@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FacturaEstado {
+  DRAFT
+  FINAL
+}
+
+model Factura {
+  id          String        @id @default(uuid())
+  nroFactura  String
+  proveedor   String?
+  fecha       DateTime      @default(now())
+  estado      FacturaEstado @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  items       FacturaItem[]
+}
+
+model FacturaItem {
+  id             String   @id @default(uuid())
+  facturaId      String
+  factura        Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+  
+  marca          String
+  tipoPrenda     String
+  codigoArticulo String
+  curvaTalles    String[] // Stored as array of strings
+  
+  colores        FacturaItemColor[]
+
+  // Enforce uniqueness of Article within a Factura
+  @@unique([facturaId, marca, tipoPrenda, codigoArticulo])
+  @@index([facturaId])
+}
+
+model FacturaItemColor {
+  id                 String      @id @default(uuid())
+  facturaItemId      String
+  facturaItem        FacturaItem @relation(fields: [facturaItemId], references: [id], onDelete: Cascade)
+  
+  codigoColor        String
+  nombreColor        String
+  cantidadesPorTalle Json        // JSONB type for { "S": 1, "M": 2 }
+
+  // Enforce uniqueness of Color within an Item
+  @@unique([facturaItemId, codigoColor])
+  @@index([facturaItemId])
+}
