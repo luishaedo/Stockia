@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { PrismaClient, Prisma } from '@prisma/client';
 import {
+    Factura,
     FacturaItem,
     VarianteColor,
     CreateFacturaDTO,
@@ -158,7 +159,7 @@ app.get('/facturas', async (req: Request, res: Response) => {
         });
 
         const response: FacturaListResponse = {
-            items: facturas,
+            items: facturas as any as Factura[],
             pagination: {
                 page: filters.page || 1,
                 pageSize: filters.pageSize || 50,
