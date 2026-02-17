@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 // Basic entities
 export enum FacturaEstado {
     DRAFT = 'DRAFT',
@@ -6,40 +8,84 @@ export enum FacturaEstado {
 
 export type DuplicateHandler = 'SUM' | 'REPLACE' | 'ERROR';
 
-export interface VarianteColor {
-    codigoColor: string;
-    nombreColor: string;
-    cantidadesPorTalle: Record<string, number>; // e.g. { "S": 2, "M": 3 }
-}
+// Zod Schemas
+export const VarianteColorSchema = z.object({
+    codigoColor: z.string().min(1),
+    nombreColor: z.string().min(1),
+    // Explicitly define key as string and value as number
+    cantidadesPorTalle: z.record(z.string(), z.number().min(0)).refine(
+        (data) => {
+            const values = Object.values(data);
+            return values.some((qty) => qty > 0);
+        },
+        { message: "At least one size quantity must be > 0" }
+    )
+});
 
-export interface FacturaItem {
-    marca: string;
-    tipoPrenda: string;
-    codigoArticulo: string;
-    curvaTalles: string[]; // e.g. ["S", "M", "L", "XL"]
-    colores: VarianteColor[];
-}
+export const FacturaItemSchema = z.object({
+    marca: z.string().min(1),
+    tipoPrenda: z.string().min(1),
+    codigoArticulo: z.string().min(1),
+    curvaTalles: z.array(z.string().min(1)).min(1),
+    colores: z.array(VarianteColorSchema)
+}).refine(
+    (item) => {
+        // Validate quantities align with curva
+        for (const color of item.colores) {
+            const sizes = Object.keys(color.cantidadesPorTalle);
+            for (const size of sizes) {
+                if (!item.curvaTalles.includes(size)) {
+                    return false; // Unknown size
+                }
+            }
+        }
+        return true;
+    },
+    { message: "cantidadesPorTalle keys must be present in curvaTalles" }
+);
+
+
+export const CreateFacturaSchema = z.object({
+    nroFactura: z.string().min(1),
+    proveedor: z.string().optional(),
+    items: z.array(FacturaItemSchema).optional().refine(
+        (items) => {
+            if (!items) return true;
+            // Check for duplicates in payload
+            const seen = new Set<string>();
+            for (const item of items) {
+                for (const color of item.colores) {
+                    const key = `${item.marca}|${item.tipoPrenda}|${item.codigoArticulo}|${color.codigoColor}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                }
+            }
+            return true;
+        },
+        { message: "DUPLICATE_ITEM_COLOR_IN_PAYLOAD" }
+    )
+});
+
+export const UpdateFacturaDraftSchema = z.object({
+    proveedor: z.string().optional(),
+    items: z.array(FacturaItemSchema).optional(),
+    duplicateHandler: z.enum(['SUM', 'REPLACE', 'ERROR']).optional(),
+    expectedUpdatedAt: z.string().datetime().optional()
+});
+
+// Derived Types
+export type VarianteColor = z.infer<typeof VarianteColorSchema>;
+export type FacturaItem = z.infer<typeof FacturaItemSchema>;
+export type CreateFacturaDTO = z.infer<typeof CreateFacturaSchema>;
+export type UpdateFacturaDraftDTO = z.infer<typeof UpdateFacturaDraftSchema>;
 
 export interface Factura {
-    id?: string;
+    id: string;
     nroFactura: string;
-    proveedor?: string;
+    proveedor?: string | null;
     fecha: Date | string;
     estado: FacturaEstado;
     createdAt: Date | string;
     updatedAt: Date | string;
     items: FacturaItem[];
-}
-
-// DTOs
-export interface CreateFacturaDTO {
-    nroFactura: string;
-    proveedor?: string;
-    items?: FacturaItem[];
-}
-
-export interface UpdateFacturaDraftDTO {
-    proveedor?: string;
-    items?: FacturaItem[];
-    duplicateHandler?: DuplicateHandler;
 }

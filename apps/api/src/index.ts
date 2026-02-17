@@ -7,8 +7,11 @@ import {
     CreateFacturaDTO,
     UpdateFacturaDraftDTO,
     DuplicateHandler,
-    FacturaEstado
+    FacturaEstado,
+    CreateFacturaSchema,
+    UpdateFacturaDraftSchema
 } from '@stockia/shared';
+import { z } from 'zod';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -17,20 +20,23 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Helper to merge items based on duplicate handler
+// --- Start Helper Functions ---
+
 const mergeItems = (items: FacturaItem[], handler: DuplicateHandler = 'ERROR'): FacturaItem[] => {
     const itemMap = new Map<string, FacturaItem>();
 
     for (const item of items) {
-        const itemKey = `${item.marca}-${item.tipoPrenda}-${item.codigoArticulo}`;
+        // Unique key for item
+        const itemKey = `${item.marca}|${item.tipoPrenda}|${item.codigoArticulo}`;
 
         if (!itemMap.has(itemKey)) {
-            // Clone deep enough
+            // Clone deep enough to avoid mutation refs
             itemMap.set(itemKey, {
                 ...item,
                 colores: item.colores.map(c => ({
                     ...c,
-                    cantidadesPorTalle: { ...c.cantidadesPorTalle }
+                    // Cast to Record<string, number> for internal logic
+                    cantidadesPorTalle: { ...c.cantidadesPorTalle } as Record<string, number>
                 }))
             });
             continue;
@@ -49,24 +55,25 @@ const mergeItems = (items: FacturaItem[], handler: DuplicateHandler = 'ERROR'): 
         for (const newColor of item.colores) {
             if (colorMap.has(newColor.codigoColor)) {
                 if (handler === 'ERROR') {
-                    throw new Error(`Duplicate color ${newColor.codigoColor} for item ${itemKey}`);
+                    throw new Error(`DUPLICATE_ITEM_COLOR_IN_PAYLOAD: ${itemKey} - Color ${newColor.codigoColor}`);
                 }
 
                 const existingColor = colorMap.get(newColor.codigoColor)!;
+                const newQuantities = newColor.cantidadesPorTalle as Record<string, number>;
+                const existingQuantities = existingColor.cantidadesPorTalle as Record<string, number>;
 
                 if (handler === 'REPLACE') {
-                    existingColor.cantidadesPorTalle = { ...newColor.cantidadesPorTalle };
+                    existingColor.cantidadesPorTalle = { ...newQuantities };
                 } else if (handler === 'SUM') {
-                    for (const [talle, cant] of Object.entries(newColor.cantidadesPorTalle)) {
-                        existingColor.cantidadesPorTalle[talle] =
-                            (existingColor.cantidadesPorTalle[talle] || 0) + cant;
+                    for (const [talle, cant] of Object.entries(newQuantities)) {
+                        existingQuantities[talle] = (existingQuantities[talle] || 0) + cant;
                     }
                 }
             } else {
                 // Add new color
                 const clonedColor = {
                     ...newColor,
-                    cantidadesPorTalle: { ...newColor.cantidadesPorTalle }
+                    cantidadesPorTalle: { ...newColor.cantidadesPorTalle } as Record<string, number>
                 };
                 colorMap.set(newColor.codigoColor, clonedColor);
                 existingItem.colores.push(clonedColor);
@@ -76,6 +83,8 @@ const mergeItems = (items: FacturaItem[], handler: DuplicateHandler = 'ERROR'): 
 
     return Array.from(itemMap.values());
 };
+
+// --- End Helper Functions ---
 
 // GET /facturas/:id
 app.get('/facturas/:id', async (req: Request, res: Response) => {
@@ -105,23 +114,30 @@ app.get('/facturas/:id', async (req: Request, res: Response) => {
 
 // POST /facturas
 app.post('/facturas', async (req: Request, res: Response) => {
-    const body: CreateFacturaDTO = req.body;
-
     try {
-        if (!body.nroFactura) {
-            return res.status(400).json({ error: 'nroFactura is required' });
+        // 1. Validation
+        const validation = CreateFacturaSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation Failed',
+                details: validation.error.format()
+            });
         }
 
+        const body: CreateFacturaDTO = validation.data;
+
+        // 2. Logic (Duplicate Check implicit in Zod or strict ERROR default)
         let processedItems: FacturaItem[] = [];
         if (body.items) {
-            // Create assumes strict validation usually, but we accept clean data
             try {
+                // Post always uses strict 'ERROR' for duplicates in payload
                 processedItems = mergeItems(body.items, 'ERROR');
             } catch (e: any) {
-                return res.status(400).json({ error: e.message });
+                return res.status(400).json({ error: e.message, code: 'DUPLICATE_ITEM_COLOR_IN_PAYLOAD' });
             }
         }
 
+        // 3. Persistence
         const newFactura = await prisma.factura.create({
             data: {
                 nroFactura: body.nroFactura,
@@ -137,7 +153,7 @@ app.post('/facturas', async (req: Request, res: Response) => {
                             create: item.colores.map(color => ({
                                 codigoColor: color.codigoColor,
                                 nombreColor: color.nombreColor,
-                                cantidadesPorTalle: color.cantidadesPorTalle
+                                cantidadesPorTalle: color.cantidadesPorTalle as any // JSON
                             }))
                         }
                     }))
@@ -155,43 +171,73 @@ app.post('/facturas', async (req: Request, res: Response) => {
         res.status(201).json(newFactura);
     } catch (error: any) {
         console.error(error);
-        res.status(400).json({ error: error.message });
+        if (error.code === 'P2002') {
+            // Should not happen for items due to mergeItems, but for nroFactura+proveedor if we had that constraint (we don't yet)
+            return res.status(409).json({ error: 'Unique Constraint Violation' });
+        }
+        res.status(500).json({ error: error.message });
     }
 });
 
 // PATCH /facturas/:id/draft
 app.patch('/facturas/:id/draft', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const body: UpdateFacturaDraftDTO = req.body;
-    const duplicateHandler = body.duplicateHandler || 'ERROR';
 
     try {
+        // 1. Validation
+        const validation = UpdateFacturaDraftSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation Failed',
+                details: validation.error.format()
+            });
+        }
+
+        const body: UpdateFacturaDraftDTO = validation.data;
+        const duplicateHandler = body.duplicateHandler || 'ERROR';
+
+        // 2. Merge Logic
         let processedItems: FacturaItem[] = [];
         if (body.items) {
             try {
                 processedItems = mergeItems(body.items, duplicateHandler);
             } catch (e: any) {
-                return res.status(400).json({ error: e.message });
+                return res.status(400).json({ error: e.message, code: 'DUPLICATE_ITEM_COLOR' });
             }
         }
 
+        // 3. Transaction with Optimistic Locking
         const updatedFactura = await prisma.$transaction(async (tx) => {
-            // 1. Update Factura fields
+            // a. Check existence and updatedAt
+            const currentFactura = await tx.factura.findUnique({ where: { id } });
+            if (!currentFactura) {
+                throw new Error('NOT_FOUND');
+            }
+
+            if (body.expectedUpdatedAt) {
+                const currentUpdated = new Date(currentFactura.updatedAt).toISOString();
+                const expected = new Date(body.expectedUpdatedAt).toISOString();
+                if (currentUpdated !== expected) {
+                    throw new Error('OPTIMISTIC_LOCK_CONFLICT');
+                }
+            }
+
+            // b. Update Header
             await tx.factura.update({
                 where: { id },
                 data: {
                     proveedor: body.proveedor,
-                    // updatedAt updated automatically
+                    // updatedAt updated automatically by Prisma
                 }
             });
 
             if (body.items) {
-                // 2. Delete existing items
+                // c. Delete existing items
                 await tx.facturaItem.deleteMany({
                     where: { facturaId: id }
                 });
 
-                // 3. Create new items
+                // d. Re-create items
                 await tx.factura.update({
                     where: { id },
                     data: {
@@ -205,7 +251,7 @@ app.patch('/facturas/:id/draft', async (req: Request, res: Response) => {
                                     create: item.colores.map(color => ({
                                         codigoColor: color.codigoColor,
                                         nombreColor: color.nombreColor,
-                                        cantidadesPorTalle: color.cantidadesPorTalle
+                                        cantidadesPorTalle: color.cantidadesPorTalle as any
                                     }))
                                 }
                             }))
@@ -223,8 +269,11 @@ app.patch('/facturas/:id/draft', async (req: Request, res: Response) => {
         res.json(updatedFactura);
 
     } catch (error: any) {
+        if (error.message === 'NOT_FOUND') return res.status(404).json({ error: 'Factura not found' });
+        if (error.message === 'OPTIMISTIC_LOCK_CONFLICT') return res.status(409).json({ error: 'Conflict: Data has changed since last retrieval' });
+
         console.error(error);
-        res.status(400).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 
