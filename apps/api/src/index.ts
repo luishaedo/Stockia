@@ -55,7 +55,7 @@ const mergeItems = (items: FacturaItem[], handler: DuplicateHandler = 'ERROR'): 
         for (const newColor of item.colores) {
             if (colorMap.has(newColor.codigoColor)) {
                 if (handler === 'ERROR') {
-                    throw new Error(`DUPLICATE_ITEM_COLOR_IN_PAYLOAD: ${itemKey} - Color ${newColor.codigoColor}`);
+                    throw new Error(`DUPLICATE_ITEM_COLOR_IN_PAYLOAD`);
                 }
 
                 const existingColor = colorMap.get(newColor.codigoColor)!;
@@ -118,6 +118,10 @@ app.post('/facturas', async (req: Request, res: Response) => {
         // 1. Validation
         const validation = CreateFacturaSchema.safeParse(req.body);
         if (!validation.success) {
+            const dup = validation.error.issues.find(i => i.message === 'DUPLICATE_ITEM_COLOR_IN_PAYLOAD');
+            if (dup) {
+                return res.status(400).json({ error: 'Duplicate Item/Color in payload', code: 'DUPLICATE_ITEM_COLOR_IN_PAYLOAD' });
+            }
             return res.status(400).json({
                 error: 'Validation Failed',
                 details: validation.error.format()
@@ -172,7 +176,6 @@ app.post('/facturas', async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error(error);
         if (error.code === 'P2002') {
-            // Should not happen for items due to mergeItems, but for nroFactura+proveedor if we had that constraint (we don't yet)
             return res.status(409).json({ error: 'Unique Constraint Violation' });
         }
         res.status(500).json({ error: error.message });
@@ -202,7 +205,7 @@ app.patch('/facturas/:id/draft', async (req: Request, res: Response) => {
             try {
                 processedItems = mergeItems(body.items, duplicateHandler);
             } catch (e: any) {
-                return res.status(400).json({ error: e.message, code: 'DUPLICATE_ITEM_COLOR' });
+                return res.status(400).json({ error: e.message, code: 'DUPLICATE_ITEM_COLOR_IN_PAYLOAD' });
             }
         }
 

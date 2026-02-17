@@ -1,20 +1,26 @@
-import { Factura } from '@stockia/shared';
-import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { FacturaProvider } from './context/FacturaContext';
+import { MainLayout } from './components/layout/MainLayout';
+import { NewFactura } from './pages/NewFactura';
+import { FacturaWizard } from './pages/FacturaWizard';
+import { FacturaSummary } from './pages/FacturaSummary';
+import './index.css';
 
 function App() {
-    const [facturas, setFacturas] = useState<Factura[]>([]);
-
-    useEffect(() => {
-        setFacturas([]); // Dummy usage to satisfy lint
-    }, []);
-
     return (
-        <div>
-            <h1>Stockia Invoice App</h1>
-            <p>This is the initial scaffold for Phase 1.</p>
-            <pre>{JSON.stringify(facturas, null, 2)}</pre>
-        </div>
-    )
+        <FacturaProvider>
+            <Router>
+                <MainLayout>
+                    <Routes>
+                        <Route path="/" element={<Navigate to="/facturas/new" replace />} />
+                        <Route path="/facturas/new" element={<NewFactura />} />
+                        <Route path="/facturas/:id/wizard" element={<FacturaWizard />} />
+                        <Route path="/facturas/:id/summary" element={<FacturaSummary />} />
+                    </Routes>
+                </MainLayout>
+            </Router>
+        </FacturaProvider>
+    );
 }
 
-export default App
+export default App;
