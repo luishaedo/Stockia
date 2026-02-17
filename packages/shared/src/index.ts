@@ -89,3 +89,35 @@ export interface Factura {
     updatedAt: Date | string;
     items: FacturaItem[];
 }
+
+// Phase 3: List Filters & Pagination
+export interface FacturaFilters {
+    nroFactura?: string;
+    proveedor?: string;
+    estado?: FacturaEstado;
+    dateFrom?: string; // ISO string
+    dateTo?: string; // ISO string
+    page?: number;
+    pageSize?: number;
+    sortBy?: 'fecha' | 'nroFactura' | 'proveedor' | 'estado';
+    sortDir?: 'asc' | 'desc';
+}
+
+export interface PaginatedResponse<T> {
+    items: T[];
+    pagination: {
+        page: number;
+        pageSize: number;
+        total: number;
+        totalPages: number;
+    };
+}
+
+export type FacturaListResponse = PaginatedResponse<Factura>;
+
+// Error Codes
+export const ErrorCodes = {
+    DUPLICATE_ITEM_COLOR_IN_PAYLOAD: 'DUPLICATE_ITEM_COLOR_IN_PAYLOAD',
+    INVOICE_FINAL_READ_ONLY: 'INVOICE_FINAL_READ_ONLY',
+    INVOICE_FINALIZE_INVALID: 'INVOICE_FINALIZE_INVALID',
+} as const;

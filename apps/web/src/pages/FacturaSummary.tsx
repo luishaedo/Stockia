@@ -1,14 +1,49 @@
-import { useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFactura } from '../context/FacturaContext';
+import { api } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle, Download } from 'lucide-react';
+import { FacturaEstado } from '@stockia/shared';
+
+// CSV Export Utility
+function exportToCSV(factura: any) {
+    const rows: string[][] = [['ID', 'Nro', 'Provider', 'Date', 'Item Code', 'Brand', 'Type', 'Color Code', 'Color Name', 'Size', 'Quantity']];
+
+    factura.items.forEach((item: any) => {
+        item.colores.forEach((color: any) => {
+            Object.entries(color.cantidadesPorTalle).forEach(([size, qty]) => {
+                rows.push([
+                    factura.id,
+                    factura.nroFactura,
+                    factura.proveedor || '',
+                    new Date(factura.fecha).toLocaleDateString(),
+                    item.codigoArticulo,
+                    item.marca,
+                    item.tipoPrenda,
+                    color.codigoColor,
+                    color.nombreColor,
+                    size,
+                    String(qty)
+                ]);
+            });
+        });
+    });
+
+    const csvContent = rows.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `invoice_${factura.nroFactura}_${Date.now()}.csv`;
+    link.click();
+}
 
 export function FacturaSummary() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { state, loadFactura } = useFactura();
+    const [finalizing, setFinalizing] = useState(false);
 
     useEffect(() => {
         if (id && (!state.currentFactura || state.currentFactura.id !== id)) {
@@ -28,25 +63,46 @@ export function FacturaSummary() {
     }, [state.currentFactura]);
 
     const handleFinalize = async () => {
-        // In strict Phase 2, we just finish draft. 
-        // Ideally update status to FINAL via API.
-        // For MVP autosave covers content. We might need an explicit "Finalize" endpoint or just field update.
-        // I'll assume we leave it as valid draft for now or update 'estado'.
-        // API Phase 1 has 'estado' field.
-        if (!id) return;
-        // updateDraft({ estado: 'FINAL' }); // Typos in shared types? Enum needed.
-        // Typecast to any or import Enum if available in frontend (it is).
-        // Let's just go back for now or show success.
-        alert("Factura Finalized (Simulation)");
-        navigate('/');
+        if (!id || !state.currentFactura) return;
+        if (state.currentFactura.estado === FacturaEstado.FINAL) {
+            alert('Invoice is already finalized');
+            return;
+        }
+
+        const confirmed = window.confirm('Are you sure you want to finalize this invoice? This action cannot be undone.');
+        if (!confirmed) return;
+
+        setFinalizing(true);
+        try {
+            await api.finalizeFactura(id);
+            await loadFactura(id); // Reload to reflect FINAL state
+            alert('Invoice finalized successfully!');
+        } catch (error: any) {
+            alert(`Finalize failed: ${error.message}`);
+        }
+        setFinalizing(false);
+    };
+
+    const handleExportCSV = () => {
+        if (!state.currentFactura) return;
+        exportToCSV(state.currentFactura);
     };
 
     if (state.status === 'LOADING' || !state.currentFactura) {
         return <Loader2 className="animate-spin h-8 w-8 mx-auto mt-12 text-blue-500" />;
     }
 
+    const isFinal = state.currentFactura.estado === FacturaEstado.FINAL;
+
     return (
         <div className="flex flex-col gap-6 max-w-5xl mx-auto">
+            {isFinal && (
+                <div className="bg-green-500/10 border border-green-500/50 rounded p-4 flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-400" />
+                    <span className="text-green-400 font-medium">This invoice is finalized and read-only</span>
+                </div>
+            )}
+
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Invoice Summary</h1>
@@ -55,13 +111,24 @@ export function FacturaSummary() {
                     </p>
                 </div>
                 <div className="flex gap-4">
-                    <Button variant="secondary" onClick={() => navigate(`/facturas/${id}/wizard`)}>
+                    <Button variant="ghost" onClick={() => navigate('/facturas')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
-                        Back to Wizard
+                        Back to List
                     </Button>
-                    <Button variant="primary" onClick={handleFinalize}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Finalize Invoice
+                    {!isFinal && (
+                        <>
+                            <Button variant="secondary" onClick={() => navigate(`/facturas/${id}/wizard`)}>
+                                Edit
+                            </Button>
+                            <Button variant="primary" onClick={handleFinalize} isLoading={finalizing}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Finalize
+                            </Button>
+                        </>
+                    )}
+                    <Button variant="secondary" onClick={handleExportCSV}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export CSV
                     </Button>
                 </div>
             </div>
@@ -79,7 +146,9 @@ export function FacturaSummary() {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-slate-400">Status</span>
-                            <span className="font-bold text-yellow-500">{state.currentFactura.estado}</span>
+                            <span className={`font-bold ${isFinal ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {state.currentFactura.estado}
+                            </span>
                         </div>
                     </div>
                 </Card>

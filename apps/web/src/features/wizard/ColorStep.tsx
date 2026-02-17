@@ -17,6 +17,7 @@ interface ColorStepProps {
     onRemoveColor: (index: number) => void;
     onFinishItem: () => void;
     onBack: () => void;
+    readOnly?: boolean;
 }
 
 export function ColorStep({
@@ -25,7 +26,8 @@ export function ColorStep({
     onAddColor,
     onRemoveColor,
     onFinishItem,
-    onBack
+    onBack,
+    readOnly = false
 }: ColorStepProps) {
 
     // Local state for the "New Color" being added
@@ -102,12 +104,14 @@ export function ColorStep({
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
                                 placeholder="e.g. 001"
+                                disabled={readOnly}
                             />
                             <Input
                                 label="Color Name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="e.g. Black"
+                                disabled={readOnly}
                             />
                         </div>
 
@@ -123,6 +127,7 @@ export function ColorStep({
                                             className="text-center"
                                             value={quantities[size] || ''}
                                             onChange={(e) => handleQtyChange(size, e.target.value)}
+                                            disabled={readOnly}
                                         />
                                     </div>
                                 ))}
@@ -131,7 +136,7 @@ export function ColorStep({
 
                         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-                        <Button onClick={handleAddColor} variant="secondary" className="mt-2" icon={<Plus className="h-4 w-4" />}>
+                        <Button onClick={handleAddColor} variant="secondary" className="mt-2" icon={<Plus className="h-4 w-4" />} disabled={readOnly}>
                             Add Variant
                         </Button>
                     </div>
@@ -160,6 +165,7 @@ export function ColorStep({
                                     variant="ghost"
                                     className="text-red-400 hover:text-red-300"
                                     onClick={() => onRemoveColor(idx)}
+                                    disabled={readOnly}
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -171,7 +177,7 @@ export function ColorStep({
                         <Button variant="ghost" onClick={onBack}>Back to Article</Button>
                         <Button
                             onClick={onFinishItem}
-                            disabled={addedColors.length === 0}
+                            disabled={addedColors.length === 0 || readOnly}
                             variant="primary"
                             icon={<Check className="h-4 w-4" />}
                         >

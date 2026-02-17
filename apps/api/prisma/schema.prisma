@@ -22,6 +22,13 @@ model Factura {
   updatedAt   DateTime      @updatedAt
 
   items       FacturaItem[]
+
+  // Indexes for list filtering
+  @@index([estado])
+  @@index([fecha])
+  @@index([nroFactura])
+  @@index([proveedor])
+  @@index([estado, fecha])
 }
 
 model FacturaItem {

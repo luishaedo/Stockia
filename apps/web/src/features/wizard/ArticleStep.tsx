@@ -12,9 +12,10 @@ interface ArticleStepProps {
     };
     onChange: (field: string, value: string) => void;
     onNext: () => void;
+    readOnly?: boolean;
 }
 
-export function ArticleStep({ draftItem, onChange, onNext }: ArticleStepProps) {
+export function ArticleStep({ draftItem, onChange, onNext, readOnly = false }: ArticleStepProps) {
     const isValid = draftItem.marca && draftItem.tipoPrenda && draftItem.codigoArticulo && draftItem.curvaTalles;
 
     return (
@@ -26,12 +27,14 @@ export function ArticleStep({ draftItem, onChange, onNext }: ArticleStepProps) {
                         value={draftItem.marca}
                         onChange={(e) => onChange('marca', e.target.value)}
                         placeholder="e.g. Nike"
+                        disabled={readOnly}
                     />
                     <Input
                         label="Type"
                         value={draftItem.tipoPrenda}
                         onChange={(e) => onChange('tipoPrenda', e.target.value)}
                         placeholder="e.g. T-Shirt"
+                        disabled={readOnly}
                     />
                 </div>
 
@@ -40,6 +43,7 @@ export function ArticleStep({ draftItem, onChange, onNext }: ArticleStepProps) {
                     value={draftItem.codigoArticulo}
                     onChange={(e) => onChange('codigoArticulo', e.target.value)}
                     placeholder="e.g. NK-1002"
+                    disabled={readOnly}
                 />
 
                 <Input
@@ -47,13 +51,14 @@ export function ArticleStep({ draftItem, onChange, onNext }: ArticleStepProps) {
                     value={draftItem.curvaTalles}
                     onChange={(e) => onChange('curvaTalles', e.target.value)}
                     placeholder="e.g. S, M, L, XL"
+                    disabled={readOnly}
                 />
                 <p className="text-xs text-gray-500">Enter sizes separated by commas.</p>
 
                 <div className="mt-4 flex justify-end">
                     <Button
                         onClick={onNext}
-                        disabled={!isValid}
+                        disabled={!isValid || readOnly}
                         icon={<ArrowRight className="h-4 w-4" />}
                     >
                         Next: Add Colors
