@@ -1,9 +1,25 @@
 import { Factura, CreateFacturaDTO, UpdateFacturaDraftDTO, FacturaFilters, FacturaListResponse } from '@stockia/shared';
 
-const API_URL = 'http://localhost:3000';
+const apiURL = import.meta.env.VITE_API_URL;
+const adminToken = import.meta.env.VITE_ADMIN_TOKEN;
+
+if (!apiURL) {
+    throw new Error('Missing VITE_API_URL environment variable');
+}
+
+if (!adminToken) {
+    throw new Error('Missing VITE_ADMIN_TOKEN environment variable');
+}
 
 class ApiService {
-    private baseURL = API_URL;
+    private baseURL = apiURL;
+
+    private getWriteHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'x-admin-token': adminToken
+        };
+    }
 
     async getFactura(id: string): Promise<Factura> {
         const response = await fetch(`${this.baseURL}/facturas/${id}`);
@@ -14,7 +30,7 @@ class ApiService {
     async createFactura(data: CreateFacturaDTO): Promise<Factura> {
         const response = await fetch(`${this.baseURL}/facturas`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.getWriteHeaders(),
             body: JSON.stringify(data)
         });
         if (!response.ok) {
@@ -28,7 +44,7 @@ class ApiService {
         const payload = { ...data, expectedUpdatedAt };
         const response = await fetch(`${this.baseURL}/facturas/${id}/draft`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.getWriteHeaders(),
             body: JSON.stringify(payload)
         });
         if (!response.ok) {
@@ -58,7 +74,7 @@ class ApiService {
     async finalizeFactura(id: string): Promise<Factura> {
         const response = await fetch(`${this.baseURL}/facturas/${id}/finalize`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' }
+            headers: this.getWriteHeaders()
         });
         if (!response.ok) {
             const error = await response.json();

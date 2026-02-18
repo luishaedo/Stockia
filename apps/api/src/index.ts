@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { PrismaClient, Prisma } from '@prisma/client';
@@ -19,10 +20,29 @@ import { z } from 'zod';
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
 app.use(cors());
 app.use(express.json());
+
+const requireAdminToken = (req: Request, res: Response, next: () => void) => {
+    if (!ADMIN_TOKEN) {
+        return res.status(500).json({ error: 'Server misconfigured: missing ADMIN_TOKEN' });
+    }
+
+    const providedToken = req.header('x-admin-token');
+
+    if (!providedToken) {
+        return res.status(401).json({ error: 'Missing admin token' });
+    }
+
+    if (providedToken !== ADMIN_TOKEN) {
+        return res.status(403).json({ error: 'Invalid admin token' });
+    }
+
+    next();
+};
 
 // --- Start Helper Functions ---
 
@@ -202,7 +222,7 @@ app.get('/facturas/:id', async (req: Request, res: Response) => {
 });
 
 // POST /facturas
-app.post('/facturas', async (req: Request, res: Response) => {
+app.post('/facturas', requireAdminToken, async (req: Request, res: Response) => {
     try {
         const validation = CreateFacturaSchema.safeParse(req.body);
         if (!validation.success) {
@@ -268,7 +288,7 @@ app.post('/facturas', async (req: Request, res: Response) => {
 });
 
 // PATCH /facturas/:id/draft
-app.patch('/facturas/:id/draft', async (req: Request, res: Response) => {
+app.patch('/facturas/:id/draft', requireAdminToken, async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
@@ -364,7 +384,7 @@ app.patch('/facturas/:id/draft', async (req: Request, res: Response) => {
 });
 
 // PATCH /facturas/:id/finalize
-app.patch('/facturas/:id/finalize', async (req: Request, res: Response) => {
+app.patch('/facturas/:id/finalize', requireAdminToken, async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {

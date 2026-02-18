@@ -1,6 +1,6 @@
 import { CreateFacturaDTO, UpdateFacturaDraftDTO } from '@stockia/shared';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = process.env.API_URL || 'http://localhost:4000';
 
 async function request(method: string, path: string, body?: any) {
     const headers = { 'Content-Type': 'application/json' };
