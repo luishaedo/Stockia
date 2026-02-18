@@ -5,6 +5,7 @@ import { ArticleStep } from '../features/wizard/ArticleStep';
 import { ColorStep } from '../features/wizard/ColorStep';
 import { FacturaItem, VarianteColor, FacturaEstado } from '@stockia/shared';
 import { Loader2, Lock } from 'lucide-react';
+import { useAutosave } from '../hooks/useAutosave';
 
 type WizardStep = 'ARTICLE' | 'COLOR';
 
@@ -14,6 +15,8 @@ export function FacturaWizard() {
     const { state, loadFactura, updateDraft } = useFactura();
 
     const [step, setStep] = useState<WizardStep>('ARTICLE');
+
+    useAutosave();
 
     // Draft Item State
     const [draftItem, setDraftItem] = useState({
