@@ -59,13 +59,13 @@ const verifyAuthToken = (token: string, secret: string): AuthUser | null => {
 };
 
 export const requireAuthToken = (jwtSecret?: string) => (req: Request, res: Response, next: NextFunction) => {
-    if (!jwtSecret) {
-        return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Server misconfigured', undefined, req.traceId);
-    }
-
     const authHeader = req.header('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
         return sendError(res, 401, ErrorCodes.AUTH_TOKEN_MISSING, 'Missing bearer token', undefined, req.traceId);
+    }
+
+    if (!jwtSecret) {
+        return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Server misconfigured', undefined, req.traceId);
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
