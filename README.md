@@ -30,11 +30,13 @@ cp apps/api/.env.example apps/api/.env
 Recommended local values:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://user:password@localhost:5432/stockia?schema=public"
 PORT=4000
-ADMIN_TOKEN=1882
+JWT_SECRET="change-me-with-long-random-secret"
+AUTH_USERNAME=admin
+AUTH_PASSWORD=change-me
 CORS_ALLOWED_ORIGINS="http://localhost:5173"
-CORS_ALLOW_NO_ORIGIN=true
+CORS_ALLOW_NO_ORIGIN=false
 RATE_LIMIT_READ_MAX=120
 RATE_LIMIT_WRITE_MAX=30
 ```
@@ -135,23 +137,23 @@ npm run preview -w web
 
 | Environment | API (`apps/api`) | Web (`apps/web`) | Notes |
 | --- | --- | --- | --- |
-| Local | `DATABASE_URL=file:./dev.db`, `PORT=4000`, `ADMIN_TOKEN=1882` | `VITE_API_URL` optional (fallback: `http://localhost:4000`), `VITE_ADMIN_TOKEN=1882` | If `VITE_API_URL` is not set, frontend uses localhost fallback. |
-| Dev | Managed DB URL, `PORT`, secured `ADMIN_TOKEN` | Set `VITE_API_URL` to dev API URL, dev admin token | Keep tokens out of source control. |
-| Stage | Stage DB URL, stage port/token | Stage API URL and token | Mirror production as close as possible. |
-| Prod | Production DB URL, hardened token policy | `VITE_API_URL` is mandatory, production token policy | Frontend fails fast if `VITE_API_URL` is missing. |
+| Local | `DATABASE_URL=postgresql://...`, `PORT=4000`, `JWT_SECRET`, `AUTH_USERNAME`, `AUTH_PASSWORD` | `VITE_API_URL` optional (fallback: `http://localhost:4000`) | If `VITE_API_URL` is not set, frontend uses localhost fallback. |
+| Dev | Managed DB URL, `PORT`, secured `JWT_SECRET` and auth credentials | Set `VITE_API_URL` to dev API URL | Keep secrets out of source control. |
+| Stage | Stage DB URL, stage port/auth secrets | Stage API URL | Mirror production as close as possible. |
+| Prod | Production DB URL, hardened auth policy and secret rotation | `VITE_API_URL` is mandatory | Frontend fails fast if `VITE_API_URL` is missing. |
 
 ## Troubleshooting
 
 ### Frontend fails with missing env variables
 
 - Ensure `apps/web/.env` exists.
-- `VITE_ADMIN_TOKEN` is required for write operations.
+- Authenticate against `POST /auth/login` to get bearer token for write operations.
 - In production builds, `VITE_API_URL` is mandatory.
 
 ### API rejects write operations with 401/403
 
-- Verify `ADMIN_TOKEN` in `apps/api/.env`.
-- Ensure frontend sends matching `VITE_ADMIN_TOKEN`.
+- Verify `JWT_SECRET`, `AUTH_USERNAME`, and `AUTH_PASSWORD` in `apps/api/.env`.
+- Ensure clients authenticate via `POST /auth/login` and use `Authorization: Bearer <token>`.
 
 ### Prisma client errors
 

@@ -2,15 +2,15 @@ import { FACTURA_ROUTE_DEFINITIONS, toRouteKey } from '../routes/routeDefinition
 
 export type RouteAuthRule = {
     requiresAdminToken: boolean;
-    requiredHeader?: 'x-admin-token';
+    requiredHeader?: 'authorization';
 };
 
 export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /facturas': { requiresAdminToken: false },
     'GET /facturas/:id': { requiresAdminToken: false },
-    'POST /facturas': { requiresAdminToken: true, requiredHeader: 'x-admin-token' },
-    'PATCH /facturas/:id/draft': { requiresAdminToken: true, requiredHeader: 'x-admin-token' },
-    'PATCH /facturas/:id/finalize': { requiresAdminToken: true, requiredHeader: 'x-admin-token' }
+    'POST /facturas': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'PATCH /facturas/:id/draft': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'PATCH /facturas/:id/finalize': { requiresAdminToken: true, requiredHeader: 'authorization' }
 };
 
 export const assertAuthPolicyCoverage = () => {

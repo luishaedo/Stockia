@@ -73,11 +73,38 @@ export const UpdateFacturaDraftSchema = z.object({
     expectedUpdatedAt: z.string().datetime().optional()
 });
 
+export const FinalizeFacturaSchema = z.object({
+    expectedUpdatedAt: z.string().datetime()
+});
+
+export const FacturaListQuerySchema = z.object({
+    nroFactura: z.string().min(1).optional(),
+    proveedor: z.string().min(1).optional(),
+    estado: z.nativeEnum(FacturaEstado).optional(),
+    dateFrom: z.string().datetime().optional(),
+    dateTo: z.string().datetime().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(50),
+    sortBy: z.enum(['fecha', 'nroFactura', 'proveedor', 'estado']).default('fecha'),
+    sortDir: z.enum(['asc', 'desc']).default('desc')
+}).refine(
+    (data) => {
+        if (!data.dateFrom || !data.dateTo) return true;
+        return new Date(data.dateFrom).getTime() <= new Date(data.dateTo).getTime();
+    },
+    {
+        message: 'dateFrom must be before or equal to dateTo',
+        path: ['dateFrom']
+    }
+);
+
 // Derived Types
 export type VarianteColor = z.infer<typeof VarianteColorSchema>;
 export type FacturaItem = z.infer<typeof FacturaItemSchema>;
 export type CreateFacturaDTO = z.infer<typeof CreateFacturaSchema>;
 export type UpdateFacturaDraftDTO = z.infer<typeof UpdateFacturaDraftSchema>;
+export type FinalizeFacturaDTO = z.infer<typeof FinalizeFacturaSchema>;
+export type FacturaListQuery = z.infer<typeof FacturaListQuerySchema>;
 
 export interface Factura {
     id: string;
@@ -126,6 +153,9 @@ export const ErrorCodes = {
     INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
     UNAUTHORIZED: 'UNAUTHORIZED',
     FORBIDDEN: 'FORBIDDEN',
+    INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+    AUTH_TOKEN_INVALID: 'AUTH_TOKEN_INVALID',
+    AUTH_TOKEN_MISSING: 'AUTH_TOKEN_MISSING',
     BAD_REQUEST: 'BAD_REQUEST',
     UNIQUE_CONSTRAINT_VIOLATION: 'UNIQUE_CONSTRAINT_VIOLATION',
     INVOICE_ALREADY_FINALIZED: 'INVOICE_ALREADY_FINALIZED',
