@@ -26,22 +26,128 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 app.use(cors());
 app.use(express.json());
 
+const sendError = (
+    res: Response,
+    status: number,
+    code: string,
+    message: string,
+    details?: unknown
+) => res.status(status).json({ error: { code, message, details } });
+
+const toMessage = (error: unknown): string => {
+    if (error instanceof Error) return error.message;
+    return 'Unknown error';
+};
+
 const requireAdminToken = (req: Request, res: Response, next: () => void) => {
     if (!ADMIN_TOKEN) {
-        return res.status(500).json({ error: 'Server misconfigured: missing ADMIN_TOKEN' });
+        return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Server misconfigured: missing ADMIN_TOKEN');
     }
 
     const providedToken = req.header('x-admin-token');
 
     if (!providedToken) {
-        return res.status(401).json({ error: 'Missing admin token' });
+        return sendError(res, 401, ErrorCodes.UNAUTHORIZED, 'Missing admin token');
     }
 
     if (providedToken !== ADMIN_TOKEN) {
-        return res.status(403).json({ error: 'Invalid admin token' });
+        return sendError(res, 403, ErrorCodes.FORBIDDEN, 'Invalid admin token');
     }
 
     next();
+};
+
+const getItemKey = (item: Pick<FacturaItem, 'marca' | 'tipoPrenda' | 'codigoArticulo'>) =>
+    `${item.marca}|${item.tipoPrenda}|${item.codigoArticulo}`;
+
+const syncDraftItems = async (
+    tx: Prisma.TransactionClient,
+    facturaId: string,
+    nextItems: FacturaItem[]
+) => {
+    const existingItems = await tx.facturaItem.findMany({
+        where: { facturaId },
+        include: { colores: true }
+    });
+
+    const existingByKey = new Map(existingItems.map(item => [getItemKey(item), item]));
+    const preservedItemIds = new Set<string>();
+
+    for (const nextItem of nextItems) {
+        const key = getItemKey(nextItem);
+        const existingItem = existingByKey.get(key);
+
+        if (!existingItem) {
+            await tx.facturaItem.create({
+                data: {
+                    facturaId,
+                    marca: nextItem.marca,
+                    tipoPrenda: nextItem.tipoPrenda,
+                    codigoArticulo: nextItem.codigoArticulo,
+                    curvaTalles: nextItem.curvaTalles,
+                    colores: {
+                        create: nextItem.colores.map(color => ({
+                            codigoColor: color.codigoColor,
+                            nombreColor: color.nombreColor,
+                            cantidadesPorTalle: color.cantidadesPorTalle as any
+                        }))
+                    }
+                }
+            });
+            continue;
+        }
+
+        preservedItemIds.add(existingItem.id);
+
+        await tx.facturaItem.update({
+            where: { id: existingItem.id },
+            data: {
+                curvaTalles: nextItem.curvaTalles,
+            }
+        });
+
+        const existingColorByCode = new Map(existingItem.colores.map(color => [color.codigoColor, color]));
+        const preservedColorIds = new Set<string>();
+
+        for (const nextColor of nextItem.colores) {
+            const existingColor = existingColorByCode.get(nextColor.codigoColor);
+            if (!existingColor) {
+                await tx.facturaItemColor.create({
+                    data: {
+                        facturaItemId: existingItem.id,
+                        codigoColor: nextColor.codigoColor,
+                        nombreColor: nextColor.nombreColor,
+                        cantidadesPorTalle: nextColor.cantidadesPorTalle as any
+                    }
+                });
+                continue;
+            }
+
+            preservedColorIds.add(existingColor.id);
+
+            await tx.facturaItemColor.update({
+                where: { id: existingColor.id },
+                data: {
+                    nombreColor: nextColor.nombreColor,
+                    cantidadesPorTalle: nextColor.cantidadesPorTalle as any
+                }
+            });
+        }
+
+        await tx.facturaItemColor.deleteMany({
+            where: {
+                facturaItemId: existingItem.id,
+                id: { notIn: Array.from(preservedColorIds) }
+            }
+        });
+    }
+
+    await tx.facturaItem.deleteMany({
+        where: {
+            facturaId,
+            id: { notIn: Array.from(preservedItemIds) }
+        }
+    });
 };
 
 // --- Start Helper Functions ---
@@ -191,7 +297,7 @@ app.get('/facturas', async (req: Request, res: Response) => {
         res.json(response);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Internal Server Error');
     }
 });
 
@@ -211,13 +317,13 @@ app.get('/facturas/:id', async (req: Request, res: Response) => {
         });
 
         if (!factura) {
-            return res.status(404).json({ error: 'Factura not found' });
+            return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Factura not found');
         }
 
         res.json(factura);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Internal Server Error');
     }
 });
 
@@ -228,12 +334,9 @@ app.post('/facturas', requireAdminToken, async (req: Request, res: Response) => 
         if (!validation.success) {
             const dup = validation.error.issues.find(i => i.message === ErrorCodes.DUPLICATE_ITEM_COLOR_IN_PAYLOAD);
             if (dup) {
-                return res.status(400).json({ error: 'Duplicate Item/Color in payload', code: ErrorCodes.DUPLICATE_ITEM_COLOR_IN_PAYLOAD });
+                return sendError(res, 400, ErrorCodes.DUPLICATE_ITEM_COLOR_IN_PAYLOAD, 'Duplicate Item/Color in payload');
             }
-            return res.status(400).json({
-                error: 'Validation Failed',
-                details: validation.error.format()
-            });
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format());
         }
 
         const body: CreateFacturaDTO = validation.data;
@@ -243,7 +346,7 @@ app.post('/facturas', requireAdminToken, async (req: Request, res: Response) => 
             try {
                 processedItems = mergeItems(body.items, 'ERROR');
             } catch (e: any) {
-                return res.status(400).json({ error: e.message, code: ErrorCodes.DUPLICATE_ITEM_COLOR_IN_PAYLOAD });
+                return sendError(res, 400, ErrorCodes.DUPLICATE_ITEM_COLOR_IN_PAYLOAD, toMessage(e));
             }
         }
 
@@ -281,9 +384,9 @@ app.post('/facturas', requireAdminToken, async (req: Request, res: Response) => 
     } catch (error: any) {
         console.error(error);
         if (error.code === 'P2002') {
-            return res.status(409).json({ error: 'Unique Constraint Violation' });
+            return sendError(res, 409, ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION, 'Unique Constraint Violation');
         }
-        res.status(500).json({ error: error.message });
+        sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, toMessage(error));
     }
 });
 
@@ -294,10 +397,7 @@ app.patch('/facturas/:id/draft', requireAdminToken, async (req: Request, res: Re
     try {
         const validation = UpdateFacturaDraftSchema.safeParse(req.body);
         if (!validation.success) {
-            return res.status(400).json({
-                error: 'Validation Failed',
-                details: validation.error.format()
-            });
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format());
         }
 
         const body: UpdateFacturaDraftDTO = validation.data;
@@ -308,7 +408,7 @@ app.patch('/facturas/:id/draft', requireAdminToken, async (req: Request, res: Re
             try {
                 processedItems = mergeItems(body.items, duplicateHandler);
             } catch (e: any) {
-                return res.status(400).json({ error: e.message, code: ErrorCodes.DUPLICATE_ITEM_COLOR_IN_PAYLOAD });
+                return sendError(res, 400, ErrorCodes.DUPLICATE_ITEM_COLOR_IN_PAYLOAD, toMessage(e));
             }
         }
 
@@ -327,7 +427,7 @@ app.patch('/facturas/:id/draft', requireAdminToken, async (req: Request, res: Re
                 const currentUpdated = new Date(currentFactura.updatedAt).toISOString();
                 const expected = new Date(body.expectedUpdatedAt).toISOString();
                 if (currentUpdated !== expected) {
-                    throw new Error('OPTIMISTIC_LOCK_CONFLICT');
+                    throw new Error(ErrorCodes.OPTIMISTIC_LOCK_CONFLICT);
                 }
             }
 
@@ -339,30 +439,7 @@ app.patch('/facturas/:id/draft', requireAdminToken, async (req: Request, res: Re
             });
 
             if (body.items) {
-                await tx.facturaItem.deleteMany({
-                    where: { facturaId: id }
-                });
-
-                await tx.factura.update({
-                    where: { id },
-                    data: {
-                        items: {
-                            create: processedItems.map(item => ({
-                                marca: item.marca,
-                                tipoPrenda: item.tipoPrenda,
-                                codigoArticulo: item.codigoArticulo,
-                                curvaTalles: item.curvaTalles,
-                                colores: {
-                                    create: item.colores.map(color => ({
-                                        codigoColor: color.codigoColor,
-                                        nombreColor: color.nombreColor,
-                                        cantidadesPorTalle: color.cantidadesPorTalle as any
-                                    }))
-                                }
-                            }))
-                        }
-                    }
-                });
+                await syncDraftItems(tx, id, processedItems);
             }
 
             return tx.factura.findUnique({
@@ -374,12 +451,12 @@ app.patch('/facturas/:id/draft', requireAdminToken, async (req: Request, res: Re
         res.json(updatedFactura);
 
     } catch (error: any) {
-        if (error.message === 'NOT_FOUND') return res.status(404).json({ error: 'Factura not found' });
-        if (error.message === 'INVOICE_FINAL_READ_ONLY') return res.status(409).json({ error: 'Cannot edit finalized invoice', code: ErrorCodes.INVOICE_FINAL_READ_ONLY });
-        if (error.message === 'OPTIMISTIC_LOCK_CONFLICT') return res.status(409).json({ error: 'Conflict: Data has changed since last retrieval' });
+        if (error.message === 'NOT_FOUND') return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Factura not found');
+        if (error.message === 'INVOICE_FINAL_READ_ONLY') return sendError(res, 409, ErrorCodes.INVOICE_FINAL_READ_ONLY, 'Cannot edit finalized invoice');
+        if (error.message === ErrorCodes.OPTIMISTIC_LOCK_CONFLICT) return sendError(res, 409, ErrorCodes.OPTIMISTIC_LOCK_CONFLICT, 'Conflict: Data has changed since last retrieval');
 
         console.error(error);
-        res.status(500).json({ error: error.message });
+        sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, toMessage(error));
     }
 });
 
@@ -400,17 +477,17 @@ app.patch('/facturas/:id/finalize', requireAdminToken, async (req: Request, res:
         });
 
         if (!factura) {
-            return res.status(404).json({ error: 'Factura not found' });
+            return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Factura not found');
         }
 
         if (factura.estado === FacturaEstado.FINAL) {
-            return res.status(400).json({ error: 'Invoice already finalized' });
+            return sendError(res, 400, ErrorCodes.INVOICE_ALREADY_FINALIZED, 'Invoice already finalized');
         }
 
         // Validate integrity
         const integrityError = validateFacturaIntegrity(factura);
         if (integrityError) {
-            return res.status(422).json({ error: integrityError, code: ErrorCodes.INVOICE_FINALIZE_INVALID });
+            return sendError(res, 422, ErrorCodes.INVOICE_FINALIZE_INVALID, integrityError);
         }
 
         // Finalize
@@ -429,7 +506,7 @@ app.patch('/facturas/:id/finalize', requireAdminToken, async (req: Request, res:
         res.json(finalized);
     } catch (error: any) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, toMessage(error));
     }
 });
 

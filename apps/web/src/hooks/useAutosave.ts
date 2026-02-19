@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useFactura } from '../context/FacturaContext';
-import { api } from '../services/api';
+import { api, ApiError } from '../services/api';
+import { ErrorCodes } from '@stockia/shared';
 
 export function useAutosave(timeout = 2000) {
     const { state, dispatch } = useFactura();
@@ -59,9 +60,8 @@ export function useAutosave(timeout = 2000) {
                     success = true;
 
                 } catch (error: any) {
-                    const msg = error.message || '';
-                    // Check for Conflict (409)
-                    if (msg.toLowerCase().includes('conflict')) {
+                    const msg = error?.message || '';
+                    if (error instanceof ApiError && error.code === ErrorCodes.OPTIMISTIC_LOCK_CONFLICT) {
                         dispatch({ type: 'SET_ERROR', payload: 'Sync Conflict: Data has changed elsewhere. Please refresh.' });
                         return; // Do not retry on conflict, let user handle it (refresh)
                     }
