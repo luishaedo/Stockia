@@ -137,6 +137,7 @@ export interface ApiErrorBody {
     code: ErrorCode | string;
     message: string;
     details?: unknown;
+    traceId?: string;
 }
 
 export interface ApiErrorResponse {
