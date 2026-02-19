@@ -1,0 +1,151 @@
+# Stockia Monorepo
+
+Stockia is organized as a monorepo with a backend API, a frontend web application, and shared contracts.
+
+## Repository structure
+
+- `apps/api`: Node.js + Express + Prisma API.
+- `apps/web`: Vite + React frontend.
+- `packages/shared`: Shared types, Zod schemas, and API error codes.
+
+## Prerequisites
+
+- Node.js 18+
+- npm 9+
+
+## Setup
+
+1. Install dependencies from the repository root:
+
+```bash
+npm install
+```
+
+2. Configure backend environment:
+
+```bash
+cp apps/api/.env.example apps/api/.env
+```
+
+Recommended local values:
+
+```env
+DATABASE_URL="file:./dev.db"
+PORT=4000
+ADMIN_TOKEN=1882
+```
+
+3. Configure frontend environment:
+
+```bash
+cp apps/web/.env.example apps/web/.env
+```
+
+4. Generate Prisma client (required before backend build/start):
+
+```bash
+npm run prisma:generate -w api
+```
+
+## Commands by app
+
+### Monorepo root
+
+- Build everything:
+
+```bash
+npm run build
+```
+
+- Start all available dev servers:
+
+```bash
+npm run dev
+```
+
+### Backend (`apps/api`)
+
+- Development mode:
+
+```bash
+npm run dev -w api
+```
+
+- Build:
+
+```bash
+npm run build -w api
+```
+
+- Start compiled app:
+
+```bash
+npm run start -w api
+```
+
+- Generate Prisma client:
+
+```bash
+npm run prisma:generate -w api
+```
+
+- Push Prisma schema:
+
+```bash
+npm run prisma:push -w api
+```
+
+### Frontend (`apps/web`)
+
+- Development mode:
+
+```bash
+npm run dev -w web
+```
+
+- Build (primary validation command):
+
+```bash
+npm run build -w web
+```
+
+- Preview production build:
+
+```bash
+npm run preview -w web
+```
+
+## Environment matrix
+
+| Environment | API (`apps/api`) | Web (`apps/web`) | Notes |
+| --- | --- | --- | --- |
+| Local | `DATABASE_URL=file:./dev.db`, `PORT=4000`, `ADMIN_TOKEN=1882` | `VITE_API_URL` optional (fallback: `http://localhost:4000`), `VITE_ADMIN_TOKEN=1882` | If `VITE_API_URL` is not set, frontend uses localhost fallback. |
+| Dev | Managed DB URL, `PORT`, secured `ADMIN_TOKEN` | Set `VITE_API_URL` to dev API URL, dev admin token | Keep tokens out of source control. |
+| Stage | Stage DB URL, stage port/token | Stage API URL and token | Mirror production as close as possible. |
+| Prod | Production DB URL, hardened token policy | `VITE_API_URL` is mandatory, production token policy | Frontend fails fast if `VITE_API_URL` is missing. |
+
+## Troubleshooting
+
+### Frontend fails with missing env variables
+
+- Ensure `apps/web/.env` exists.
+- `VITE_ADMIN_TOKEN` is required for write operations.
+- In production builds, `VITE_API_URL` is mandatory.
+
+### API rejects write operations with 401/403
+
+- Verify `ADMIN_TOKEN` in `apps/api/.env`.
+- Ensure frontend sends matching `VITE_ADMIN_TOKEN`.
+
+### Prisma client errors
+
+- Re-run:
+
+```bash
+npm run prisma:generate -w api
+```
+
+### Port conflicts
+
+- Default API port is `4000`.
+- Change `PORT` in `apps/api/.env` and update `VITE_API_URL` accordingly.
