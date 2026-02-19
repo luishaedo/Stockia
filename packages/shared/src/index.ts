@@ -120,4 +120,25 @@ export const ErrorCodes = {
     DUPLICATE_ITEM_COLOR_IN_PAYLOAD: 'DUPLICATE_ITEM_COLOR_IN_PAYLOAD',
     INVOICE_FINAL_READ_ONLY: 'INVOICE_FINAL_READ_ONLY',
     INVOICE_FINALIZE_INVALID: 'INVOICE_FINALIZE_INVALID',
+    OPTIMISTIC_LOCK_CONFLICT: 'OPTIMISTIC_LOCK_CONFLICT',
+    NOT_FOUND: 'NOT_FOUND',
+    VALIDATION_FAILED: 'VALIDATION_FAILED',
+    INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+    UNAUTHORIZED: 'UNAUTHORIZED',
+    FORBIDDEN: 'FORBIDDEN',
+    BAD_REQUEST: 'BAD_REQUEST',
+    UNIQUE_CONSTRAINT_VIOLATION: 'UNIQUE_CONSTRAINT_VIOLATION',
+    INVOICE_ALREADY_FINALIZED: 'INVOICE_ALREADY_FINALIZED',
 } as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+
+export interface ApiErrorBody {
+    code: ErrorCode | string;
+    message: string;
+    details?: unknown;
+}
+
+export interface ApiErrorResponse {
+    error: ApiErrorBody;
+}

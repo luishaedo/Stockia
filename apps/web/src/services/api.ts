@@ -1,4 +1,4 @@
-import { Factura, CreateFacturaDTO, UpdateFacturaDraftDTO, FacturaFilters, FacturaListResponse } from '@stockia/shared';
+import { ApiErrorResponse, ErrorCodes, Factura, CreateFacturaDTO, UpdateFacturaDraftDTO, FacturaFilters, FacturaListResponse } from '@stockia/shared';
 
 const apiURL = import.meta.env.VITE_API_URL;
 const adminToken = import.meta.env.VITE_ADMIN_TOKEN;
@@ -11,6 +11,56 @@ if (!adminToken) {
     throw new Error('Missing VITE_ADMIN_TOKEN environment variable');
 }
 
+export class ApiError extends Error {
+    code: string;
+    status: number;
+    details?: unknown;
+
+    constructor(message: string, code: string, status: number, details?: unknown) {
+        super(message);
+        this.name = 'ApiError';
+        this.code = code;
+        this.status = status;
+        this.details = details;
+    }
+}
+
+const getDefaultMessage = (status: number, fallback: string) => {
+    if (status >= 500) return 'Internal Server Error';
+    return fallback;
+};
+
+const parseErrorPayload = async (response: Response, fallback: string): Promise<ApiError> => {
+    let payload: ApiErrorResponse | { error?: string; code?: string; details?: unknown } | null = null;
+
+    try {
+        payload = await response.json();
+    } catch {
+        payload = null;
+    }
+
+    if (payload && typeof payload.error === 'object' && payload.error !== null && 'message' in payload.error) {
+        return new ApiError(
+            payload.error.message,
+            payload.error.code || ErrorCodes.BAD_REQUEST,
+            response.status,
+            payload.error.details
+        );
+    }
+
+    if (payload && typeof payload.error === 'string') {
+        const legacyPayload = payload as { error: string; code?: string; details?: unknown };
+        return new ApiError(
+            legacyPayload.error,
+            legacyPayload.code || ErrorCodes.BAD_REQUEST,
+            response.status,
+            legacyPayload.details
+        );
+    }
+
+    return new ApiError(getDefaultMessage(response.status, fallback), ErrorCodes.BAD_REQUEST, response.status);
+};
+
 class ApiService {
     private baseURL = apiURL;
 
@@ -21,9 +71,14 @@ class ApiService {
         };
     }
 
+    private async assertOk(response: Response, fallback: string) {
+        if (response.ok) return;
+        throw await parseErrorPayload(response, fallback);
+    }
+
     async getFactura(id: string): Promise<Factura> {
         const response = await fetch(`${this.baseURL}/facturas/${id}`);
-        if (!response.ok) throw new Error('Failed to fetch factura');
+        await this.assertOk(response, 'Failed to fetch factura');
         return response.json();
     }
 
@@ -33,10 +88,7 @@ class ApiService {
             headers: this.getWriteHeaders(),
             body: JSON.stringify(data)
         });
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Create failed');
-        }
+        await this.assertOk(response, 'Create failed');
         return response.json();
     }
 
@@ -47,10 +99,7 @@ class ApiService {
             headers: this.getWriteHeaders(),
             body: JSON.stringify(payload)
         });
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Update failed');
-        }
+        await this.assertOk(response, 'Update failed');
         return response.json();
     }
 
@@ -67,7 +116,7 @@ class ApiService {
         if (filters.sortDir) params.append('sortDir', filters.sortDir);
 
         const response = await fetch(`${this.baseURL}/facturas?${params.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch facturas');
+        await this.assertOk(response, 'Failed to fetch facturas');
         return response.json();
     }
 
@@ -76,10 +125,7 @@ class ApiService {
             method: 'PATCH',
             headers: this.getWriteHeaders()
         });
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Finalize failed');
-        }
+        await this.assertOk(response, 'Finalize failed');
         return response.json();
     }
 }
