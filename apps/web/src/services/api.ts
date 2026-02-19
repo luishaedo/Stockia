@@ -3,15 +3,12 @@ import { ApiErrorResponse, ErrorCodes, Factura, CreateFacturaDTO, UpdateFacturaD
 const envApiUrl = import.meta.env.VITE_API_URL;
 const isProduction = import.meta.env.PROD;
 const apiURL = envApiUrl || 'http://localhost:4000';
-const adminToken = import.meta.env.VITE_ADMIN_TOKEN;
 
 if (isProduction && !envApiUrl) {
     throw new Error('Missing VITE_API_URL environment variable in production');
 }
 
-if (!adminToken) {
-    throw new Error('Missing VITE_ADMIN_TOKEN environment variable');
-}
+const ACCESS_TOKEN_KEY = 'stockia.accessToken';
 
 export class ApiError extends Error {
     code: string;
@@ -66,10 +63,43 @@ const parseErrorPayload = async (response: Response, fallback: string): Promise<
 class ApiService {
     private baseURL = apiURL;
 
-    private getWriteHeaders() {
+    private getAccessToken() {
+        return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+    }
+
+    private setAccessToken(token: string) {
+        window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
+    }
+
+    private async loginWithPrompt() {
+        const username = window.prompt('Enter API username');
+        const password = window.prompt('Enter API password');
+
+        if (!username || !password) {
+            throw new ApiError('Authentication cancelled', ErrorCodes.UNAUTHORIZED, 401);
+        }
+
+        const response = await fetch(`${this.baseURL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        await this.assertOk(response, 'Login failed');
+        const data = await response.json() as { accessToken: string };
+        this.setAccessToken(data.accessToken);
+        return data.accessToken;
+    }
+
+    private async getWriteHeaders() {
+        let accessToken = this.getAccessToken();
+        if (!accessToken) {
+            accessToken = await this.loginWithPrompt();
+        }
+
         return {
             'Content-Type': 'application/json',
-            'x-admin-token': adminToken
+            authorization: `Bearer ${accessToken}`
         };
     }
 
@@ -87,7 +117,7 @@ class ApiService {
     async createFactura(data: CreateFacturaDTO): Promise<Factura> {
         const response = await fetch(`${this.baseURL}/facturas`, {
             method: 'POST',
-            headers: this.getWriteHeaders(),
+            headers: await this.getWriteHeaders(),
             body: JSON.stringify(data)
         });
         await this.assertOk(response, 'Create failed');
@@ -98,7 +128,7 @@ class ApiService {
         const payload = { ...data, expectedUpdatedAt };
         const response = await fetch(`${this.baseURL}/facturas/${id}/draft`, {
             method: 'PATCH',
-            headers: this.getWriteHeaders(),
+            headers: await this.getWriteHeaders(),
             body: JSON.stringify(payload)
         });
         await this.assertOk(response, 'Update failed');
@@ -122,10 +152,11 @@ class ApiService {
         return response.json();
     }
 
-    async finalizeFactura(id: string): Promise<Factura> {
+    async finalizeFactura(id: string, expectedUpdatedAt: string): Promise<Factura> {
         const response = await fetch(`${this.baseURL}/facturas/${id}/finalize`, {
             method: 'PATCH',
-            headers: this.getWriteHeaders()
+            headers: await this.getWriteHeaders(),
+            body: JSON.stringify({ expectedUpdatedAt })
         });
         await this.assertOk(response, 'Finalize failed');
         return response.json();

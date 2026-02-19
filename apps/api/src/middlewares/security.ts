@@ -21,7 +21,7 @@ const parseAllowedOrigins = () => {
 
 export const buildCorsMiddleware = () => {
     const allowedOrigins = parseAllowedOrigins();
-    const allowNoOrigin = process.env.CORS_ALLOW_NO_ORIGIN !== 'false';
+    const allowNoOrigin = process.env.CORS_ALLOW_NO_ORIGIN === 'true';
 
     const corsOptions: CorsOptions = {
         origin: (origin, callback) => {
@@ -39,7 +39,7 @@ export const buildCorsMiddleware = () => {
         },
         credentials: true,
         methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'x-admin-token', 'x-request-id']
+        allowedHeaders: ['Content-Type', 'authorization', 'x-request-id']
     };
 
     return cors(corsOptions);
@@ -56,6 +56,15 @@ export const securityHeadersMiddleware = (_req: Request, res: Response, next: Ne
 
 const createRateLimiter = (maxRequests: number, windowMs: number) => {
     const counters = new Map<string, CounterRecord>();
+
+    setInterval(() => {
+        const now = Date.now();
+        for (const [key, value] of counters.entries()) {
+            if (value.resetAt <= now) {
+                counters.delete(key);
+            }
+        }
+    }, windowMs).unref();
 
     return (req: Request, res: Response, next: NextFunction) => {
         const key = `${req.ip}:${req.method}:${req.route?.path ?? req.path}`;

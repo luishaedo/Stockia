@@ -110,7 +110,7 @@ export class FacturaService {
         });
     }
 
-    async finalizeFactura(id: string) {
+    async finalizeFactura(id: string, expectedUpdatedAt: string) {
         const factura = await this.repository.findById(id);
         if (!factura) {
             throw new DomainError(ErrorCodes.NOT_FOUND, 'Factura not found', 404);
@@ -125,6 +125,11 @@ export class FacturaService {
             throw new DomainError(ErrorCodes.INVOICE_FINALIZE_INVALID, integrityError, 422);
         }
 
-        return this.repository.updateToFinal(id);
+        const finalized = await this.repository.updateToFinal(id, expectedUpdatedAt);
+        if (!finalized) {
+            throw new DomainError(ErrorCodes.OPTIMISTIC_LOCK_CONFLICT, 'Conflict: Data has changed since last retrieval', 409);
+        }
+
+        return finalized;
     }
 }

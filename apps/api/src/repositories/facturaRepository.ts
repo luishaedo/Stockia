@@ -139,10 +139,22 @@ export class FacturaRepository {
         });
     }
 
-    updateToFinal(id: string) {
-        return this.prisma.factura.update({
+    async updateToFinal(id: string, expectedUpdatedAt: string) {
+        const result = await this.prisma.factura.updateMany({
+            where: {
+                id,
+                estado: FacturaEstado.DRAFT,
+                updatedAt: new Date(expectedUpdatedAt)
+            },
+            data: { estado: FacturaEstado.FINAL }
+        });
+
+        if (result.count === 0) {
+            return null;
+        }
+
+        return this.prisma.factura.findUnique({
             where: { id },
-            data: { estado: FacturaEstado.FINAL },
             include: { items: { include: { colores: true } } }
         });
     }
