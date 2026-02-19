@@ -1,10 +1,12 @@
 import { ApiErrorResponse, ErrorCodes, Factura, CreateFacturaDTO, UpdateFacturaDraftDTO, FacturaFilters, FacturaListResponse } from '@stockia/shared';
 
-const apiURL = import.meta.env.VITE_API_URL;
+const envApiUrl = import.meta.env.VITE_API_URL;
+const isProduction = import.meta.env.PROD;
+const apiURL = envApiUrl || 'http://localhost:4000';
 const adminToken = import.meta.env.VITE_ADMIN_TOKEN;
 
-if (!apiURL) {
-    throw new Error('Missing VITE_API_URL environment variable');
+if (isProduction && !envApiUrl) {
+    throw new Error('Missing VITE_API_URL environment variable in production');
 }
 
 if (!adminToken) {
