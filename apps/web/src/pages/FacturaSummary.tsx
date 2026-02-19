@@ -74,7 +74,7 @@ export function FacturaSummary() {
 
         setFinalizing(true);
         try {
-            await api.finalizeFactura(id);
+            await api.finalizeFactura(id, state.currentFactura.updatedAt as string);
             await loadFactura(id); // Reload to reflect FINAL state
             alert('Invoice finalized successfully!');
         } catch (error: any) {

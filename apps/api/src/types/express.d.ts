@@ -1,7 +1,12 @@
-import 'express-serve-static-core';
+import type { AuthUser } from '../middlewares/auth.js';
 
-declare module 'express-serve-static-core' {
-    interface Request {
-        traceId?: string;
+declare global {
+    namespace Express {
+        interface Request {
+            traceId?: string;
+            authUser?: AuthUser;
+        }
     }
 }
+
+export {};
