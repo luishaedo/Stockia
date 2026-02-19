@@ -33,6 +33,10 @@ Recommended local values:
 DATABASE_URL="file:./dev.db"
 PORT=4000
 ADMIN_TOKEN=1882
+CORS_ALLOWED_ORIGINS="http://localhost:5173"
+CORS_ALLOW_NO_ORIGIN=true
+RATE_LIMIT_READ_MAX=120
+RATE_LIMIT_WRITE_MAX=30
 ```
 
 3. Configure frontend environment:
@@ -93,6 +97,18 @@ npm run prisma:generate -w api
 
 ```bash
 npm run prisma:push -w api
+```
+
+- Verify auth policy coverage:
+
+```bash
+npm run verify:auth-policy -w api
+```
+
+- Run API smoke checks (requires built API):
+
+```bash
+npm run smoke:ci -w api
 ```
 
 ### Frontend (`apps/web`)
