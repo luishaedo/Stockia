@@ -33,7 +33,7 @@ body {
   max-width: 80rem;
   /* 1280px */
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0.75rem;
 }
 
 .flex {
@@ -97,4 +97,10 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 2rem;
+  }
 }

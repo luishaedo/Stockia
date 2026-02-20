@@ -8,6 +8,7 @@
     border: none;
     cursor: pointer;
     font-family: inherit;
+    min-height: 44px;
 }
 
 .button:disabled {
@@ -15,7 +16,6 @@
     pointer-events: none;
 }
 
-/* Variants */
 .primary {
     background-color: var(--color-primary);
     color: white;
@@ -53,21 +53,20 @@
     background-color: #b91c1c;
 }
 
-/* Sizes */
 .sm {
-    height: 2rem;
+    min-height: 36px;
     padding: 0 0.75rem;
     font-size: 0.875rem;
 }
 
 .md {
-    height: 2.5rem;
+    min-height: 44px;
     padding: 0 1rem;
     font-size: 1rem;
 }
 
 .lg {
-    height: 3rem;
+    min-height: 48px;
     padding: 0 1.5rem;
     font-size: 1.125rem;
 }

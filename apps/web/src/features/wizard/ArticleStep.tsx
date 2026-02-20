@@ -8,7 +8,7 @@ interface ArticleStepProps {
         marca: string;
         tipoPrenda: string;
         codigoArticulo: string;
-        curvaTalles: string; // Store as comma-sep string for input, parse later
+        curvaTalles: string;
     };
     onChange: (field: string, value: string) => void;
     onNext: () => void;
@@ -19,49 +19,50 @@ export function ArticleStep({ draftItem, onChange, onNext, readOnly = false }: A
     const isValid = draftItem.marca && draftItem.tipoPrenda && draftItem.codigoArticulo && draftItem.curvaTalles;
 
     return (
-        <Card title="Step 1: Article Details" className="max-w-xl mx-auto">
+        <Card title="Paso 1/2 · Datos del artículo" className="max-w-xl mx-auto">
             <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
-                        label="Brand"
+                        label="Marca"
                         value={draftItem.marca}
                         onChange={(e) => onChange('marca', e.target.value)}
-                        placeholder="e.g. Nike"
+                        placeholder="Ej: Nike"
                         disabled={readOnly}
                     />
                     <Input
-                        label="Type"
+                        label="Tipo de prenda"
                         value={draftItem.tipoPrenda}
                         onChange={(e) => onChange('tipoPrenda', e.target.value)}
-                        placeholder="e.g. T-Shirt"
+                        placeholder="Ej: Remera"
                         disabled={readOnly}
                     />
                 </div>
 
                 <Input
-                    label="Article Code"
+                    label="Código de artículo"
                     value={draftItem.codigoArticulo}
                     onChange={(e) => onChange('codigoArticulo', e.target.value)}
-                    placeholder="e.g. NK-1002"
+                    placeholder="Ej: NK-1002"
                     disabled={readOnly}
                 />
 
                 <Input
-                    label="Size Curve (comma separated)"
+                    label="Curva de talles (separada por comas)"
                     value={draftItem.curvaTalles}
                     onChange={(e) => onChange('curvaTalles', e.target.value)}
-                    placeholder="e.g. S, M, L, XL"
+                    placeholder="Ej: S, M, L, XL"
                     disabled={readOnly}
                 />
-                <p className="text-xs text-gray-500">Enter sizes separated by commas.</p>
+                <p className="text-xs text-gray-400">Ingresá los talles separados por coma.</p>
 
-                <div className="mt-4 flex justify-end">
+                <div className="mt-2">
                     <Button
                         onClick={onNext}
                         disabled={!isValid || readOnly}
                         icon={<ArrowRight className="h-4 w-4" />}
+                        className="w-full sm:w-auto"
                     >
-                        Next: Add Colors
+                        Continuar: agregar colores
                     </Button>
                 </div>
             </div>

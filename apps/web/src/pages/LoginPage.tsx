@@ -26,18 +26,18 @@ export function LoginPage() {
             await login(username.trim(), password);
             navigate(redirectTo, { replace: true });
         } catch (submitError: any) {
-            setError(submitError?.message || 'Login failed');
+            setError(submitError?.message || 'No pudimos iniciar sesión. Verificá tus credenciales.');
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="max-w-md mx-auto mt-16">
-            <Card title="Sign in" className="shadow-lg">
+        <div className="max-w-md mx-auto mt-6 sm:mt-16 px-1 sm:px-0">
+            <Card title="Iniciar sesión" className="shadow-lg">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <Input
-                        label="Username"
+                        label="Usuario"
                         value={username}
                         onChange={(event) => setUsername(event.target.value)}
                         autoComplete="username"
@@ -45,7 +45,7 @@ export function LoginPage() {
                     />
                     <Input
                         type="password"
-                        label="Password"
+                        label="Contraseña"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         autoComplete="current-password"
@@ -56,8 +56,8 @@ export function LoginPage() {
                         <div className="text-red-500 text-sm p-2 bg-red-500/10 rounded">{error}</div>
                     )}
 
-                    <div className="flex justify-end mt-2">
-                        <Button type="submit" isLoading={isLoading}>Sign in</Button>
+                    <div className="mt-2">
+                        <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">Iniciar sesión</Button>
                     </div>
                 </form>
             </Card>
