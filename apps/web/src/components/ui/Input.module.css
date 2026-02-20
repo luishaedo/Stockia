@@ -12,7 +12,7 @@
 }
 
 .input {
-    height: 2.5rem;
+    min-height: 44px;
     padding: 0 0.75rem;
     border-radius: var(--radius-md);
     border: 1px solid var(--color-border);

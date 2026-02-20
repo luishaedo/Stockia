@@ -25,7 +25,7 @@ export class ApiError extends Error {
 }
 
 const getDefaultMessage = (status: number, fallback: string) => {
-    if (status >= 500) return 'Internal Server Error';
+    if (status >= 500) return 'Error interno del servidor';
     return fallback;
 };
 
@@ -84,7 +84,7 @@ class ApiService {
     private getAccessTokenOrThrow() {
         const accessToken = getStoredAccessToken();
         if (!accessToken) {
-            throw new ApiError('Authentication required', ErrorCodes.AUTH_TOKEN_MISSING, 401);
+            throw new ApiError('Se requiere autenticación', ErrorCodes.AUTH_TOKEN_MISSING, 401);
         }
         return accessToken;
     }
@@ -113,7 +113,7 @@ class ApiService {
             body: JSON.stringify({ username, password })
         });
 
-        await this.assertOk(response, 'Login failed');
+        await this.assertOk(response, 'No pudimos iniciar sesión');
         const data = await response.json() as { accessToken: string };
         authTokenStore.set(data.accessToken);
         return data.accessToken;
@@ -123,7 +123,7 @@ class ApiService {
         const response = await fetch(`${this.baseURL}/facturas/${id}`, {
             headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
         });
-        await this.assertOk(response, 'Failed to fetch factura');
+        await this.assertOk(response, 'No pudimos obtener la factura');
         return response.json();
     }
 
@@ -133,7 +133,7 @@ class ApiService {
             headers: await this.getAuthHeaders(),
             body: JSON.stringify(data)
         });
-        await this.assertOk(response, 'Create failed');
+        await this.assertOk(response, 'No pudimos crear la factura');
         return response.json();
     }
 
@@ -143,7 +143,7 @@ class ApiService {
             headers: await this.getAuthHeaders(),
             body: JSON.stringify(data)
         });
-        await this.assertOk(response, 'Update failed');
+        await this.assertOk(response, 'No pudimos guardar los cambios');
         return response.json();
     }
 
@@ -162,7 +162,7 @@ class ApiService {
         const response = await fetch(`${this.baseURL}/facturas?${params.toString()}`, {
             headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
         });
-        await this.assertOk(response, 'Failed to fetch facturas');
+        await this.assertOk(response, 'No pudimos cargar las facturas');
         return response.json();
     }
 
@@ -172,7 +172,7 @@ class ApiService {
             headers: await this.getAuthHeaders(),
             body: JSON.stringify({ expectedUpdatedAt })
         });
-        await this.assertOk(response, 'Finalize failed');
+        await this.assertOk(response, 'No pudimos finalizar la factura');
         return response.json();
     }
 }

@@ -46,7 +46,7 @@ export function useAutosave(timeout = 2000) {
             pendingPayloadRef.current = null;
             setConflictState({ hasConflict: false, message: null });
         } catch (error: any) {
-            dispatch({ type: 'SET_ERROR', payload: `Reload failed: ${error?.message || 'Unknown error'}` });
+            dispatch({ type: 'SET_ERROR', payload: `No se pudo recargar: ${error?.message || 'Error desconocido'}` });
         }
     };
 
@@ -59,11 +59,11 @@ export function useAutosave(timeout = 2000) {
             conflictExpectedUpdatedAt.current = latestRemote.updatedAt as string;
             const latestExpectedUpdatedAt = conflictExpectedUpdatedAt.current;
             if (!latestExpectedUpdatedAt) {
-                throw new Error('Missing expectedUpdatedAt for conflict resolution');
+                throw new Error('Falta expectedUpdatedAt para resolver el conflicto');
             }
             await saveDraft(pendingPayloadRef.current, latestExpectedUpdatedAt);
         } catch (error: any) {
-            dispatch({ type: 'SET_ERROR', payload: `Retry failed: ${error?.message || 'Unknown error'}` });
+            dispatch({ type: 'SET_ERROR', payload: `No se pudo reintentar: ${error?.message || 'Error desconocido'}` });
         }
     };
 
@@ -77,7 +77,7 @@ export function useAutosave(timeout = 2000) {
                 conflictExpectedUpdatedAt.current || state.lastSavedAt || (state.currentFactura.updatedAt as string)
             );
         } catch (error: any) {
-            dispatch({ type: 'SET_ERROR', payload: `Retry failed: ${error?.message || 'Unknown error'}` });
+            dispatch({ type: 'SET_ERROR', payload: `No se pudo reintentar: ${error?.message || 'Error desconocido'}` });
         }
     };
 
@@ -130,15 +130,15 @@ export function useAutosave(timeout = 2000) {
                     if (error instanceof ApiError && error.code === ErrorCodes.OPTIMISTIC_LOCK_CONFLICT) {
                         setConflictState({
                             hasConflict: true,
-                            message: 'Another update was detected. Choose how to continue.'
+                            message: 'Se detectó otra actualización. Elegí cómo continuar.'
                         });
-                        dispatch({ type: 'SET_ERROR', payload: 'Sync conflict detected' });
+                        dispatch({ type: 'SET_ERROR', payload: 'Se detectó un conflicto de sincronización' });
                         return;
                     }
 
                     attempt++;
                     if (attempt >= maxRetries) {
-                        dispatch({ type: 'SET_ERROR', payload: `Save failed: ${message}` });
+                        dispatch({ type: 'SET_ERROR', payload: `No se pudo guardar: ${message}` });
                     } else {
                         await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
                     }

@@ -17,44 +17,45 @@ export function NewFactura() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!nroFactura.trim()) {
-            setError('Invoice number is required');
+            setError('El número de factura es obligatorio.');
             return;
         }
 
         try {
             const id = await createFactura(nroFactura, proveedor);
             navigate(`/facturas/${id}/wizard`);
-        } catch (err) {
-            // Error handled in context state usually, but valid to check here
+        } catch {
+            // handled by context
         }
     };
 
     return (
-        <div className="max-w-md mx-auto mt-12">
-            <Card title="New Invoice" className="shadow-lg">
+        <div className="max-w-md mx-auto mt-6 sm:mt-12 px-1 sm:px-0">
+            <Card title="Nueva factura" className="shadow-lg">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <Input
-                        label="Invoice Number *"
+                        label="Nro. factura *"
                         value={nroFactura}
                         onChange={(e) => setNroFactura(e.target.value)}
-                        placeholder="e.g. A-0001-12345678"
+                        placeholder="Ej: A-0001-12345678"
                         error={error}
                     />
 
                     <Input
-                        label="Provider (Optional)"
+                        label="Proveedor (opcional)"
                         value={proveedor}
                         onChange={(e) => setProveedor(e.target.value)}
-                        placeholder="e.g. Nike"
+                        placeholder="Ej: Nike"
                     />
 
-                    <div className="mt-4 flex justify-end">
+                    <div className="mt-2">
                         <Button
                             type="submit"
                             isLoading={state.status === 'SAVING'}
                             icon={<ArrowRight className="h-4 w-4" />}
+                            className="w-full sm:w-auto"
                         >
-                            Start Loading
+                            Comenzar carga
                         </Button>
                     </div>
 

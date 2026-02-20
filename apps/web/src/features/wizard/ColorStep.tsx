@@ -29,8 +29,6 @@ export function ColorStep({
     onBack,
     readOnly = false
 }: ColorStepProps) {
-
-    // Local state for the "New Color" being added
     const [code, setCode] = useState('');
     const [name, setName] = useState('');
     const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -43,27 +41,23 @@ export function ColorStep({
 
     const handleAddColor = () => {
         if (!code || !name) {
-            setError('Color code and name are required');
+            setError('El código y el nombre del color son obligatorios.');
             return;
         }
 
         const hasQuantity = Object.values(quantities).some(q => q > 0);
         if (!hasQuantity) {
-            setError('At least one size must have a quantity > 0');
+            setError('Al menos un talle debe tener una cantidad mayor a 0.');
             return;
         }
 
-        // Check duplicate color in current session
         if (addedColors.some(c => c.codigoColor === code)) {
-            setError('Color code already added for this item');
+            setError('El código de color ya fue agregado en este ítem.');
             return;
         }
 
-        // Filter quantities to ensure only valid curve keys are sent
         const validQuantities = Object.fromEntries(
-            Object.entries(quantities).filter(([key]) =>
-                itemContext.curvaTalles.includes(key)
-            )
+            Object.entries(quantities).filter(([key]) => itemContext.curvaTalles.includes(key))
         );
 
         onAddColor({
@@ -72,7 +66,6 @@ export function ColorStep({
             cantidadesPorTalle: validQuantities
         });
 
-        // Reset form
         setCode('');
         setName('');
         setQuantities({});
@@ -80,44 +73,42 @@ export function ColorStep({
     };
 
     return (
-        <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-            {/* Header Context */}
+        <div className="flex flex-col gap-4 sm:gap-6 max-w-4xl mx-auto">
             <Card className="bg-slate-800 border-slate-700">
-                <div className="flex justify-between items-start">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                     <div>
                         <h2 className="text-lg font-bold text-white">{itemContext.marca} - {itemContext.tipoPrenda}</h2>
-                        <p className="text-slate-400">Code: {itemContext.codigoArticulo}</p>
+                        <p className="text-slate-400">Código: {itemContext.codigoArticulo}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right">
                         <span className="text-sm text-slate-500">Curva: {itemContext.curvaTalles.join(', ')}</span>
                     </div>
                 </div>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left: Add New Color Form */}
-                <Card title="Add Color Variant">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <Card title="Agregar variante de color">
                     <div className="flex flex-col gap-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <Input
-                                label="Color Code"
+                                label="Código de color"
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
-                                placeholder="e.g. 001"
+                                placeholder="Ej: 001"
                                 disabled={readOnly}
                             />
                             <Input
-                                label="Color Name"
+                                label="Nombre de color"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="e.g. Black"
+                                placeholder="Ej: Negro"
                                 disabled={readOnly}
                             />
                         </div>
 
-                        <div className="mt-2">
-                            <label className="text-sm font-medium text-slate-400 mb-2 block">Quantities per Size</label>
-                            <div className="grid grid-cols-4 gap-2">
+                        <div className="mt-1">
+                            <label className="text-sm font-medium text-slate-400 mb-2 block">Cantidades por talle</label>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                                 {itemContext.curvaTalles.map(size => (
                                     <div key={size} className="flex flex-col">
                                         <span className="text-xs text-center text-slate-500 mb-1">{size}</span>
@@ -136,17 +127,16 @@ export function ColorStep({
 
                         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-                        <Button onClick={handleAddColor} variant="secondary" className="mt-2" icon={<Plus className="h-4 w-4" />} disabled={readOnly}>
-                            Add Variant
+                        <Button onClick={handleAddColor} variant="secondary" className="mt-2 w-full sm:w-auto" icon={<Plus className="h-4 w-4" />} disabled={readOnly}>
+                            Agregar variante
                         </Button>
                     </div>
                 </Card>
 
-                {/* Right: Added Colors List */}
-                <Card title={`Added Variants (${addedColors.length})`}>
+                <Card title={`Variantes agregadas (${addedColors.length})`}>
                     <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto">
                         {addedColors.length === 0 && (
-                            <p className="text-slate-500 text-center py-8">No colors added yet.</p>
+                            <p className="text-slate-500 text-center py-8">Todavía no agregaste colores.</p>
                         )}
 
                         {addedColors.map((color, idx) => (
@@ -155,7 +145,7 @@ export function ColorStep({
                                     <div className="font-bold text-sm text-white">{color.nombreColor} ({color.codigoColor})</div>
                                     <div className="text-xs text-slate-400 mt-1">
                                         {Object.entries(color.cantidadesPorTalle)
-                                            .filter(([_, q]) => q > 0)
+                                            .filter(([_, q]) => Number(q) > 0)
                                             .map(([s, q]) => `${s}: ${q}`)
                                             .join(', ')}
                                     </div>
@@ -173,15 +163,16 @@ export function ColorStep({
                         ))}
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-slate-700 flex justify-between">
-                        <Button variant="ghost" onClick={onBack}>Back to Article</Button>
+                    <div className="mt-6 pt-4 border-t border-slate-700 flex flex-col sm:flex-row gap-2 sm:justify-between">
+                        <Button variant="ghost" onClick={onBack} className="w-full sm:w-auto">Volver al artículo</Button>
                         <Button
                             onClick={onFinishItem}
                             disabled={addedColors.length === 0 || readOnly}
                             variant="primary"
                             icon={<Check className="h-4 w-4" />}
+                            className="w-full sm:w-auto"
                         >
-                            Finish Item
+                            Guardar ítem
                         </Button>
                     </div>
                 </Card>
