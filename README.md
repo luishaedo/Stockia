@@ -212,12 +212,15 @@ Recommended:
 
 ### Vercel (Web)
 
-The web app includes `apps/web/vercel.json` with SPA rewrites for React Router (`BrowserRouter`).
+Use the **repository root** as project root for monorepo builds.
 
-- Root Directory: `apps/web`
-- Build Command: `npm run build`
-- Output Directory: `dist`
+- Root Directory: `.` (repo root)
+- Install Command: `npm install --include=dev --workspaces`
+- Build Command: `npm run build -w @stockia/shared && npm run build -w web`
+- Output Directory: `apps/web/dist`
 - Required env: `VITE_API_URL=https://<your-render-api-domain>`
+
+This repo now includes root `vercel.json` with those defaults and SPA rewrites for React Router.
 
 ### Production checklist
 
