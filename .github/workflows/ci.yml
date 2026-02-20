@@ -28,7 +28,6 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stockia?schema=public
       PORT: 4000
-      ADMIN_TOKEN: 1882
       CORS_ALLOWED_ORIGINS: http://localhost:5173
 
     steps:

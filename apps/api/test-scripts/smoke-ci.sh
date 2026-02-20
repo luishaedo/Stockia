@@ -3,7 +3,6 @@ set -euo pipefail
 
 PORT="${PORT:-4000}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${PORT}}"
-ADMIN_TOKEN="${ADMIN_TOKEN:-1882}"
 JWT_SECRET="${JWT_SECRET:-smoke-ci-secret}"
 AUTH_USERNAME="${AUTH_USERNAME:-admin}"
 AUTH_PASSWORD="${AUTH_PASSWORD:-smoke-password}"
