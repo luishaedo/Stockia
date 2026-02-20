@@ -92,3 +92,5 @@ const createRateLimiter = (maxRequests: number, windowMs: number) => {
 
 export const readRateLimitMiddleware = createRateLimiter(Number(process.env.RATE_LIMIT_READ_MAX ?? 120), 60 * 1000);
 export const writeRateLimitMiddleware = createRateLimiter(Number(process.env.RATE_LIMIT_WRITE_MAX ?? 30), 60 * 1000);
+export const loginRateLimitMiddleware = createRateLimiter(Number(process.env.RATE_LIMIT_LOGIN_MAX ?? 10), 60 * 1000);
+

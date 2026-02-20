@@ -70,7 +70,7 @@ export const UpdateFacturaDraftSchema = z.object({
     proveedor: z.string().optional(),
     items: z.array(FacturaItemSchema).optional(),
     duplicateHandler: z.enum(['SUM', 'REPLACE', 'ERROR']).optional(),
-    expectedUpdatedAt: z.string().datetime().optional()
+    expectedUpdatedAt: z.string().datetime()
 });
 
 export const FinalizeFacturaSchema = z.object({

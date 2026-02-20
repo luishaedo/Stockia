@@ -5,8 +5,8 @@ export type RouteDefinition = {
 };
 
 export const FACTURA_ROUTE_DEFINITIONS: RouteDefinition[] = [
-    { method: 'GET', path: '/facturas', requiresAdminToken: false },
-    { method: 'GET', path: '/facturas/:id', requiresAdminToken: false },
+    { method: 'GET', path: '/facturas', requiresAdminToken: true },
+    { method: 'GET', path: '/facturas/:id', requiresAdminToken: true },
     { method: 'POST', path: '/facturas', requiresAdminToken: true },
     { method: 'PATCH', path: '/facturas/:id/draft', requiresAdminToken: true },
     { method: 'PATCH', path: '/facturas/:id/finalize', requiresAdminToken: true }

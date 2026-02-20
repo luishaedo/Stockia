@@ -88,16 +88,14 @@ export class FacturaService {
                 throw new DomainError(ErrorCodes.INVOICE_FINAL_READ_ONLY, 'Cannot edit finalized invoice', 409);
             }
 
-            if (body.expectedUpdatedAt) {
-                const currentUpdated = new Date(currentFactura.updatedAt).toISOString();
-                const expected = new Date(body.expectedUpdatedAt).toISOString();
-                if (currentUpdated !== expected) {
-                    throw new DomainError(
-                        ErrorCodes.OPTIMISTIC_LOCK_CONFLICT,
-                        'Conflict: Data has changed since last retrieval',
-                        409
-                    );
-                }
+            const currentUpdated = new Date(currentFactura.updatedAt).toISOString();
+            const expected = new Date(body.expectedUpdatedAt).toISOString();
+            if (currentUpdated !== expected) {
+                throw new DomainError(
+                    ErrorCodes.OPTIMISTIC_LOCK_CONFLICT,
+                    'Conflict: Data has changed since last retrieval',
+                    409
+                );
             }
 
             await tx.factura.update({ where: { id }, data: { proveedor: body.proveedor } });

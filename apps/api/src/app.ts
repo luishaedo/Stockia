@@ -6,6 +6,7 @@ import { requestLoggerMiddleware } from './middlewares/requestLogger.js';
 import { issueAuthToken, requireAuthToken } from './middlewares/auth.js';
 import {
     buildCorsMiddleware,
+    loginRateLimitMiddleware,
     readRateLimitMiddleware,
     securityHeadersMiddleware,
     writeRateLimitMiddleware
@@ -30,7 +31,7 @@ export const createApp = (prisma: PrismaClient) => {
         res.status(200).json({ status: 'ok' });
     });
 
-    app.post('/auth/login', (req, res) => {
+    app.post('/auth/login', loginRateLimitMiddleware, (req, res) => {
         const { username, password } = req.body ?? {};
         const configuredUsername = process.env.AUTH_USERNAME;
         const configuredPassword = process.env.AUTH_PASSWORD;

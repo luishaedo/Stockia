@@ -33,10 +33,10 @@ done
 echo "Smoke: GET /health"
 curl -fsS "$BASE_URL/health" | grep -q '"status":"ok"'
 
-echo "Smoke: GET /facturas"
+echo "Smoke: GET /facturas without token"
 get_status=$(curl -s -o /tmp/smoke_get_facturas.out -w "%{http_code}" "$BASE_URL/facturas")
-if [[ "$get_status" != "200" ]]; then
-  echo "Expected 200 for GET /facturas, got $get_status"
+if [[ "$get_status" != "401" ]]; then
+  echo "Expected 401 for unauth GET /facturas, got $get_status"
   cat /tmp/smoke_get_facturas.out
   exit 1
 fi
@@ -61,6 +61,14 @@ access_token=$(node -e "const fs=require('fs'); const data=JSON.parse(fs.readFil
 if [[ -z "$access_token" ]]; then
   echo "Missing accessToken in /auth/login response"
   cat /tmp/smoke_auth_login.out
+  exit 1
+fi
+
+echo "Smoke: GET /facturas with token"
+get_auth_status=$(curl -s -o /tmp/smoke_get_facturas_auth.out -w "%{http_code}" "$BASE_URL/facturas" -H "Authorization: Bearer $access_token")
+if [[ "$get_auth_status" != "200" ]]; then
+  echo "Expected 200 for auth GET /facturas, got $get_auth_status"
+  cat /tmp/smoke_get_facturas_auth.out
   exit 1
 fi
 
