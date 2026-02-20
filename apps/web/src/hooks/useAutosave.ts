@@ -12,7 +12,7 @@ interface AutosaveConflictState {
 
 export function useAutosave(timeout = 2000) {
     const { state, dispatch, loadFactura } = useFactura();
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastSavedState = useRef<string | null>(null);
     const conflictExpectedUpdatedAt = useRef<string | null>(null);
     const pendingPayloadRef = useRef<DraftPayload | null>(null);
