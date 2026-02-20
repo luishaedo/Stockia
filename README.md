@@ -54,6 +54,21 @@ cp apps/web/.env.example apps/web/.env
 npm run prisma:generate -w api
 ```
 
+
+## Production readiness
+
+### API boot validation
+
+On startup, the API validates critical environment variables and fails fast if any required value is missing or invalid:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `AUTH_USERNAME`
+- `AUTH_PASSWORD`
+- numeric limits (`PORT`, `RATE_LIMIT_*`)
+
+The server also attempts a database connection before binding the HTTP port, so startup failures are visible immediately in logs.
+
 ## Commands by app
 
 ### Monorepo root
@@ -168,3 +183,47 @@ npm run prisma:generate -w api
 
 - Default API port is `4000`.
 - Change `PORT` in `apps/api/.env` and update `VITE_API_URL` accordingly.
+
+
+## Deployment
+
+### Render (API)
+
+This repository includes `render.yaml` for a production API service.
+
+- Build command: `npm ci && npm run build -w @stockia/shared && npm run build -w api`
+- Start command: `npm run start -w api`
+- Health check: `GET /health`
+
+Required API environment variables on Render:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `AUTH_USERNAME`
+- `AUTH_PASSWORD`
+- `CORS_ALLOWED_ORIGINS` (set to your Vercel domain)
+
+Recommended:
+
+- `CORS_ALLOW_NO_ORIGIN=false`
+- `RATE_LIMIT_READ_MAX=120`
+- `RATE_LIMIT_WRITE_MAX=30`
+- `RATE_LIMIT_LOGIN_MAX=10`
+
+### Vercel (Web)
+
+The web app includes `apps/web/vercel.json` with SPA rewrites for React Router (`BrowserRouter`).
+
+- Root Directory: `apps/web`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Required env: `VITE_API_URL=https://<your-render-api-domain>`
+
+### Production checklist
+
+- API is reachable at `https://<render-service>/health`.
+- Web can authenticate through `POST /auth/login`.
+- `CORS_ALLOWED_ORIGINS` exactly matches the Vercel origin.
+- `VITE_API_URL` points to the Render API HTTPS URL.
+- No secrets are committed; all credentials are set in platform environment variables.
+
