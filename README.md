@@ -39,6 +39,7 @@ CORS_ALLOWED_ORIGINS="http://localhost:5173"
 CORS_ALLOW_NO_ORIGIN=false
 RATE_LIMIT_READ_MAX=120
 RATE_LIMIT_WRITE_MAX=30
+RATE_LIMIT_LOGIN_MAX=10
 ```
 
 3. Configure frontend environment:
@@ -147,10 +148,10 @@ npm run preview -w web
 ### Frontend fails with missing env variables
 
 - Ensure `apps/web/.env` exists.
-- Authenticate against `POST /auth/login` to get bearer token for write operations.
+- Authenticate against `POST /auth/login` to get bearer token for all factura operations (read/write).
 - In production builds, `VITE_API_URL` is mandatory.
 
-### API rejects write operations with 401/403
+### API rejects factura operations with 401/403
 
 - Verify `JWT_SECRET`, `AUTH_USERNAME`, and `AUTH_PASSWORD` in `apps/api/.env`.
 - Ensure clients authenticate via `POST /auth/login` and use `Authorization: Bearer <token>`.

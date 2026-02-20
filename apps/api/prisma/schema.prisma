@@ -14,7 +14,7 @@ enum FacturaEstado {
 
 model Factura {
   id          String        @id @default(uuid())
-  nroFactura  String
+  nroFactura  String        @unique
   proveedor   String?
   fecha       DateTime      @default(now())
   estado      FacturaEstado @default(DRAFT)

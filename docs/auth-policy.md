@@ -21,8 +21,8 @@ This document defines authentication requirements per endpoint for the current A
 | --- | --- | --- | --- | --- |
 | GET | `/health` | No | N/A | Liveness endpoint |
 | POST | `/auth/login` | No | N/A | Issues access token |
-| GET | `/facturas` | No | N/A | List/search facturas |
-| GET | `/facturas/:id` | No | N/A | Retrieve factura detail |
+| GET | `/facturas` | Yes | `Authorization: Bearer <token>` | List/search facturas |
+| GET | `/facturas/:id` | Yes | `Authorization: Bearer <token>` | Retrieve factura detail |
 | POST | `/facturas` | Yes | `Authorization: Bearer <token>` | Creates draft factura |
 | PATCH | `/facturas/:id/draft` | Yes | `Authorization: Bearer <token>` | Updates draft factura |
 | PATCH | `/facturas/:id/finalize` | Yes | `Authorization: Bearer <token>` | Finalizes factura, requires `expectedUpdatedAt` |

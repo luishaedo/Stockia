@@ -3,6 +3,8 @@ import { useFactura } from '../context/FacturaContext';
 import { api, ApiError } from '../services/api';
 import { ErrorCodes, UpdateFacturaDraftDTO } from '@stockia/shared';
 
+type DraftPayload = Omit<UpdateFacturaDraftDTO, 'expectedUpdatedAt'>;
+
 interface AutosaveConflictState {
     hasConflict: boolean;
     message: string | null;
@@ -13,21 +15,17 @@ export function useAutosave(timeout = 2000) {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastSavedState = useRef<string | null>(null);
     const conflictExpectedUpdatedAt = useRef<string | null>(null);
-    const pendingPayloadRef = useRef<UpdateFacturaDraftDTO | null>(null);
+    const pendingPayloadRef = useRef<DraftPayload | null>(null);
 
     const [conflictState, setConflictState] = useState<AutosaveConflictState>({
         hasConflict: false,
         message: null
     });
 
-    const saveDraft = async (payload: UpdateFacturaDraftDTO, expectedUpdatedAt?: string) => {
+    const saveDraft = async (payload: DraftPayload, expectedUpdatedAt: string) => {
         if (!state.currentFactura) return;
 
-        const updated = await api.updateFacturaDraft(
-            state.currentFactura.id,
-            payload,
-            expectedUpdatedAt
-        );
+        const updated = await api.updateFacturaDraft(state.currentFactura.id, { ...payload, expectedUpdatedAt });
 
         dispatch({
             type: 'FINISH_SAVING',
@@ -59,20 +57,24 @@ export function useAutosave(timeout = 2000) {
             dispatch({ type: 'START_SAVING' });
             const latestRemote = await api.getFactura(state.currentFactura.id);
             conflictExpectedUpdatedAt.current = latestRemote.updatedAt as string;
-            await saveDraft(pendingPayloadRef.current, conflictExpectedUpdatedAt.current || undefined);
+            const latestExpectedUpdatedAt = conflictExpectedUpdatedAt.current;
+            if (!latestExpectedUpdatedAt) {
+                throw new Error('Missing expectedUpdatedAt for conflict resolution');
+            }
+            await saveDraft(pendingPayloadRef.current, latestExpectedUpdatedAt);
         } catch (error: any) {
             dispatch({ type: 'SET_ERROR', payload: `Retry failed: ${error?.message || 'Unknown error'}` });
         }
     };
 
     const retrySave = async () => {
-        if (!pendingPayloadRef.current) return;
+        if (!pendingPayloadRef.current || !state.currentFactura) return;
 
         try {
             dispatch({ type: 'START_SAVING' });
             await saveDraft(
                 pendingPayloadRef.current,
-                conflictExpectedUpdatedAt.current || state.lastSavedAt || undefined
+                conflictExpectedUpdatedAt.current || state.lastSavedAt || (state.currentFactura.updatedAt as string)
             );
         } catch (error: any) {
             dispatch({ type: 'SET_ERROR', payload: `Retry failed: ${error?.message || 'Unknown error'}` });
@@ -103,7 +105,7 @@ export function useAutosave(timeout = 2000) {
         timeoutRef.current = setTimeout(async () => {
             if (!state.currentFactura) return;
 
-            const payload: UpdateFacturaDraftDTO = {
+            const payload: DraftPayload = {
                 proveedor: state.currentFactura.proveedor || undefined,
                 items: state.currentFactura.items,
                 duplicateHandler: 'REPLACE'
@@ -118,7 +120,7 @@ export function useAutosave(timeout = 2000) {
                 try {
                     await saveDraft(
                         payload,
-                        conflictExpectedUpdatedAt.current || state.lastSavedAt || undefined
+                        conflictExpectedUpdatedAt.current || state.lastSavedAt || (state.currentFactura.updatedAt as string)
                     );
                     lastSavedState.current = currentState;
                     success = true;
