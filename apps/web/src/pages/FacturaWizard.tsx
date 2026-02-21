@@ -28,11 +28,13 @@ export function FacturaWizard() {
 
     const [draftColors, setDraftColors] = useState<VarianteColor[]>([]);
 
+    const currentFacturaId = state.currentFactura?.id;
+
     useEffect(() => {
-        if (id && (!state.currentFactura || state.currentFactura.id !== id)) {
+        if (id && currentFacturaId !== id) {
             loadFactura(id);
         }
-    }, [id, state.currentFactura, loadFactura]);
+    }, [id, currentFacturaId, loadFactura]);
 
     const isFinal = state.currentFactura?.estado === FacturaEstado.FINAL;
 
