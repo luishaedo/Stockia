@@ -47,11 +47,13 @@ export function FacturaSummary() {
     const { state, loadFactura } = useFactura();
     const [finalizing, setFinalizing] = useState(false);
 
+    const currentFacturaId = state.currentFactura?.id;
+
     useEffect(() => {
-        if (id && (!state.currentFactura || state.currentFactura.id !== id)) {
+        if (id && currentFacturaId !== id) {
             loadFactura(id);
         }
-    }, [id, state.currentFactura, loadFactura]);
+    }, [id, currentFacturaId, loadFactura]);
 
     const stats = useMemo(() => {
         if (!state.currentFactura?.items) return { items: 0, units: 0 };

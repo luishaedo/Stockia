@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useCallback, useContext, useReducer } from 'react';
 import { Factura } from '@stockia/shared';
 import { api } from '../services/api';
 
@@ -73,7 +73,7 @@ const FacturaCtx = createContext<FacturaContextType | undefined>(undefined);
 export function FacturaProvider({ children }: { children: React.ReactNode }) {
     const [state, dispatch] = useReducer(facturaReducer, initialState);
 
-    const loadFactura = async (id: string) => {
+    const loadFactura = useCallback(async (id: string) => {
         dispatch({ type: 'START_SAVING' }); // Reusing saving state for loading temporarily or add LOADING
         try {
             const factura = await api.getFactura(id);
@@ -81,9 +81,9 @@ export function FacturaProvider({ children }: { children: React.ReactNode }) {
         } catch (e: any) {
             dispatch({ type: 'SET_ERROR', payload: e.message });
         }
-    };
+    }, []);
 
-    const createFactura = async (nro: string, prov: string) => {
+    const createFactura = useCallback(async (nro: string, prov: string) => {
         dispatch({ type: 'START_SAVING' });
         try {
             const factura = await api.createFactura({ nroFactura: nro, proveedor: prov });
@@ -93,11 +93,11 @@ export function FacturaProvider({ children }: { children: React.ReactNode }) {
             dispatch({ type: 'SET_ERROR', payload: e.message });
             throw e;
         }
-    };
+    }, []);
 
-    const updateDraft = (changes: Partial<Factura>) => {
+    const updateDraft = useCallback((changes: Partial<Factura>) => {
         dispatch({ type: 'UPDATE_DRAFT_LOCAL', payload: changes });
-    };
+    }, []);
 
     return (
         <FacturaCtx.Provider value={{ state, loadFactura, createFactura, updateDraft, dispatch }}>
