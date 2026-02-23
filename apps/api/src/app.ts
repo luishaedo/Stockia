@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes } from '@stockia/shared';
 import { requestIdMiddleware } from './middlewares/requestId.js';
@@ -13,6 +14,7 @@ import {
 } from './middlewares/security.js';
 import { createFacturaRoutes } from './routes/facturaRoutes.js';
 import { createAdminCatalogRoutes } from './routes/adminCatalogRoutes.js';
+import { createAdminUploadRoutes } from './routes/adminUploadRoutes.js';
 import { FacturaRepository } from './repositories/facturaRepository.js';
 import { FacturaService } from './services/facturaService.js';
 import { FacturaController } from './controllers/facturaController.js';
@@ -27,6 +29,7 @@ export const createApp = (prisma: PrismaClient) => {
     app.use(express.json());
     app.use(requestIdMiddleware);
     app.use(requestLoggerMiddleware);
+    app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
     app.get('/health', (_req, res) => {
         res.status(200).json({ status: 'ok' });
@@ -55,6 +58,7 @@ export const createApp = (prisma: PrismaClient) => {
 
     app.use(createFacturaRoutes(controller, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
     app.use(createAdminCatalogRoutes(prisma, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use(createAdminUploadRoutes(requireAuthToken(process.env.JWT_SECRET), writeRateLimitMiddleware));
 
     return app;
 };

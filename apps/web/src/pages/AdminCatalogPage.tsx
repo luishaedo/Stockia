@@ -34,6 +34,7 @@ export function AdminCatalogPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
 
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
@@ -44,6 +45,7 @@ export function AdminCatalogPage() {
     const isSupplier = selectedCatalog === 'suppliers';
     const isCategory = selectedCatalog === 'categories';
     const isSizeCurve = selectedCatalog === 'size-curves';
+    const requiresLogo = isCategory || isSupplier;
 
     const title = useMemo(() => catalogOptions.find(option => option.key === selectedCatalog)?.label ?? selectedCatalog, [selectedCatalog]);
 
@@ -61,7 +63,7 @@ export function AdminCatalogPage() {
         setError(null);
 
         try {
-            const data = await api.getAdminCatalog<CatalogItem[]>(catalog);
+            const data = await api.getAdminCatalogCached<CatalogItem[]>(catalog, true);
             setItems(data);
         } catch (err) {
             const message = err instanceof ApiError ? err.message : 'No pudimos cargar el catálogo';
@@ -83,6 +85,22 @@ export function AdminCatalogPage() {
         setLogoUrl(item.logoUrl || '');
         setLongDescription(item.longDescription || '');
         setSizeValues(item.values?.map(entry => entry.value).join(',') || '');
+    };
+
+    const handleLogoUpload = async (file?: File) => {
+        if (!file) return;
+        setUploadingLogo(true);
+        setError(null);
+
+        try {
+            const response = await api.uploadAdminLogo(file);
+            setLogoUrl(response.url);
+        } catch (err) {
+            const message = err instanceof ApiError ? err.message : 'No pudimos subir el logo';
+            setError(message);
+        } finally {
+            setUploadingLogo(false);
+        }
     };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -108,6 +126,18 @@ export function AdminCatalogPage() {
             await loadItems(selectedCatalog);
         } catch (err) {
             const message = err instanceof ApiError ? err.message : 'No pudimos guardar los datos';
+            setError(message);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        setError(null);
+        try {
+            await api.deleteAdminCatalog(selectedCatalog, id);
+            if (editingId === id) resetForm();
+            await loadItems(selectedCatalog);
+        } catch (err) {
+            const message = err instanceof ApiError ? err.message : 'No pudimos eliminar el registro';
             setError(message);
         }
     };
@@ -138,8 +168,23 @@ export function AdminCatalogPage() {
                     <Input label="Código" value={code} onChange={e => setCode(e.target.value)} required />
                     <Input label={isSupplier ? 'Nombre' : 'Descripción'} value={description} onChange={e => setDescription(e.target.value)} required />
 
-                    {(isSupplier || isCategory) && (
-                        <Input label="Logo URL" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
+                    {requiresLogo && (
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium">Logo (upload)</label>
+                            <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                onChange={(event) => void handleLogoUpload(event.target.files?.[0])}
+                                className="block w-full text-sm text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-slate-800 file:text-slate-100"
+                            />
+                            {uploadingLogo && <p className="text-xs text-slate-400">Subiendo logo...</p>}
+                            {!!logoUrl && (
+                                <div className="text-xs text-slate-300">
+                                    <p className="mb-2">Logo cargado:</p>
+                                    <img src={api.resolveAssetUrl(logoUrl)} alt="Uploaded logo" className="h-12 w-12 object-contain bg-slate-950 border border-slate-700 rounded" />
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {isCategory && (
@@ -166,16 +211,24 @@ export function AdminCatalogPage() {
                             <div key={item.id} className="border border-slate-700 rounded-md p-3 flex justify-between items-center gap-3">
                                 <div>
                                     <p className="font-semibold">{item.code} - {getDisplayDescription(item)}</p>
-                                    {item.logoUrl && <p className="text-xs text-slate-400">Logo: {item.logoUrl}</p>}
+                                    {item.logoUrl && (
+                                        <div className="text-xs text-slate-400 flex items-center gap-2 mt-1">
+                                            <img src={api.resolveAssetUrl(item.logoUrl)} alt={`Logo for ${getDisplayDescription(item)}`} className="h-8 w-8 object-contain bg-slate-950 border border-slate-700 rounded" />
+                                            <span>{item.logoUrl}</span>
+                                        </div>
+                                    )}
                                     {item.longDescription && <p className="text-xs text-slate-400">{item.longDescription}</p>}
                                     {item.values && item.values.length > 0 && (
                                         <p className="text-xs text-slate-400">Talles: {item.values.map(size => size.value).join(', ')}</p>
                                     )}
                                 </div>
-                                <Button size="sm" variant="secondary" onClick={() => handleEdit(item)}>Editar</Button>
+                                <div className="flex gap-2">
+                                    <Button size="sm" variant="secondary" onClick={() => handleEdit(item)}>Editar</Button>
+                                    <Button size="sm" variant="ghost" onClick={() => void handleDelete(item.id)}>Eliminar</Button>
+                                </div>
                             </div>
                         ))}
-                        {!items.length && <p className="text-slate-400">No hay registros cargados.</p>}
+                        {!items.length && <p className="text-amber-300">No hay registros cargados. Debés crear al menos uno para habilitar el stockeador.</p>}
                     </div>
                 )}
             </Card>

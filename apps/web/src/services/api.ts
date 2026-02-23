@@ -9,6 +9,7 @@ if (isProduction && !envApiUrl) {
 }
 
 const ACCESS_TOKEN_KEY = 'stockia.accessToken';
+const CATALOG_CACHE_TTL_MS = 60_000;
 
 export type AdminCatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
 
@@ -85,6 +86,7 @@ export const authTokenStore = {
 
 class ApiService {
     private baseURL = apiURL;
+    private catalogCache = new Map<AdminCatalogKey, { expiresAt: number; data: unknown }>();
 
     private getAccessTokenOrThrow() {
         const accessToken = getStoredAccessToken();
@@ -199,6 +201,27 @@ class ApiService {
         return response.json();
     }
 
+    async getAdminCatalogCached<T>(catalog: AdminCatalogKey, forceRefresh = false): Promise<T> {
+        const cached = this.catalogCache.get(catalog);
+        const now = Date.now();
+
+        if (!forceRefresh && cached && cached.expiresAt > now) {
+            return cached.data as T;
+        }
+
+        const data = await this.getAdminCatalog<T>(catalog);
+        this.catalogCache.set(catalog, { data, expiresAt: now + CATALOG_CACHE_TTL_MS });
+        return data;
+    }
+
+    invalidateCatalogCache(catalog?: AdminCatalogKey) {
+        if (!catalog) {
+            this.catalogCache.clear();
+            return;
+        }
+        this.catalogCache.delete(catalog);
+    }
+
     async createAdminCatalog(catalog: AdminCatalogKey, payload: Record<string, unknown>) {
         const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}`, {
             method: 'POST',
@@ -206,6 +229,7 @@ class ApiService {
             body: JSON.stringify(payload)
         });
         await this.assertOk(response, 'No pudimos crear el registro');
+        this.invalidateCatalogCache(catalog);
         return response.json();
     }
 
@@ -216,7 +240,38 @@ class ApiService {
             body: JSON.stringify(payload)
         });
         await this.assertOk(response, 'No pudimos actualizar el registro');
+        this.invalidateCatalogCache(catalog);
         return response.json();
+    }
+
+    async deleteAdminCatalog(catalog: AdminCatalogKey, id: string): Promise<void> {
+        const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}/${id}`, {
+            method: 'DELETE',
+            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
+        });
+        await this.assertOk(response, 'No pudimos eliminar el registro');
+        this.invalidateCatalogCache(catalog);
+    }
+
+    async uploadAdminLogo(file: File): Promise<{ url: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${this.baseURL}/admin/uploads/logo`, {
+            method: 'POST',
+            headers: {
+                authorization: `Bearer ${this.getAccessTokenOrThrow()}`
+            },
+            body: formData
+        });
+        await this.assertOk(response, 'No pudimos subir el logo');
+        return response.json();
+    }
+
+    resolveAssetUrl(url?: string | null): string {
+        if (!url) return '';
+        if (url.startsWith('http://') || url.startsWith('https://')) return url;
+        return `${this.baseURL}${url.startsWith('/') ? '' : '/'}${url}`;
     }
 }
 
