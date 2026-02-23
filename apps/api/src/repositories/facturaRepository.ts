@@ -35,14 +35,18 @@ export class FacturaRepository {
         });
     }
 
-    findSupplierBySelection(selection: string) {
-        return this.prisma.supplier.findFirst({
-            where: {
-                OR: [
-                    { id: selection },
-                    { code: { equals: selection, mode: 'insensitive' } },
-                    { name: { equals: selection, mode: 'insensitive' } }
-                ]
+    findSupplierById(id: string) {
+        return this.prisma.supplier.findUnique({ where: { id } });
+    }
+
+    upsertInvoiceUserByExternalId(externalId: string) {
+        const normalizedExternalId = externalId.trim();
+        return this.prisma.invoiceUser.upsert({
+            where: { externalId: normalizedExternalId },
+            update: { name: normalizedExternalId },
+            create: {
+                externalId: normalizedExternalId,
+                name: normalizedExternalId
             }
         });
     }
@@ -56,6 +60,7 @@ export class FacturaRepository {
         proveedor?: string;
         supplierSnapshot?: { id: string; code: string; label: string };
         createdBy?: string;
+        createdByUserId?: string;
         items: FacturaItem[]
     }) {
         return this.prisma.factura.create({
@@ -63,6 +68,7 @@ export class FacturaRepository {
                 nroFactura: data.nroFactura,
                 proveedor: data.proveedor,
                 createdBy: data.createdBy,
+                createdByUserId: data.createdByUserId,
                 supplierSnapshot: data.supplierSnapshot as Prisma.InputJsonValue | undefined,
                 estado: FacturaEstado.DRAFT,
                 items: {
@@ -180,7 +186,7 @@ export class FacturaRepository {
         }
 
         if (filters.userId) {
-            where.createdBy = { equals: filters.userId, mode: 'insensitive' };
+            where.createdByUserId = filters.userId;
         }
 
         return Promise.all([
@@ -196,7 +202,15 @@ export class FacturaRepository {
                     proveedor: true,
                     estado: true,
                     createdAt: true,
-                    createdBy: true
+                    createdBy: true,
+                    createdByUser: {
+                        select: {
+                            id: true,
+                            externalId: true,
+                            name: true,
+                            email: true
+                        }
+                    }
                 }
             })
         ]);

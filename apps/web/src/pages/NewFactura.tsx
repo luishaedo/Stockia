@@ -12,7 +12,7 @@ export function NewFactura() {
     const { createFactura, state } = useFactura();
 
     const [nroFactura, setNroFactura] = useState('');
-    const [proveedor, setProveedor] = useState('');
+    const [supplierId, setSupplierId] = useState('');
     const [error, setError] = useState('');
     const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string }>>([]);
     const [suppliersError, setSuppliersError] = useState<string | null>(null);
@@ -46,13 +46,13 @@ export function NewFactura() {
             return;
         }
 
-        if (!proveedor.trim()) {
+        if (!supplierId.trim()) {
             setError('Seleccioná un proveedor existente para continuar.');
             return;
         }
 
         try {
-            const id = await createFactura(nroFactura, proveedor);
+            const id = await createFactura(nroFactura, supplierId);
             navigate(`/facturas/${id}/wizard`);
         } catch {
             // handled by context
@@ -71,19 +71,20 @@ export function NewFactura() {
                         error={error}
                     />
 
-                    <Input
-                        label="Proveedor *"
-                        value={proveedor}
-                        onChange={(e) => setProveedor(e.target.value)}
-                        placeholder={loadingSuppliers ? 'Cargando proveedores...' : 'Seleccioná un proveedor'}
-                        list="supplier-options"
-                        disabled={loadingSuppliers || suppliers.length === 0}
-                    />
-                    <datalist id="supplier-options">
-                        {suppliers.map((supplier) => (
-                            <option key={supplier.id} value={supplier.label}>{supplier.label}</option>
-                        ))}
-                    </datalist>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Proveedor *</label>
+                        <select
+                            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 disabled:opacity-60"
+                            value={supplierId}
+                            onChange={(e) => setSupplierId(e.target.value)}
+                            disabled={loadingSuppliers || suppliers.length === 0}
+                        >
+                            <option value="">{loadingSuppliers ? 'Cargando proveedores...' : 'Seleccioná un proveedor'}</option>
+                            {suppliers.map((supplier) => (
+                                <option key={supplier.id} value={supplier.id}>{supplier.label}</option>
+                            ))}
+                        </select>
+                    </div>
 
                     {(suppliersError || suppliers.length === 0) && !loadingSuppliers && (
                         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100">
