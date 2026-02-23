@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { AdminInvoice, api } from '../services/api';
+import { AdminInvoice } from '@stockia/shared';
+import { api } from '../services/api';
 
-const formatDateTime = (value: string) => new Intl.DateTimeFormat('es-AR', {
+const formatDateTime = (value: string | Date) => new Intl.DateTimeFormat('es-AR', {
     dateStyle: 'short',
     timeStyle: 'short'
 }).format(new Date(value));

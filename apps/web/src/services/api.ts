@@ -1,4 +1,14 @@
-import { ApiErrorResponse, ErrorCodes, Factura, CreateFacturaDTO, UpdateFacturaDraftDTO, FacturaFilters, FacturaListResponse } from '@stockia/shared';
+import {
+    AdminInvoiceListResponse,
+    AdminInvoicesQuery,
+    ApiErrorResponse,
+    CreateFacturaDTO,
+    ErrorCodes,
+    Factura,
+    FacturaFilters,
+    FacturaListResponse,
+    UpdateFacturaDraftDTO
+} from '@stockia/shared';
 
 const envApiUrl = import.meta.env.VITE_API_URL;
 const isProduction = import.meta.env.PROD;
@@ -13,27 +23,6 @@ const CATALOG_CACHE_TTL_MS = 60_000;
 
 export type AdminCatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
 
-export type AdminInvoice = {
-    id: string;
-    number: string;
-    supplier: string | null;
-    status: string;
-    createdAt: string;
-    createdBy: {
-        id: string;
-        name: string;
-        email: string | null;
-    } | null;
-};
-
-export type AdminInvoiceListResponse = {
-    items: AdminInvoice[];
-    pagination: {
-        page: number;
-        pageSize: number;
-        total: number;
-    };
-};
 
 export class ApiError extends Error {
     code: string;
@@ -215,7 +204,7 @@ class ApiService {
         return response.json();
     }
 
-    async getAdminInvoices(filters: { page?: number; pageSize?: number; from?: string; to?: string; userId?: string }): Promise<AdminInvoiceListResponse> {
+    async getAdminInvoices(filters: Partial<AdminInvoicesQuery> = {}): Promise<AdminInvoiceListResponse> {
         const params = new URLSearchParams();
         if (filters.page) params.append('page', filters.page.toString());
         if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());

@@ -71,6 +71,37 @@ export const FinalizeFacturaSchema = z.object({
     expectedUpdatedAt: z.string().datetime()
 });
 
+
+export const AdminInvoicesQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    userId: z.string().min(1).optional()
+});
+
+export const AdminInvoiceSchema = z.object({
+    id: z.string().min(1),
+    number: z.string().min(1),
+    supplier: z.string().nullable(),
+    status: z.string().min(1),
+    createdAt: z.union([z.string().datetime(), z.date()]),
+    createdBy: z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        email: z.string().email().nullable()
+    }).nullable()
+});
+
+export const AdminInvoiceListResponseSchema = z.object({
+    items: z.array(AdminInvoiceSchema),
+    pagination: z.object({
+        page: z.number().int().min(1),
+        pageSize: z.number().int().min(1).max(100),
+        total: z.number().int().min(0)
+    })
+});
+
 export const FacturaListQuerySchema = z.object({
     nroFactura: z.string().min(1).optional(),
     proveedor: z.string().min(1).optional(),
@@ -99,6 +130,9 @@ export type CreateFacturaDTO = z.infer<typeof CreateFacturaSchema>;
 export type UpdateFacturaDraftDTO = z.infer<typeof UpdateFacturaDraftSchema>;
 export type FinalizeFacturaDTO = z.infer<typeof FinalizeFacturaSchema>;
 export type FacturaListQuery = z.infer<typeof FacturaListQuerySchema>;
+export type AdminInvoicesQuery = z.infer<typeof AdminInvoicesQuerySchema>;
+export type AdminInvoice = z.infer<typeof AdminInvoiceSchema>;
+export type AdminInvoiceListResponse = z.infer<typeof AdminInvoiceListResponseSchema>;
 
 export interface Factura {
     id: string;

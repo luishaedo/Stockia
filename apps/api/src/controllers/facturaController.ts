@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { z } from 'zod';
 import {
+    AdminInvoicesQuerySchema,
     CreateFacturaSchema,
     ErrorCodes,
     FacturaFilters,
@@ -11,14 +11,6 @@ import {
 import { logger } from '../lib/logger.js';
 import { sendError } from '../middlewares/error.js';
 import { DomainError, FacturaService } from '../services/facturaService.js';
-
-const AdminInvoicesQuerySchema = z.object({
-    page: z.coerce.number().int().min(1).default(1),
-    pageSize: z.coerce.number().int().min(1).max(100).default(20),
-    from: z.string().datetime().optional(),
-    to: z.string().datetime().optional(),
-    userId: z.string().min(1).optional()
-});
 
 export class FacturaController {
     constructor(private readonly service: FacturaService) {}
