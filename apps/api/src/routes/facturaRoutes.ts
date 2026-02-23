@@ -11,6 +11,7 @@ export const createFacturaRoutes = (
 
     router.get('/facturas', readRateLimitMiddleware, requireAdminToken, controller.list);
     router.get('/admin/invoices', readRateLimitMiddleware, requireAdminToken, controller.listAdminInvoices);
+    router.get('/admin/invoice-users', readRateLimitMiddleware, requireAdminToken, controller.listAdminInvoiceUsers);
     router.get('/facturas/:id', readRateLimitMiddleware, requireAdminToken, controller.getById);
     router.post('/facturas', writeRateLimitMiddleware, requireAdminToken, controller.create);
     router.patch('/facturas/:id/draft', writeRateLimitMiddleware, requireAdminToken, controller.updateDraft);

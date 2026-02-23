@@ -14,6 +14,7 @@ const formatStatus = (status: string) => (status === 'FINAL' ? 'Final' : 'Borrad
 
 export function AdminInvoicesPage() {
     const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
+    const [userOptions, setUserOptions] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [dateFrom, setDateFrom] = useState('');
@@ -22,8 +23,20 @@ export function AdminInvoicesPage() {
     const [page, setPage] = useState(1);
     const [pageSize] = useState(20);
     const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const loadUsers = async (search = '') => {
+        try {
+            const response = await api.getAdminInvoiceUsers({
+                page: 1,
+                pageSize: 50,
+                search: search || undefined
+            });
+            setUserOptions(response.items.map((user) => user.externalId));
+        } catch {
+            setUserOptions([]);
+        }
+    };
 
     const loadInvoices = async () => {
         setLoading(true);
@@ -40,6 +53,7 @@ export function AdminInvoicesPage() {
 
             setInvoices(response.items);
             setTotal(response.pagination.total);
+            setTotalPages(Math.max(1, response.pagination.totalPages));
         } catch (err: any) {
             setError(err.message || 'No pudimos cargar facturas admin.');
         } finally {
@@ -52,13 +66,11 @@ export function AdminInvoicesPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page]);
 
-    const usersForAutocomplete = useMemo(() => {
-        const users = invoices
-            .map((invoice) => invoice.createdBy?.id)
-            .filter((value): value is string => Boolean(value));
+    useEffect(() => {
+        void loadUsers(userFilter);
+    }, [userFilter]);
 
-        return Array.from(new Set(users));
-    }, [invoices]);
+    const usersForAutocomplete = useMemo(() => Array.from(new Set(userOptions)), [userOptions]);
 
     return (
         <div className="space-y-6">

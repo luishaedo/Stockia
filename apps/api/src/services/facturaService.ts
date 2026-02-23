@@ -1,6 +1,8 @@
 import { Prisma } from '@prisma/client';
 import {
     AdminInvoiceListResponse,
+    AdminInvoiceUserQuery,
+    AdminInvoiceUsersResponse,
     AdminInvoicesQuery,
     CreateFacturaDTO,
     ErrorCodes,
@@ -12,6 +14,7 @@ import {
     UpdateFacturaDraftDTO,
 } from '@stockia/shared';
 import { FacturaRepository } from '../repositories/facturaRepository.js';
+import { logger } from '../lib/logger.js';
 import { mergeItems, validateFacturaIntegrity } from '../utils/factura.js';
 
 export class DomainError extends Error {
@@ -27,6 +30,12 @@ const hasExactValues = (left: string[], right: string[]) => {
     return left.every((value, index) => value === right[index]);
 };
 
+const getSupplierIdFromSnapshot = (snapshot: Prisma.JsonValue | null): string | undefined => {
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return undefined;
+    const id = (snapshot as Record<string, unknown>).id;
+    return typeof id === 'string' && id.trim() ? id : undefined;
+};
+
 type CatalogValidationResult = {
     normalizedSupplier: string;
     supplierSnapshot: {
@@ -35,6 +44,8 @@ type CatalogValidationResult = {
         label: string;
     };
     normalizedItems: FacturaItem[];
+    usedLegacySupplierField: boolean;
+    usedLegacySizeCurveField: boolean;
 };
 
 export class FacturaService {
@@ -79,7 +90,21 @@ export class FacturaService {
             pagination: {
                 page: filters.page,
                 pageSize: filters.pageSize,
-                total
+                total,
+                totalPages: Math.ceil(total / filters.pageSize)
+            }
+        };
+    }
+
+    async listAdminInvoiceUsers(filters: AdminInvoiceUserQuery): Promise<AdminInvoiceUsersResponse> {
+        const [total, users] = await this.repository.listAdminInvoiceUsers(filters);
+        return {
+            items: users,
+            pagination: {
+                page: filters.page,
+                pageSize: filters.pageSize,
+                total,
+                totalPages: Math.ceil(total / filters.pageSize)
             }
         };
     }
@@ -92,8 +117,11 @@ export class FacturaService {
         return factura;
     }
 
-    private async validateCatalogSelections(proveedor: string | undefined, items: FacturaItem[]): Promise<CatalogValidationResult> {
-        if (!proveedor || !proveedor.trim()) {
+    private async validateCatalogSelections(payload: { supplierId?: string; proveedor?: string }, items: FacturaItem[]): Promise<CatalogValidationResult> {
+        const supplierId = payload.supplierId?.trim() || payload.proveedor?.trim();
+        const usedLegacySupplierField = !payload.supplierId?.trim() && Boolean(payload.proveedor?.trim());
+
+        if (!supplierId) {
             throw new DomainError(
                 ErrorCodes.VALIDATION_FAILED,
                 'Supplier is required. Select an existing supplier or create one first.',
@@ -101,7 +129,6 @@ export class FacturaService {
             );
         }
 
-        const supplierId = proveedor.trim();
         const supplier = await this.repository.findSupplierById(supplierId);
         if (!supplier) {
             throw new DomainError(
@@ -121,20 +148,53 @@ export class FacturaService {
             return {
                 normalizedSupplier: supplier.name,
                 supplierSnapshot,
-                normalizedItems: items
+                normalizedItems: items,
+                usedLegacySupplierField,
+                usedLegacySizeCurveField: false
             };
         }
 
-        const curves = await this.repository.findAllSizeCurves();
-        if (curves.length === 0) {
-            throw new DomainError(
-                ErrorCodes.VALIDATION_FAILED,
-                'No size tables available. Create a size table first.',
-                422
-            );
-        }
+        let usedLegacySizeCurveField = false;
 
-        const normalizedItems = items.map(item => {
+        const requiresLegacyCurveLookup = items.some(item => !item.sizeCurveId?.trim());
+        const curves = requiresLegacyCurveLookup ? await this.repository.findAllSizeCurves() : [];
+
+        const normalizedItems = await Promise.all(items.map(async (item) => {
+            const sizeCurveId = item.sizeCurveId?.trim();
+            if (sizeCurveId) {
+                const sizeCurve = await this.repository.findSizeCurveById(sizeCurveId);
+                if (!sizeCurve) {
+                    throw new DomainError(
+                        ErrorCodes.VALIDATION_FAILED,
+                        `Invalid size curve for item ${item.codigoArticulo}. Select an existing size table.`,
+                        422
+                    );
+                }
+
+                const curveValues = normalizedValues(sizeCurve.values.map(value => value.value));
+
+                return {
+                    ...item,
+                    marca: item.supplierLabel ?? item.marca,
+                    sizeCurveId,
+                    curvaTalles: curveValues,
+                    sizeCurveSnapshot: {
+                        id: sizeCurve.id,
+                        code: sizeCurve.code,
+                        label: sizeCurve.description,
+                        values: curveValues
+                    }
+                };
+            }
+
+            if (curves.length === 0) {
+                throw new DomainError(
+                    ErrorCodes.VALIDATION_FAILED,
+                    'No size tables available. Create a size table first.',
+                    422
+                );
+            }
+
             const inputCurveValues = normalizedValues(item.curvaTalles);
             const matchingCurve = curves.find(curve => {
                 const catalogValues = curve.values.map(value => value.value);
@@ -149,9 +209,13 @@ export class FacturaService {
                 );
             }
 
+            usedLegacySizeCurveField = true;
+
             return {
                 ...item,
+                marca: item.supplierLabel ?? item.marca,
                 curvaTalles: inputCurveValues,
+                sizeCurveId: matchingCurve.id,
                 sizeCurveSnapshot: {
                     id: matchingCurve.id,
                     code: matchingCurve.code,
@@ -159,12 +223,14 @@ export class FacturaService {
                     values: inputCurveValues
                 }
             };
-        });
+        }));
 
         return {
             normalizedSupplier: supplier.name,
             supplierSnapshot,
-            normalizedItems
+            normalizedItems,
+            usedLegacySupplierField,
+            usedLegacySizeCurveField
         };
     }
 
@@ -178,7 +244,14 @@ export class FacturaService {
             }
         }
 
-        const catalogSelections = await this.validateCatalogSelections(body.proveedor, processedItems);
+        const catalogSelections = await this.validateCatalogSelections({ supplierId: body.supplierId, proveedor: body.proveedor }, processedItems);
+
+        if (catalogSelections.usedLegacySupplierField) {
+            logger.warn({ route: 'createFacturaDraft', field: 'proveedor' }, 'Deprecation warning: use supplierId instead of proveedor.');
+        }
+        if (catalogSelections.usedLegacySizeCurveField) {
+            logger.warn({ route: 'createFacturaDraft', field: 'curvaTalles' }, 'Deprecation warning: use sizeCurveId instead of curvaTalles.');
+        }
         const normalizedCreatedBy = createdBy?.trim();
         const createdByUser = normalizedCreatedBy
             ? await this.repository.upsertInvoiceUserByExternalId(normalizedCreatedBy)
@@ -233,7 +306,20 @@ export class FacturaService {
                 );
             }
 
-            const catalogSelections = await this.validateCatalogSelections(body.proveedor ?? currentFactura.proveedor ?? undefined, processedItems);
+            const catalogSelections = await this.validateCatalogSelections(
+                {
+                    supplierId: body.supplierId,
+                    proveedor: body.proveedor ?? getSupplierIdFromSnapshot(currentFactura.supplierSnapshot as Prisma.JsonValue | null)
+                },
+                processedItems
+            );
+
+            if (catalogSelections.usedLegacySupplierField) {
+                logger.warn({ route: 'updateFacturaDraft', field: 'proveedor' }, 'Deprecation warning: use supplierId instead of proveedor.');
+            }
+            if (catalogSelections.usedLegacySizeCurveField) {
+                logger.warn({ route: 'updateFacturaDraft', field: 'curvaTalles' }, 'Deprecation warning: use sizeCurveId instead of curvaTalles.');
+            }
 
             await tx.factura.update({
                 where: { id },

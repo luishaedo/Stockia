@@ -100,6 +100,8 @@ export function useAutosave(timeout = 2000) {
     useEffect(() => {
         if (!state.currentFactura) return;
 
+        const supplierId = state.currentFactura.supplierSnapshot?.id;
+
         const currentState = JSON.stringify({
             proveedor: state.currentFactura.proveedor,
             items: state.currentFactura.items
@@ -122,6 +124,7 @@ export function useAutosave(timeout = 2000) {
             if (!state.currentFactura) return;
 
             const payload: DraftPayload = {
+                supplierId: supplierId || undefined,
                 proveedor: state.currentFactura.proveedor || undefined,
                 items: state.currentFactura.items,
                 duplicateHandler: 'REPLACE'

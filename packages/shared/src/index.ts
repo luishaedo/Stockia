@@ -18,8 +18,10 @@ export const VarianteColorSchema = z.object({
 
 export const FacturaItemSchema = z.object({
     marca: z.string().min(1),
+    supplierLabel: z.string().min(1).optional(),
     tipoPrenda: z.string().min(1),
     codigoArticulo: z.string().min(1),
+    sizeCurveId: z.string().min(1).optional(),
     curvaTalles: z.array(z.string().min(1)).min(1),
     garmentTypeSnapshot: z.object({
         id: z.string().min(1),
@@ -34,6 +36,9 @@ export const FacturaItemSchema = z.object({
     }).optional(),
     colores: z.array(VarianteColorSchema)
 }).refine(
+    (item) => Boolean(item.sizeCurveId?.trim()) || item.curvaTalles.length > 0,
+    { message: 'sizeCurveId or curvaTalles must be provided', path: ['sizeCurveId'] }
+).refine(
     (item) => {
         // Validate quantities align with curva
         for (const color of item.colores) {
@@ -52,6 +57,7 @@ export const FacturaItemSchema = z.object({
 
 export const CreateFacturaSchema = z.object({
     nroFactura: z.string().min(1),
+    supplierId: z.string().min(1).optional(),
     proveedor: z.string().optional(),
     supplierSnapshot: z.object({
         id: z.string().min(1),
@@ -74,14 +80,21 @@ export const CreateFacturaSchema = z.object({
         },
         { message: "DUPLICATE_ITEM_COLOR_IN_PAYLOAD" }
     )
-});
+}).refine(
+    (data) => Boolean(data.supplierId?.trim()) || Boolean(data.proveedor?.trim()),
+    { message: 'supplierId or proveedor must be provided', path: ['supplierId'] }
+);
 
 export const UpdateFacturaDraftSchema = z.object({
+    supplierId: z.string().min(1).optional(),
     proveedor: z.string().optional(),
     items: z.array(FacturaItemSchema).optional(),
     duplicateHandler: z.enum(['SUM', 'REPLACE', 'ERROR']).optional(),
     expectedUpdatedAt: z.string().datetime()
-});
+}).refine(
+    (data) => data.supplierId === undefined || Boolean(data.supplierId.trim()),
+    { message: 'supplierId cannot be empty', path: ['supplierId'] }
+);
 
 export const FinalizeFacturaSchema = z.object({
     expectedUpdatedAt: z.string().datetime()
@@ -107,6 +120,38 @@ export const AdminInvoicesQuerySchema = z.object({
     from: z.string().datetime().optional(),
     to: z.string().datetime().optional(),
     userId: z.string().min(1).optional()
+}).refine(
+    (data) => {
+        if (!data.from || !data.to) return true;
+        return new Date(data.from).getTime() <= new Date(data.to).getTime();
+    },
+    {
+        message: 'from must be before or equal to to',
+        path: ['from']
+    }
+);
+
+export const AdminInvoiceUserQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().min(1).optional()
+});
+
+export const AdminInvoiceUserSchema = z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    email: z.string().email().nullable(),
+    externalId: z.string().min(1)
+});
+
+export const AdminInvoiceUsersResponseSchema = z.object({
+    items: z.array(AdminInvoiceUserSchema),
+    pagination: z.object({
+        page: z.number().int().min(1),
+        pageSize: z.number().int().min(1).max(100),
+        total: z.number().int().min(0),
+        totalPages: z.number().int().min(0)
+    })
 });
 
 export const AdminInvoiceSchema = z.object({
@@ -127,7 +172,8 @@ export const AdminInvoiceListResponseSchema = z.object({
     pagination: z.object({
         page: z.number().int().min(1),
         pageSize: z.number().int().min(1).max(100),
-        total: z.number().int().min(0)
+        total: z.number().int().min(0),
+        totalPages: z.number().int().min(0)
     })
 });
 
@@ -160,8 +206,11 @@ export type UpdateFacturaDraftDTO = z.infer<typeof UpdateFacturaDraftSchema>;
 export type FinalizeFacturaDTO = z.infer<typeof FinalizeFacturaSchema>;
 export type FacturaListQuery = z.infer<typeof FacturaListQuerySchema>;
 export type AdminInvoicesQuery = z.infer<typeof AdminInvoicesQuerySchema>;
+export type AdminInvoiceUserQuery = z.infer<typeof AdminInvoiceUserQuerySchema>;
 export type AdminInvoice = z.infer<typeof AdminInvoiceSchema>;
 export type AdminInvoiceListResponse = z.infer<typeof AdminInvoiceListResponseSchema>;
+export type AdminInvoiceUser = z.infer<typeof AdminInvoiceUserSchema>;
+export type AdminInvoiceUsersResponse = z.infer<typeof AdminInvoiceUsersResponseSchema>;
 export type OperationCatalogEntry = z.infer<typeof OperationCatalogEntrySchema>;
 export type OperationCatalogsResponse = z.infer<typeof OperationCatalogsResponseSchema>;
 

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import {
+    AdminInvoiceUserQuerySchema,
     AdminInvoicesQuerySchema,
     CreateFacturaSchema,
     ErrorCodes,
@@ -40,6 +41,20 @@ export class FacturaController {
             }
 
             const response = await this.service.listAdminInvoices(validation.data);
+            res.json(response);
+        } catch (error) {
+            this.handleError(error, req, res);
+        }
+    };
+
+    listAdminInvoiceUsers = async (req: Request, res: Response) => {
+        try {
+            const validation = AdminInvoiceUserQuerySchema.safeParse(req.query);
+            if (!validation.success) {
+                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
+            }
+
+            const response = await this.service.listAdminInvoiceUsers(validation.data);
             res.json(response);
         } catch (error) {
             this.handleError(error, req, res);
