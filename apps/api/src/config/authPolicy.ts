@@ -1,4 +1,4 @@
-import { FACTURA_ROUTE_DEFINITIONS, toRouteKey } from '../routes/routeDefinitions.js';
+import { ROUTE_DEFINITIONS, toRouteKey } from '../routes/routeDefinitions.js';
 
 export type RouteAuthRule = {
     requiresAdminToken: boolean;
@@ -10,14 +10,17 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /facturas/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /facturas': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'PATCH /facturas/:id/draft': { requiresAdminToken: true, requiredHeader: 'authorization' },
-    'PATCH /facturas/:id/finalize': { requiresAdminToken: true, requiredHeader: 'authorization' }
+    'PATCH /facturas/:id/finalize': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /admin/catalogs/:catalog': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'POST /admin/catalogs/:catalog': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'PUT /admin/catalogs/:catalog/:id': { requiresAdminToken: true, requiredHeader: 'authorization' }
 };
 
 export const assertAuthPolicyCoverage = () => {
     const missingPolicyEntries: string[] = [];
     const orphanPolicyEntries = new Set(Object.keys(AUTH_POLICY));
 
-    for (const route of FACTURA_ROUTE_DEFINITIONS) {
+    for (const route of ROUTE_DEFINITIONS) {
         const routeKey = toRouteKey(route.method, route.path);
         const authRule = AUTH_POLICY[routeKey];
 

@@ -10,6 +10,8 @@ if (isProduction && !envApiUrl) {
 
 const ACCESS_TOKEN_KEY = 'stockia.accessToken';
 
+export type AdminCatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
+
 export class ApiError extends Error {
     code: string;
     status: number;
@@ -186,6 +188,34 @@ class ApiService {
             body: JSON.stringify({ expectedUpdatedAt })
         });
         await this.assertOk(response, 'No pudimos finalizar la factura');
+        return response.json();
+    }
+
+    async getAdminCatalog<T>(catalog: AdminCatalogKey): Promise<T> {
+        const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}`, {
+            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
+        });
+        await this.assertOk(response, 'No pudimos cargar el catálogo');
+        return response.json();
+    }
+
+    async createAdminCatalog(catalog: AdminCatalogKey, payload: Record<string, unknown>) {
+        const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}`, {
+            method: 'POST',
+            headers: await this.getAuthHeaders(),
+            body: JSON.stringify(payload)
+        });
+        await this.assertOk(response, 'No pudimos crear el registro');
+        return response.json();
+    }
+
+    async updateAdminCatalog(catalog: AdminCatalogKey, id: string, payload: Record<string, unknown>) {
+        const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}/${id}`, {
+            method: 'PUT',
+            headers: await this.getAuthHeaders(),
+            body: JSON.stringify(payload)
+        });
+        await this.assertOk(response, 'No pudimos actualizar el registro');
         return response.json();
     }
 }

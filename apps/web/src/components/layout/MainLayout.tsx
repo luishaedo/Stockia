@@ -28,9 +28,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                         <Package className="h-6 w-6 text-blue-500" />
                         <span>Stockia</span>
                     </Link>
-                    <nav>
+                    <nav className="flex items-center gap-2">
                         {isAuthenticated && !isLoginPage && (
-                            <Button variant="ghost" size="sm" onClick={handleLogout}>Cerrar sesión</Button>
+                            <>
+                                <Link to="/facturas" className="text-sm text-slate-300 hover:text-white">Facturas</Link>
+                                <Link to="/admin" className="text-sm text-slate-300 hover:text-white">Admin</Link>
+                                <Button variant="ghost" size="sm" onClick={handleLogout}>Cerrar sesión</Button>
+                            </>
                         )}
                     </nav>
                 </div>
