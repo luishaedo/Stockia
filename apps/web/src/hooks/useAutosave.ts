@@ -10,6 +10,19 @@ interface AutosaveConflictState {
     message: string | null;
 }
 
+const getTechnicalErrorMessage = (prefix: string, error: unknown) => {
+    if (error instanceof ApiError) {
+        const trace = error.traceId ? ` traceId=${error.traceId}` : '';
+        return `${prefix}: ${error.message} [code=${error.code} status=${error.status}${trace}]`;
+    }
+
+    if (error instanceof Error) {
+        return `${prefix}: ${error.message}`;
+    }
+
+    return `${prefix}: Error desconocido`;
+};
+
 export function useAutosave(timeout = 2000) {
     const { state, dispatch, loadFactura } = useFactura();
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,8 +58,9 @@ export function useAutosave(timeout = 2000) {
             conflictExpectedUpdatedAt.current = null;
             pendingPayloadRef.current = null;
             setConflictState({ hasConflict: false, message: null });
-        } catch (error: any) {
-            dispatch({ type: 'SET_ERROR', payload: `No se pudo recargar: ${error?.message || 'Error desconocido'}` });
+        } catch (error: unknown) {
+            console.error('Autosave reloadFromServer failed', error);
+            dispatch({ type: 'SET_ERROR', payload: getTechnicalErrorMessage('No se pudo recargar', error) });
         }
     };
 
@@ -62,8 +76,9 @@ export function useAutosave(timeout = 2000) {
                 throw new Error('Falta expectedUpdatedAt para resolver el conflicto');
             }
             await saveDraft(pendingPayloadRef.current, latestExpectedUpdatedAt);
-        } catch (error: any) {
-            dispatch({ type: 'SET_ERROR', payload: `No se pudo reintentar: ${error?.message || 'Error desconocido'}` });
+        } catch (error: unknown) {
+            console.error('Autosave keepLocalChanges failed', error);
+            dispatch({ type: 'SET_ERROR', payload: getTechnicalErrorMessage('No se pudo reintentar', error) });
         }
     };
 
@@ -76,8 +91,9 @@ export function useAutosave(timeout = 2000) {
                 pendingPayloadRef.current,
                 conflictExpectedUpdatedAt.current || state.lastSavedAt || (state.currentFactura.updatedAt as string)
             );
-        } catch (error: any) {
-            dispatch({ type: 'SET_ERROR', payload: `No se pudo reintentar: ${error?.message || 'Error desconocido'}` });
+        } catch (error: unknown) {
+            console.error('Autosave retrySave failed', error);
+            dispatch({ type: 'SET_ERROR', payload: getTechnicalErrorMessage('No se pudo reintentar', error) });
         }
     };
 
@@ -124,8 +140,15 @@ export function useAutosave(timeout = 2000) {
                     );
                     lastSavedState.current = currentState;
                     success = true;
-                } catch (error: any) {
-                    const message = error?.message || '';
+                } catch (error: unknown) {
+                    if (error instanceof ApiError) {
+                        console.error('Autosave saveDraft failed', {
+                            code: error.code,
+                            status: error.status,
+                            traceId: error.traceId,
+                            details: error.details
+                        });
+                    }
 
                     if (error instanceof ApiError && error.code === ErrorCodes.OPTIMISTIC_LOCK_CONFLICT) {
                         setConflictState({
@@ -138,7 +161,7 @@ export function useAutosave(timeout = 2000) {
 
                     attempt++;
                     if (attempt >= maxRetries) {
-                        dispatch({ type: 'SET_ERROR', payload: `No se pudo guardar: ${message}` });
+                        dispatch({ type: 'SET_ERROR', payload: getTechnicalErrorMessage('No se pudo guardar', error) });
                     } else {
                         await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
                     }

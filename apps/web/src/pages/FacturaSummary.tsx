@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFactura } from '../context/FacturaContext';
-import { api } from '../services/api';
+import { api, ApiError } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Loader2, ArrowLeft, CheckCircle, Download } from 'lucide-react';
@@ -47,11 +47,13 @@ export function FacturaSummary() {
     const { state, loadFactura } = useFactura();
     const [finalizing, setFinalizing] = useState(false);
 
+    const currentFacturaId = state.currentFactura?.id;
+
     useEffect(() => {
-        if (id && (!state.currentFactura || state.currentFactura.id !== id)) {
+        if (id && currentFacturaId !== id) {
             loadFactura(id);
         }
-    }, [id, state.currentFactura, loadFactura]);
+    }, [id, currentFacturaId, loadFactura]);
 
     const stats = useMemo(() => {
         if (!state.currentFactura?.items) return { items: 0, units: 0 };
@@ -79,8 +81,23 @@ export function FacturaSummary() {
             await api.finalizeFactura(id, state.currentFactura.updatedAt as string);
             await loadFactura(id);
             alert('Factura finalizada correctamente.');
-        } catch (error: any) {
-            alert(`No se pudo finalizar la factura: ${error.message}`);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                console.error('Finalize factura failed', {
+                    code: error.code,
+                    status: error.status,
+                    traceId: error.traceId,
+                    details: error.details
+                });
+                const trace = error.traceId ? ` | traceId: ${error.traceId}` : '';
+                alert(`No se pudo finalizar la factura: ${error.message} [${error.code} - ${error.status}]${trace}`);
+            } else if (error instanceof Error) {
+                console.error('Finalize factura failed', error);
+                alert(`No se pudo finalizar la factura: ${error.message}`);
+            } else {
+                console.error('Finalize factura failed', error);
+                alert('No se pudo finalizar la factura: Error desconocido');
+            }
         }
         setFinalizing(false);
     };
