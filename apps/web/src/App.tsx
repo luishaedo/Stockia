@@ -9,6 +9,7 @@ import { FacturaSummary } from './pages/FacturaSummary';
 import { FacturasListPage } from './pages/FacturasListPage';
 import { LoginPage } from './pages/LoginPage';
 import { AdminCatalogPage } from './pages/AdminCatalogPage';
+import { AdminInvoicesPage } from './pages/AdminInvoicesPage';
 import './index.css';
 
 function App() {
@@ -32,6 +33,14 @@ function App() {
                                 element={(
                                     <ProtectedRoute>
                                         <FacturasListPage />
+                                    </ProtectedRoute>
+                                )}
+                            />
+                            <Route
+                                path="/admin/facturas"
+                                element={(
+                                    <ProtectedRoute>
+                                        <AdminInvoicesPage />
                                     </ProtectedRoute>
                                 )}
                             />

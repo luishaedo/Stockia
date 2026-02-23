@@ -32,7 +32,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                         {isAuthenticated && !isLoginPage && (
                             <>
                                 <Link to="/facturas" className="text-sm text-slate-300 hover:text-white">Facturas</Link>
-                                <Link to="/admin" className="text-sm text-slate-300 hover:text-white">Admin</Link>
+                                <Link to="/admin" className="text-sm text-slate-300 hover:text-white">Catálogos</Link>
+                                <Link to="/admin/facturas" className="text-sm text-slate-300 hover:text-white">Admin Facturas</Link>
                                 <Button variant="ghost" size="sm" onClick={handleLogout}>Cerrar sesión</Button>
                             </>
                         )}

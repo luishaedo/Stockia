@@ -13,6 +13,28 @@ const CATALOG_CACHE_TTL_MS = 60_000;
 
 export type AdminCatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
 
+export type AdminInvoice = {
+    id: string;
+    number: string;
+    supplier: string | null;
+    status: string;
+    createdAt: string;
+    createdBy: {
+        id: string;
+        name: string;
+        email: string | null;
+    } | null;
+};
+
+export type AdminInvoiceListResponse = {
+    items: AdminInvoice[];
+    pagination: {
+        page: number;
+        pageSize: number;
+        total: number;
+    };
+};
+
 export class ApiError extends Error {
     code: string;
     status: number;
@@ -190,6 +212,21 @@ class ApiService {
             body: JSON.stringify({ expectedUpdatedAt })
         });
         await this.assertOk(response, 'No pudimos finalizar la factura');
+        return response.json();
+    }
+
+    async getAdminInvoices(filters: { page?: number; pageSize?: number; from?: string; to?: string; userId?: string }): Promise<AdminInvoiceListResponse> {
+        const params = new URLSearchParams();
+        if (filters.page) params.append('page', filters.page.toString());
+        if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());
+        if (filters.from) params.append('from', filters.from);
+        if (filters.to) params.append('to', filters.to);
+        if (filters.userId) params.append('userId', filters.userId);
+
+        const response = await fetch(`${this.baseURL}/admin/invoices?${params.toString()}`, {
+            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
+        });
+        await this.assertOk(response, 'No pudimos cargar el panel de facturas admin');
         return response.json();
     }
 

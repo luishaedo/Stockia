@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+import { ApiError, api } from '../services/api';
 import { FacturaFilters, Factura, FacturaEstado, FacturaListResponse } from '@stockia/shared';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -15,6 +15,8 @@ export function FacturasListPage() {
     const [data, setData] = useState<FacturaListResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+    const [supplierOptions, setSupplierOptions] = useState<Array<{ code: string; name: string }>>([]);
+    const [supplierOptionsError, setSupplierOptionsError] = useState<string | null>(null);
     const [filters, setFilters] = useState<FacturaFilters>({
         page: 1,
         pageSize: 20,
@@ -37,6 +39,21 @@ export function FacturasListPage() {
         loadFacturas();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.page, filters.pageSize, filters.sortBy, filters.sortDir]);
+
+    useEffect(() => {
+        const loadSuppliers = async () => {
+            try {
+                const suppliers = await api.getAdminCatalogCached<Array<{ code: string; name: string }>>('suppliers');
+                setSupplierOptions(suppliers);
+                setSupplierOptionsError(null);
+            } catch (error) {
+                const message = error instanceof ApiError ? error.message : 'No pudimos cargar proveedores para filtros.';
+                setSupplierOptionsError(message);
+            }
+        };
+
+        void loadSuppliers();
+    }, []);
 
     const handleSearch = () => {
         setFilters({ ...filters, page: 1 });
@@ -80,12 +97,21 @@ export function FacturasListPage() {
                             onChange={(e) => setFilters({ ...filters, nroFactura: e.target.value })}
                             placeholder="Ej: A-001"
                         />
-                        <Input
-                            label="Proveedor"
-                            value={filters.proveedor || ''}
-                            onChange={(e) => setFilters({ ...filters, proveedor: e.target.value })}
-                            placeholder="Ej: Nike"
-                        />
+                        <div>
+                            <Input
+                                label="Proveedor"
+                                value={filters.proveedor || ''}
+                                onChange={(e) => setFilters({ ...filters, proveedor: e.target.value })}
+                                placeholder="Seleccioná proveedor"
+                                list="invoice-filter-supplier-options"
+                            />
+                            <datalist id="invoice-filter-supplier-options">
+                                {supplierOptions.map((supplier) => (
+                                    <option key={supplier.code} value={supplier.name}>{supplier.code} - {supplier.name}</option>
+                                ))}
+                            </datalist>
+                            {supplierOptionsError && <p className="text-xs text-amber-300 mt-1">{supplierOptionsError}</p>}
+                        </div>
                         <div>
                             <label className="text-sm font-medium text-slate-400 block mb-1">Estado</label>
                             <select
