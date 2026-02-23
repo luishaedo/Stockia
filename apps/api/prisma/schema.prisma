@@ -16,6 +16,7 @@ model Factura {
   id          String        @id @default(uuid())
   nroFactura  String        @unique
   proveedor   String?
+  supplierSnapshot Json?
   createdBy   String?
   fecha       DateTime      @default(now())
   estado      FacturaEstado @default(DRAFT)
@@ -42,6 +43,8 @@ model FacturaItem {
   tipoPrenda     String
   codigoArticulo String
   curvaTalles    String[] // Stored as array of strings
+  garmentTypeSnapshot Json?
+  sizeCurveSnapshot   Json?
   
   colores        FacturaItemColor[]
 

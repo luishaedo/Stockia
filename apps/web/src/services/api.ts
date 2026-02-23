@@ -2,6 +2,7 @@ import {
     AdminInvoiceListResponse,
     AdminInvoicesQuery,
     ApiErrorResponse,
+    OperationCatalogsResponse,
     CreateFacturaDTO,
     ErrorCodes,
     Factura,
@@ -20,6 +21,7 @@ if (isProduction && !envApiUrl) {
 
 const ACCESS_TOKEN_KEY = 'stockia.accessToken';
 const CATALOG_CACHE_TTL_MS = 60_000;
+const OPERATIONS_CATALOG_TTL_MS = 300_000;
 
 export type AdminCatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
 
@@ -98,6 +100,7 @@ export const authTokenStore = {
 class ApiService {
     private baseURL = apiURL;
     private catalogCache = new Map<AdminCatalogKey, { expiresAt: number; data: unknown }>();
+    private operationsCatalogCache: { expiresAt: number; data: OperationCatalogsResponse } | null = null;
 
     private getAccessTokenOrThrow() {
         const accessToken = getStoredAccessToken();
@@ -202,6 +205,27 @@ class ApiService {
         });
         await this.assertOk(response, 'No pudimos finalizar la factura');
         return response.json();
+    }
+
+
+    async getOperationsCatalogs(forceRefresh = false): Promise<OperationCatalogsResponse> {
+        const now = Date.now();
+        if (!forceRefresh && this.operationsCatalogCache && this.operationsCatalogCache.expiresAt > now) {
+            return this.operationsCatalogCache.data;
+        }
+
+        const response = await fetch(`${this.baseURL}/operations/catalogs`, {
+            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
+        });
+        await this.assertOk(response, 'No pudimos cargar los catálogos operativos');
+
+        const data = await response.json() as OperationCatalogsResponse;
+        this.operationsCatalogCache = {
+            data,
+            expiresAt: now + OPERATIONS_CATALOG_TTL_MS
+        };
+
+        return data;
     }
 
     async getAdminInvoices(filters: Partial<AdminInvoicesQuery> = {}): Promise<AdminInvoiceListResponse> {

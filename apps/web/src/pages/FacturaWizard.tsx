@@ -12,9 +12,9 @@ const getEstadoLabel = (estado: string) => (estado === 'FINAL' ? 'Final' : 'Borr
 
 type WizardStep = 'ARTICLE' | 'COLOR';
 
-type SupplierOption = { value: string; label: string };
-type GarmentTypeOption = { value: string; label: string };
-type SizeCurveOption = { value: string; label: string };
+type SupplierOption = { value: string; label: string; id: string };
+type GarmentTypeOption = { value: string; label: string; id: string };
+type SizeCurveOption = { value: string; label: string; id: string; values: string[] };
 
 export function FacturaWizard() {
     const { id } = useParams<{ id: string }>();
@@ -51,28 +51,32 @@ export function FacturaWizard() {
             setCatalogsLoading(true);
             setCatalogsError(null);
             try {
-                const [suppliers, garmentTypes, sizeCurves] = await Promise.all([
-                    api.getAdminCatalogCached<Array<{ code: string; name: string }>>('suppliers'),
-                    api.getAdminCatalogCached<Array<{ code: string; description: string }>>('garment-types'),
-                    api.getAdminCatalogCached<Array<{ code: string; description: string; values?: Array<{ value: string }> }>>('size-curves')
-                ]);
+                const operationsCatalogs = await api.getOperationsCatalogs();
 
-                setSupplierOptions(suppliers.map((entry) => ({
-                    value: entry.name,
-                    label: `${entry.code} - ${entry.name}`
+                setSupplierOptions(operationsCatalogs.suppliers.map((entry) => ({
+                    id: entry.id,
+                    value: entry.label,
+                    label: entry.label
                 })));
 
-                setGarmentTypeOptions(garmentTypes.map((entry) => ({
-                    value: entry.description,
-                    label: `${entry.code} - ${entry.description}`
+                setGarmentTypeOptions(operationsCatalogs.families.map((entry) => ({
+                    id: entry.id,
+                    value: entry.label,
+                    label: entry.label
                 })));
 
-                setSizeCurveOptions(sizeCurves.map((entry) => {
-                    const curveValues = (entry.values ?? []).map((size) => size.value).join(',');
-                    const value = curveValues || entry.description;
-                    const label = `${entry.code} - ${entry.description}${curveValues ? ` (${curveValues})` : ''}`;
+                setSizeCurveOptions(operationsCatalogs.curves.map((entry) => {
+                    const match = entry.label.match(/\((.*?)\)\s*$/);
+                    const values = match?.[1]
+                        ? match[1].split(',').map((size) => size.trim()).filter(Boolean)
+                        : entry.label.split(',').map((size) => size.trim()).filter(Boolean);
 
-                    return { value, label };
+                    return {
+                        id: entry.id,
+                        value: values.join(','),
+                        values,
+                        label: entry.label
+                    };
                 }));
             } catch (error) {
                 const message = error instanceof ApiError
@@ -97,13 +101,28 @@ export function FacturaWizard() {
     const handleFinishItem = () => {
         if (isFinal || !state.currentFactura) return;
 
-        const curva = draftItem.curvaTalles.split(',').map(s => s.trim()).filter(Boolean);
+        const selectedGarmentType = garmentTypeOptions.find(option => option.value === draftItem.tipoPrenda);
+        const selectedCurve = sizeCurveOptions.find(option => option.value === draftItem.curvaTalles);
+        const curva = selectedCurve?.values?.length
+            ? selectedCurve.values
+            : draftItem.curvaTalles.split(',').map(s => s.trim()).filter(Boolean);
 
         const newItem: FacturaItem = {
             marca: draftItem.marca,
             tipoPrenda: draftItem.tipoPrenda,
             codigoArticulo: draftItem.codigoArticulo,
             curvaTalles: curva,
+            garmentTypeSnapshot: selectedGarmentType ? {
+                id: selectedGarmentType.id,
+                code: selectedGarmentType.id,
+                label: selectedGarmentType.label
+            } : undefined,
+            sizeCurveSnapshot: selectedCurve ? {
+                id: selectedCurve.id,
+                code: selectedCurve.id,
+                label: selectedCurve.label,
+                values: curva
+            } : undefined,
             colores: draftColors
         };
 

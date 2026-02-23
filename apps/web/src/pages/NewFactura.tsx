@@ -14,7 +14,7 @@ export function NewFactura() {
     const [nroFactura, setNroFactura] = useState('');
     const [proveedor, setProveedor] = useState('');
     const [error, setError] = useState('');
-    const [suppliers, setSuppliers] = useState<Array<{ code: string; name: string }>>([]);
+    const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string }>>([]);
     const [suppliersError, setSuppliersError] = useState<string | null>(null);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
@@ -24,8 +24,8 @@ export function NewFactura() {
             setSuppliersError(null);
 
             try {
-                const response = await api.getAdminCatalogCached<Array<{ code: string; name: string }>>('suppliers', true);
-                setSuppliers(response);
+                const response = await api.getOperationsCatalogs(true);
+                setSuppliers(response.suppliers);
             } catch (err) {
                 const message = err instanceof ApiError
                     ? err.message
@@ -81,7 +81,7 @@ export function NewFactura() {
                     />
                     <datalist id="supplier-options">
                         {suppliers.map((supplier) => (
-                            <option key={supplier.code} value={supplier.name}>{supplier.code} - {supplier.name}</option>
+                            <option key={supplier.id} value={supplier.label}>{supplier.label}</option>
                         ))}
                     </datalist>
 

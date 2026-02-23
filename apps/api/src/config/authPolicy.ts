@@ -18,7 +18,8 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'POST /admin/catalogs/:catalog': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'PUT /admin/catalogs/:catalog/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'DELETE /admin/catalogs/:catalog/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
-    'POST /admin/uploads/logo': { requiresAdminToken: true, requiredHeader: 'authorization' }
+    'POST /admin/uploads/logo': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /operations/catalogs': { requiresAdminToken: true, requiredHeader: 'authorization' }
 };
 
 export const assertAuthPolicyCoverage = () => {

@@ -51,12 +51,19 @@ export class FacturaRepository {
         return this.prisma.sizeCurve.findMany({ include: { values: { orderBy: { sortOrder: 'asc' } } } });
     }
 
-    createDraft(data: { nroFactura: string; proveedor?: string; createdBy?: string; items: FacturaItem[] }) {
+    createDraft(data: {
+        nroFactura: string;
+        proveedor?: string;
+        supplierSnapshot?: { id: string; code: string; label: string };
+        createdBy?: string;
+        items: FacturaItem[]
+    }) {
         return this.prisma.factura.create({
             data: {
                 nroFactura: data.nroFactura,
                 proveedor: data.proveedor,
                 createdBy: data.createdBy,
+                supplierSnapshot: data.supplierSnapshot as Prisma.InputJsonValue | undefined,
                 estado: FacturaEstado.DRAFT,
                 items: {
                     create: data.items.map(item => ({
@@ -64,6 +71,8 @@ export class FacturaRepository {
                         tipoPrenda: item.tipoPrenda,
                         codigoArticulo: item.codigoArticulo,
                         curvaTalles: item.curvaTalles,
+                        garmentTypeSnapshot: item.garmentTypeSnapshot as Prisma.InputJsonValue | undefined,
+                        sizeCurveSnapshot: item.sizeCurveSnapshot as Prisma.InputJsonValue | undefined,
                         colores: {
                             create: item.colores.map(color => ({
                                 codigoColor: color.codigoColor,
@@ -99,6 +108,8 @@ export class FacturaRepository {
                         tipoPrenda: nextItem.tipoPrenda,
                         codigoArticulo: nextItem.codigoArticulo,
                         curvaTalles: nextItem.curvaTalles,
+                        garmentTypeSnapshot: nextItem.garmentTypeSnapshot as Prisma.InputJsonValue | undefined,
+                        sizeCurveSnapshot: nextItem.sizeCurveSnapshot as Prisma.InputJsonValue | undefined,
                         colores: {
                             create: nextItem.colores.map(color => ({
                                 codigoColor: color.codigoColor,
@@ -113,7 +124,14 @@ export class FacturaRepository {
 
             preservedItemIds.add(existingItem.id);
 
-            await tx.facturaItem.update({ where: { id: existingItem.id }, data: { curvaTalles: nextItem.curvaTalles } });
+            await tx.facturaItem.update({
+                where: { id: existingItem.id },
+                data: {
+                    curvaTalles: nextItem.curvaTalles,
+                    garmentTypeSnapshot: nextItem.garmentTypeSnapshot as Prisma.InputJsonValue | undefined,
+                    sizeCurveSnapshot: nextItem.sizeCurveSnapshot as Prisma.InputJsonValue | undefined
+                }
+            });
 
             const existingColorByCode = new Map(existingItem.colores.map(color => [color.codigoColor, color]));
             const preservedColorIds = new Set<string>();

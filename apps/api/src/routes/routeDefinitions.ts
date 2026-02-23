@@ -10,7 +10,8 @@ export type RouteDefinition = {
         | '/facturas/:id/finalize'
         | '/admin/catalogs/:catalog'
         | '/admin/catalogs/:catalog/:id'
-        | '/admin/uploads/logo';
+        | '/admin/uploads/logo'
+        | '/operations/catalogs';
     requiresAdminToken: boolean;
 };
 
@@ -27,7 +28,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     { method: 'POST', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
     { method: 'PUT', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
-    { method: 'POST', path: '/admin/uploads/logo', requiresAdminToken: true }
+    { method: 'POST', path: '/admin/uploads/logo', requiresAdminToken: true },
+    { method: 'GET', path: '/operations/catalogs', requiresAdminToken: true }
 ];
 
 export const toRouteKey = (method: RouteDefinition['method'], path: RouteDefinition['path']) => `${method} ${path}`;
