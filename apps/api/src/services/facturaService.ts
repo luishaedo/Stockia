@@ -62,13 +62,19 @@ export class FacturaService {
                 supplier: invoice.proveedor,
                 status: invoice.estado,
                 createdAt: invoice.createdAt,
-                createdBy: invoice.createdBy
+                createdBy: invoice.createdByUser
                     ? {
-                        id: invoice.createdBy,
-                        name: invoice.createdBy,
-                        email: null
+                        id: invoice.createdByUser.id,
+                        name: invoice.createdByUser.name,
+                        email: invoice.createdByUser.email
                     }
-                    : null
+                    : invoice.createdBy
+                        ? {
+                            id: invoice.createdBy,
+                            name: invoice.createdBy,
+                            email: null
+                        }
+                        : null
             })),
             pagination: {
                 page: filters.page,
@@ -95,7 +101,8 @@ export class FacturaService {
             );
         }
 
-        const supplier = await this.repository.findSupplierBySelection(proveedor);
+        const supplierId = proveedor.trim();
+        const supplier = await this.repository.findSupplierById(supplierId);
         if (!supplier) {
             throw new DomainError(
                 ErrorCodes.VALIDATION_FAILED,
@@ -172,13 +179,18 @@ export class FacturaService {
         }
 
         const catalogSelections = await this.validateCatalogSelections(body.proveedor, processedItems);
+        const normalizedCreatedBy = createdBy?.trim();
+        const createdByUser = normalizedCreatedBy
+            ? await this.repository.upsertInvoiceUserByExternalId(normalizedCreatedBy)
+            : null;
 
         try {
             return await this.repository.createDraft({
                 nroFactura: body.nroFactura,
                 proveedor: catalogSelections.normalizedSupplier,
                 supplierSnapshot: catalogSelections.supplierSnapshot,
-                createdBy,
+                createdBy: normalizedCreatedBy,
+                createdByUserId: createdByUser?.id,
                 items: catalogSelections.normalizedItems
             });
         } catch (error: any) {

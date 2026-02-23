@@ -18,6 +18,8 @@ model Factura {
   proveedor   String?
   supplierSnapshot Json?
   createdBy   String?
+  createdByUserId String?
+  createdByUser InvoiceUser? @relation(fields: [createdByUserId], references: [id])
   fecha       DateTime      @default(now())
   estado      FacturaEstado @default(DRAFT)
   createdAt   DateTime      @default(now())
@@ -31,7 +33,21 @@ model Factura {
   @@index([nroFactura])
   @@index([proveedor])
   @@index([createdBy])
+  @@index([createdByUserId])
   @@index([estado, fecha])
+}
+
+model InvoiceUser {
+  id         String    @id @default(uuid())
+  externalId String    @unique
+  name       String
+  email      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  invoices   Factura[]
+
+  @@index([externalId])
+  @@index([name])
 }
 
 model FacturaItem {
