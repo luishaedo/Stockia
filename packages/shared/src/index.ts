@@ -21,6 +21,17 @@ export const FacturaItemSchema = z.object({
     tipoPrenda: z.string().min(1),
     codigoArticulo: z.string().min(1),
     curvaTalles: z.array(z.string().min(1)).min(1),
+    garmentTypeSnapshot: z.object({
+        id: z.string().min(1),
+        code: z.string().min(1),
+        label: z.string().min(1)
+    }).optional(),
+    sizeCurveSnapshot: z.object({
+        id: z.string().min(1),
+        code: z.string().min(1),
+        label: z.string().min(1),
+        values: z.array(z.string().min(1)).min(1)
+    }).optional(),
     colores: z.array(VarianteColorSchema)
 }).refine(
     (item) => {
@@ -42,6 +53,11 @@ export const FacturaItemSchema = z.object({
 export const CreateFacturaSchema = z.object({
     nroFactura: z.string().min(1),
     proveedor: z.string().optional(),
+    supplierSnapshot: z.object({
+        id: z.string().min(1),
+        code: z.string().min(1),
+        label: z.string().min(1)
+    }).optional(),
     items: z.array(FacturaItemSchema).optional().refine(
         (items) => {
             if (!items) return true;
@@ -71,6 +87,19 @@ export const FinalizeFacturaSchema = z.object({
     expectedUpdatedAt: z.string().datetime()
 });
 
+
+
+export const OperationCatalogEntrySchema = z.object({
+    id: z.string().min(1),
+    label: z.string().min(1)
+});
+
+export const OperationCatalogsResponseSchema = z.object({
+    families: z.array(OperationCatalogEntrySchema),
+    suppliers: z.array(OperationCatalogEntrySchema),
+    colors: z.array(OperationCatalogEntrySchema),
+    curves: z.array(OperationCatalogEntrySchema)
+});
 
 export const AdminInvoicesQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
@@ -133,11 +162,18 @@ export type FacturaListQuery = z.infer<typeof FacturaListQuerySchema>;
 export type AdminInvoicesQuery = z.infer<typeof AdminInvoicesQuerySchema>;
 export type AdminInvoice = z.infer<typeof AdminInvoiceSchema>;
 export type AdminInvoiceListResponse = z.infer<typeof AdminInvoiceListResponseSchema>;
+export type OperationCatalogEntry = z.infer<typeof OperationCatalogEntrySchema>;
+export type OperationCatalogsResponse = z.infer<typeof OperationCatalogsResponseSchema>;
 
 export interface Factura {
     id: string;
     nroFactura: string;
     proveedor?: string | null;
+    supplierSnapshot?: {
+        id: string;
+        code: string;
+        label: string;
+    } | null;
     createdBy?: string | null;
     fecha: Date | string;
     estado: FacturaEstado;

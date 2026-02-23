@@ -27,6 +27,16 @@ const hasExactValues = (left: string[], right: string[]) => {
     return left.every((value, index) => value === right[index]);
 };
 
+type CatalogValidationResult = {
+    normalizedSupplier: string;
+    supplierSnapshot: {
+        id: string;
+        code: string;
+        label: string;
+    };
+    normalizedItems: FacturaItem[];
+};
+
 export class FacturaService {
     constructor(private readonly repository: FacturaRepository) {}
 
@@ -76,7 +86,7 @@ export class FacturaService {
         return factura;
     }
 
-    private async validateCatalogSelections(proveedor: string | undefined, items: FacturaItem[]) {
+    private async validateCatalogSelections(proveedor: string | undefined, items: FacturaItem[]): Promise<CatalogValidationResult> {
         if (!proveedor || !proveedor.trim()) {
             throw new DomainError(
                 ErrorCodes.VALIDATION_FAILED,
@@ -94,7 +104,19 @@ export class FacturaService {
             );
         }
 
-        if (items.length === 0) return items;
+        const supplierSnapshot = {
+            id: supplier.id,
+            code: supplier.code,
+            label: supplier.name
+        };
+
+        if (items.length === 0) {
+            return {
+                normalizedSupplier: supplier.name,
+                supplierSnapshot,
+                normalizedItems: items
+            };
+        }
 
         const curves = await this.repository.findAllSizeCurves();
         if (curves.length === 0) {
@@ -105,23 +127,38 @@ export class FacturaService {
             );
         }
 
-        for (const item of items) {
+        const normalizedItems = items.map(item => {
             const inputCurveValues = normalizedValues(item.curvaTalles);
-            const hasMatchingCurve = curves.some(curve => {
+            const matchingCurve = curves.find(curve => {
                 const catalogValues = curve.values.map(value => value.value);
                 return hasExactValues(catalogValues, inputCurveValues);
             });
 
-            if (!hasMatchingCurve) {
+            if (!matchingCurve) {
                 throw new DomainError(
                     ErrorCodes.VALIDATION_FAILED,
                     `Invalid size curve for item ${item.codigoArticulo}. Select an existing size table.`,
                     422
                 );
             }
-        }
 
-        return items;
+            return {
+                ...item,
+                curvaTalles: inputCurveValues,
+                sizeCurveSnapshot: {
+                    id: matchingCurve.id,
+                    code: matchingCurve.code,
+                    label: matchingCurve.description,
+                    values: inputCurveValues
+                }
+            };
+        });
+
+        return {
+            normalizedSupplier: supplier.name,
+            supplierSnapshot,
+            normalizedItems
+        };
     }
 
     async createFacturaDraft(body: CreateFacturaDTO, createdBy?: string) {
@@ -134,14 +171,15 @@ export class FacturaService {
             }
         }
 
-        await this.validateCatalogSelections(body.proveedor, processedItems);
+        const catalogSelections = await this.validateCatalogSelections(body.proveedor, processedItems);
 
         try {
             return await this.repository.createDraft({
                 nroFactura: body.nroFactura,
-                proveedor: body.proveedor,
+                proveedor: catalogSelections.normalizedSupplier,
+                supplierSnapshot: catalogSelections.supplierSnapshot,
                 createdBy,
-                items: processedItems
+                items: catalogSelections.normalizedItems
             });
         } catch (error: any) {
             if (error.code === 'P2002') {
@@ -183,12 +221,18 @@ export class FacturaService {
                 );
             }
 
-            await this.validateCatalogSelections(body.proveedor ?? currentFactura.proveedor ?? undefined, processedItems);
+            const catalogSelections = await this.validateCatalogSelections(body.proveedor ?? currentFactura.proveedor ?? undefined, processedItems);
 
-            await tx.factura.update({ where: { id }, data: { proveedor: body.proveedor } });
+            await tx.factura.update({
+                where: { id },
+                data: {
+                    proveedor: catalogSelections.normalizedSupplier,
+                    supplierSnapshot: catalogSelections.supplierSnapshot as Prisma.InputJsonValue
+                }
+            });
 
             if (body.items) {
-                await this.repository.syncDraftItems(tx, id, processedItems);
+                await this.repository.syncDraftItems(tx, id, catalogSelections.normalizedItems);
             }
 
             return tx.factura.findUnique({ where: { id }, include: { items: { include: { colores: true } } } });
