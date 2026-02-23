@@ -54,6 +54,49 @@ cp apps/web/.env.example apps/web/.env
 npm run prisma:generate -w api
 ```
 
+## Architecture policy
+
+- PostgreSQL is the only supported database engine across local, dev, stage, and production environments.
+- `DATABASE_URL` must always target a PostgreSQL instance.
+- SQLite assumptions are deprecated and must not be introduced in schema definitions, env templates, scripts, or docs.
+
+See the architecture decision record: `docs/adr/0001-postgresql-source-of-truth.md`.
+
+## Official local database bootstrap (single path)
+
+The official local bootstrap uses Dockerized PostgreSQL.
+
+1. Start PostgreSQL in Docker:
+
+```bash
+docker run --name stockia-postgres \
+  -e POSTGRES_USER=stockia \
+  -e POSTGRES_PASSWORD=stockia \
+  -e POSTGRES_DB=stockia \
+  -p 5432:5432 \
+  -d postgres:16
+```
+
+2. Configure API environment (`apps/api/.env`):
+
+```env
+DATABASE_URL="postgresql://stockia:stockia@localhost:5432/stockia?schema=public"
+```
+
+3. Generate Prisma client and sync schema:
+
+```bash
+npm run prisma:generate -w api
+npm run prisma:push -w api
+```
+
+4. Start backend and frontend:
+
+```bash
+npm run dev -w api
+npm run dev -w web
+```
+
 
 ## Production readiness
 
@@ -229,4 +272,3 @@ This repo now includes root `vercel.json` with those defaults and SPA rewrites f
 - `CORS_ALLOWED_ORIGINS` exactly matches the Vercel origin.
 - `VITE_API_URL` points to the Render API HTTPS URL.
 - No secrets are committed; all credentials are set in platform environment variables.
-

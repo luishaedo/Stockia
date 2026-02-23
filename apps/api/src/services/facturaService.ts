@@ -1,5 +1,7 @@
 import { Prisma } from '@prisma/client';
 import {
+    AdminInvoiceListResponse,
+    AdminInvoicesQuery,
     CreateFacturaDTO,
     ErrorCodes,
     Factura,
@@ -41,7 +43,7 @@ export class FacturaService {
         };
     }
 
-    async listAdminInvoices(filters: { page: number; pageSize: number; from?: string; to?: string; userId?: string }) {
+    async listAdminInvoices(filters: AdminInvoicesQuery): Promise<AdminInvoiceListResponse> {
         const [total, invoices] = await this.repository.listAdminInvoices(filters);
         return {
             items: invoices.map(invoice => ({
