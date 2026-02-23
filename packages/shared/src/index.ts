@@ -12,14 +12,8 @@ export type DuplicateHandler = 'SUM' | 'REPLACE' | 'ERROR';
 export const VarianteColorSchema = z.object({
     codigoColor: z.string().min(1),
     nombreColor: z.string().min(1),
-    // Explicitly define key as string and value as number
-    cantidadesPorTalle: z.record(z.string(), z.number().min(0)).refine(
-        (data) => {
-            const values = Object.values(data);
-            return values.some((qty) => qty > 0);
-        },
-        { message: "At least one size quantity must be > 0" }
-    )
+    // Allow partial size quantities. Missing sizes in the curve are treated as 0.
+    cantidadesPorTalle: z.record(z.string(), z.number().min(0))
 });
 
 export const FacturaItemSchema = z.object({

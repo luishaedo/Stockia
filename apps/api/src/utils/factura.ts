@@ -63,6 +63,8 @@ export const validateFacturaIntegrity = (factura: any): string | null => {
         return 'Invoice must have at least one item';
     }
 
+    let hasAnyPositiveQuantity = false;
+
     for (const item of factura.items) {
         if (!item.colores || item.colores.length === 0) {
             return `Item ${item.codigoArticulo} must have at least one color`;
@@ -71,9 +73,7 @@ export const validateFacturaIntegrity = (factura: any): string | null => {
         for (const color of item.colores) {
             const quantities = color.cantidadesPorTalle as Record<string, number>;
             const hasPositive = Object.values(quantities).some(q => q > 0);
-            if (!hasPositive) {
-                return `Color ${color.codigoColor} in item ${item.codigoArticulo} must have at least one quantity > 0`;
-            }
+            hasAnyPositiveQuantity = hasAnyPositiveQuantity || hasPositive;
 
             const sizes = Object.keys(quantities);
             for (const size of sizes) {
@@ -82,6 +82,10 @@ export const validateFacturaIntegrity = (factura: any): string | null => {
                 }
             }
         }
+    }
+
+    if (!hasAnyPositiveQuantity) {
+        return 'Invoice must have at least one quantity > 0';
     }
 
     return null;

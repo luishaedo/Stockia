@@ -88,10 +88,21 @@ export class FacturaController {
 
     private handleError(error: unknown, req: Request, res: Response) {
         if (error instanceof DomainError) {
+            logger.warn(
+                {
+                    traceId: req.traceId,
+                    code: error.code,
+                    status: error.status,
+                    details: error.details,
+                    path: req.path,
+                    method: req.method
+                },
+                'Domain validation error in factura flow'
+            );
             return sendError(res, error.status, error.code, error.message, error.details, req.traceId);
         }
 
-        logger.error({ err: error, traceId: req.traceId }, 'Unhandled controller error');
+        logger.error({ err: error, traceId: req.traceId, path: req.path, method: req.method }, 'Unhandled controller error');
         return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Internal Server Error', undefined, req.traceId);
     }
 }

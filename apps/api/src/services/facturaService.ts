@@ -120,7 +120,17 @@ export class FacturaService {
 
         const integrityError = validateFacturaIntegrity(factura);
         if (integrityError) {
-            throw new DomainError(ErrorCodes.INVOICE_FINALIZE_INVALID, integrityError, 422);
+            throw new DomainError(
+                ErrorCodes.INVOICE_FINALIZE_INVALID,
+                'Invoice integrity validation failed before finalization',
+                422,
+                {
+                    reason: integrityError,
+                    invoiceId: id,
+                    state: factura.estado,
+                    itemCount: factura.items?.length || 0
+                }
+            );
         }
 
         const finalized = await this.repository.updateToFinal(id, expectedUpdatedAt);

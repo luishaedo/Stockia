@@ -14,13 +14,15 @@ export class ApiError extends Error {
     code: string;
     status: number;
     details?: unknown;
+    traceId?: string;
 
-    constructor(message: string, code: string, status: number, details?: unknown) {
+    constructor(message: string, code: string, status: number, details?: unknown, traceId?: string) {
         super(message);
         this.name = 'ApiError';
         this.code = code;
         this.status = status;
         this.details = details;
+        this.traceId = traceId;
     }
 }
 
@@ -43,7 +45,8 @@ const parseErrorPayload = async (response: Response, fallback: string): Promise<
             payload.error.message,
             payload.error.code || ErrorCodes.BAD_REQUEST,
             response.status,
-            payload.error.details
+            payload.error.details,
+            payload.error.traceId
         );
     }
 
@@ -100,6 +103,16 @@ class ApiService {
         if (response.ok) return;
 
         const parsed = await parseErrorPayload(response, fallback);
+
+        console.error('API request failed', {
+            url: response.url,
+            status: response.status,
+            code: parsed.code,
+            message: parsed.message,
+            details: parsed.details,
+            traceId: parsed.traceId
+        });
+
         if (parsed.code === ErrorCodes.AUTH_TOKEN_INVALID || parsed.code === ErrorCodes.AUTH_TOKEN_MISSING) {
             authTokenStore.clear();
         }
