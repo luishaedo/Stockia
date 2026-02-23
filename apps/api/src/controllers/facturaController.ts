@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import {
     CreateFacturaSchema,
     ErrorCodes,
@@ -10,6 +11,14 @@ import {
 import { logger } from '../lib/logger.js';
 import { sendError } from '../middlewares/error.js';
 import { DomainError, FacturaService } from '../services/facturaService.js';
+
+const AdminInvoicesQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    userId: z.string().min(1).optional()
+});
 
 export class FacturaController {
     constructor(private readonly service: FacturaService) {}
@@ -28,6 +37,20 @@ export class FacturaController {
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId }, 'Error listing facturas');
             sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Internal Server Error', undefined, req.traceId);
+        }
+    };
+
+    listAdminInvoices = async (req: Request, res: Response) => {
+        try {
+            const validation = AdminInvoicesQuerySchema.safeParse(req.query);
+            if (!validation.success) {
+                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
+            }
+
+            const response = await this.service.listAdminInvoices(validation.data);
+            res.json(response);
+        } catch (error) {
+            this.handleError(error, req, res);
         }
     };
 
@@ -51,7 +74,7 @@ export class FacturaController {
                 return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
             }
 
-            const factura = await this.service.createFacturaDraft(validation.data);
+            const factura = await this.service.createFacturaDraft(validation.data, req.authUser?.sub);
             res.status(201).json(factura);
         } catch (error) {
             this.handleError(error, req, res);

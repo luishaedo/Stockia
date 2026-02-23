@@ -18,6 +18,13 @@ export class DomainError extends Error {
     }
 }
 
+const normalizedValues = (values: string[]) => values.map(value => value.trim()).filter(Boolean);
+
+const hasExactValues = (left: string[], right: string[]) => {
+    if (left.length !== right.length) return false;
+    return left.every((value, index) => value === right[index]);
+};
+
 export class FacturaService {
     constructor(private readonly repository: FacturaRepository) {}
 
@@ -34,6 +41,31 @@ export class FacturaService {
         };
     }
 
+    async listAdminInvoices(filters: { page: number; pageSize: number; from?: string; to?: string; userId?: string }) {
+        const [total, invoices] = await this.repository.listAdminInvoices(filters);
+        return {
+            items: invoices.map(invoice => ({
+                id: invoice.id,
+                number: invoice.nroFactura,
+                supplier: invoice.proveedor,
+                status: invoice.estado,
+                createdAt: invoice.createdAt,
+                createdBy: invoice.createdBy
+                    ? {
+                        id: invoice.createdBy,
+                        name: invoice.createdBy,
+                        email: null
+                    }
+                    : null
+            })),
+            pagination: {
+                page: filters.page,
+                pageSize: filters.pageSize,
+                total
+            }
+        };
+    }
+
     async getFacturaById(id: string) {
         const factura = await this.repository.findById(id);
         if (!factura) {
@@ -42,7 +74,55 @@ export class FacturaService {
         return factura;
     }
 
-    async createFacturaDraft(body: CreateFacturaDTO) {
+    private async validateCatalogSelections(proveedor: string | undefined, items: FacturaItem[]) {
+        if (!proveedor || !proveedor.trim()) {
+            throw new DomainError(
+                ErrorCodes.VALIDATION_FAILED,
+                'Supplier is required. Select an existing supplier or create one first.',
+                422
+            );
+        }
+
+        const supplier = await this.repository.findSupplierBySelection(proveedor);
+        if (!supplier) {
+            throw new DomainError(
+                ErrorCodes.VALIDATION_FAILED,
+                'Invalid supplier. Select an existing supplier or create one first.',
+                422
+            );
+        }
+
+        if (items.length === 0) return items;
+
+        const curves = await this.repository.findAllSizeCurves();
+        if (curves.length === 0) {
+            throw new DomainError(
+                ErrorCodes.VALIDATION_FAILED,
+                'No size tables available. Create a size table first.',
+                422
+            );
+        }
+
+        for (const item of items) {
+            const inputCurveValues = normalizedValues(item.curvaTalles);
+            const hasMatchingCurve = curves.some(curve => {
+                const catalogValues = curve.values.map(value => value.value);
+                return hasExactValues(catalogValues, inputCurveValues);
+            });
+
+            if (!hasMatchingCurve) {
+                throw new DomainError(
+                    ErrorCodes.VALIDATION_FAILED,
+                    `Invalid size curve for item ${item.codigoArticulo}. Select an existing size table.`,
+                    422
+                );
+            }
+        }
+
+        return items;
+    }
+
+    async createFacturaDraft(body: CreateFacturaDTO, createdBy?: string) {
         let processedItems: FacturaItem[] = [];
         if (body.items) {
             try {
@@ -52,10 +132,13 @@ export class FacturaService {
             }
         }
 
+        await this.validateCatalogSelections(body.proveedor, processedItems);
+
         try {
             return await this.repository.createDraft({
                 nroFactura: body.nroFactura,
                 proveedor: body.proveedor,
+                createdBy,
                 items: processedItems
             });
         } catch (error: any) {
@@ -78,7 +161,7 @@ export class FacturaService {
             }
         }
 
-        return this.repository.runDraftTransaction(id, async (tx: Prisma.TransactionClient) => {
+        return this.repository.runDraftTransaction(async (tx: Prisma.TransactionClient) => {
             const currentFactura = await tx.factura.findUnique({ where: { id } });
             if (!currentFactura) {
                 throw new DomainError(ErrorCodes.NOT_FOUND, 'Factura not found', 404);
@@ -97,6 +180,8 @@ export class FacturaService {
                     409
                 );
             }
+
+            await this.validateCatalogSelections(body.proveedor ?? currentFactura.proveedor ?? undefined, processedItems);
 
             await tx.factura.update({ where: { id }, data: { proveedor: body.proveedor } });
 
