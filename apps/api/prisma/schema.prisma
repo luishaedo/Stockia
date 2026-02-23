@@ -16,6 +16,7 @@ model Factura {
   id          String        @id @default(uuid())
   nroFactura  String        @unique
   proveedor   String?
+  createdBy   String?
   fecha       DateTime      @default(now())
   estado      FacturaEstado @default(DRAFT)
   createdAt   DateTime      @default(now())
@@ -28,6 +29,7 @@ model Factura {
   @@index([fecha])
   @@index([nroFactura])
   @@index([proveedor])
+  @@index([createdBy])
   @@index([estado, fecha])
 }
 

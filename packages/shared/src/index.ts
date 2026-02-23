@@ -104,6 +104,7 @@ export interface Factura {
     id: string;
     nroFactura: string;
     proveedor?: string | null;
+    createdBy?: string | null;
     fecha: Date | string;
     estado: FacturaEstado;
     createdAt: Date | string;

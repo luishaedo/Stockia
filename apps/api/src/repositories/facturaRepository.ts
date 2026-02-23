@@ -35,11 +35,28 @@ export class FacturaRepository {
         });
     }
 
-    createDraft(data: { nroFactura: string; proveedor?: string; items: FacturaItem[] }) {
+    findSupplierBySelection(selection: string) {
+        return this.prisma.supplier.findFirst({
+            where: {
+                OR: [
+                    { id: selection },
+                    { code: { equals: selection, mode: 'insensitive' } },
+                    { name: { equals: selection, mode: 'insensitive' } }
+                ]
+            }
+        });
+    }
+
+    findAllSizeCurves() {
+        return this.prisma.sizeCurve.findMany({ include: { values: { orderBy: { sortOrder: 'asc' } } } });
+    }
+
+    createDraft(data: { nroFactura: string; proveedor?: string; createdBy?: string; items: FacturaItem[] }) {
         return this.prisma.factura.create({
             data: {
                 nroFactura: data.nroFactura,
                 proveedor: data.proveedor,
+                createdBy: data.createdBy,
                 estado: FacturaEstado.DRAFT,
                 items: {
                     create: data.items.map(item => ({
@@ -61,11 +78,7 @@ export class FacturaRepository {
         });
     }
 
-    updateProveedor(id: string, proveedor?: string) {
-        return this.prisma.factura.update({ where: { id }, data: { proveedor } });
-    }
-
-    async runDraftTransaction<T>(id: string, callback: (tx: Prisma.TransactionClient) => Promise<T>) {
+    async runDraftTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) {
         return this.prisma.$transaction(async tx => callback(tx));
     }
 
@@ -137,6 +150,38 @@ export class FacturaRepository {
         await tx.facturaItem.deleteMany({
             where: { facturaId, id: { notIn: Array.from(preservedItemIds) } }
         });
+    }
+
+    listAdminInvoices(filters: { page: number; pageSize: number; from?: string; to?: string; userId?: string }) {
+        const where: Prisma.FacturaWhereInput = {};
+
+        if (filters.from || filters.to) {
+            where.createdAt = {};
+            if (filters.from) where.createdAt.gte = new Date(filters.from);
+            if (filters.to) where.createdAt.lte = new Date(filters.to);
+        }
+
+        if (filters.userId) {
+            where.createdBy = { equals: filters.userId, mode: 'insensitive' };
+        }
+
+        return Promise.all([
+            this.prisma.factura.count({ where }),
+            this.prisma.factura.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (filters.page - 1) * filters.pageSize,
+                take: filters.pageSize,
+                select: {
+                    id: true,
+                    nroFactura: true,
+                    proveedor: true,
+                    estado: true,
+                    createdAt: true,
+                    createdBy: true
+                }
+            })
+        ]);
     }
 
     async updateToFinal(id: string, expectedUpdatedAt: string) {
