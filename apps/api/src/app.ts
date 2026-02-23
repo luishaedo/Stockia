@@ -12,6 +12,7 @@ import {
     writeRateLimitMiddleware
 } from './middlewares/security.js';
 import { createFacturaRoutes } from './routes/facturaRoutes.js';
+import { createAdminCatalogRoutes } from './routes/adminCatalogRoutes.js';
 import { FacturaRepository } from './repositories/facturaRepository.js';
 import { FacturaService } from './services/facturaService.js';
 import { FacturaController } from './controllers/facturaController.js';
@@ -53,6 +54,7 @@ export const createApp = (prisma: PrismaClient) => {
     const controller = new FacturaController(service);
 
     app.use(createFacturaRoutes(controller, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use(createAdminCatalogRoutes(prisma, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
 
     return app;
 };

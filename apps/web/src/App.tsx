@@ -8,6 +8,7 @@ import { FacturaWizard } from './pages/FacturaWizard';
 import { FacturaSummary } from './pages/FacturaSummary';
 import { FacturasListPage } from './pages/FacturasListPage';
 import { LoginPage } from './pages/LoginPage';
+import { AdminCatalogPage } from './pages/AdminCatalogPage';
 import './index.css';
 
 function App() {
@@ -31,6 +32,14 @@ function App() {
                                 element={(
                                     <ProtectedRoute>
                                         <FacturasListPage />
+                                    </ProtectedRoute>
+                                )}
+                            />
+                            <Route
+                                path="/admin"
+                                element={(
+                                    <ProtectedRoute>
+                                        <AdminCatalogPage />
                                     </ProtectedRoute>
                                 )}
                             />
