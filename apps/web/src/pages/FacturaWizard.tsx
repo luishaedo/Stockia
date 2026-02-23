@@ -109,8 +109,10 @@ export function FacturaWizard() {
 
         const newItem: FacturaItem = {
             marca: draftItem.marca,
+            supplierLabel: draftItem.marca,
             tipoPrenda: draftItem.tipoPrenda,
             codigoArticulo: draftItem.codigoArticulo,
+            sizeCurveId: selectedCurve?.id,
             curvaTalles: curva,
             garmentTypeSnapshot: selectedGarmentType ? {
                 id: selectedGarmentType.id,

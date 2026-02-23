@@ -8,6 +8,7 @@ export type RouteAuthRule = {
 export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /facturas': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /admin/invoices': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /admin/invoice-users': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /providers': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /size-tables': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /facturas/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },

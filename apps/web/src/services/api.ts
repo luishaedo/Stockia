@@ -1,4 +1,6 @@
 import {
+    AdminInvoiceUserQuery,
+    AdminInvoiceUsersResponse,
     AdminInvoiceListResponse,
     AdminInvoicesQuery,
     ApiErrorResponse,
@@ -240,6 +242,19 @@ class ApiService {
             headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
         });
         await this.assertOk(response, 'No pudimos cargar el panel de facturas admin');
+        return response.json();
+    }
+
+    async getAdminInvoiceUsers(filters: Partial<AdminInvoiceUserQuery> = {}): Promise<AdminInvoiceUsersResponse> {
+        const params = new URLSearchParams();
+        if (filters.page) params.append('page', filters.page.toString());
+        if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());
+        if (filters.search) params.append('search', filters.search);
+
+        const response = await fetch(`${this.baseURL}/admin/invoice-users?${params.toString()}`, {
+            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
+        });
+        await this.assertOk(response, 'No pudimos cargar usuarios de facturas admin');
         return response.json();
     }
 

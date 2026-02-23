@@ -55,6 +55,13 @@ export class FacturaRepository {
         return this.prisma.sizeCurve.findMany({ include: { values: { orderBy: { sortOrder: 'asc' } } } });
     }
 
+    findSizeCurveById(id: string) {
+        return this.prisma.sizeCurve.findUnique({
+            where: { id },
+            include: { values: { orderBy: { sortOrder: 'asc' } } }
+        });
+    }
+
     createDraft(data: {
         nroFactura: string;
         proveedor?: string;
@@ -211,6 +218,34 @@ export class FacturaRepository {
                             email: true
                         }
                     }
+                }
+            })
+        ]);
+    }
+
+    listAdminInvoiceUsers(filters: { page: number; pageSize: number; search?: string }) {
+        const where: Prisma.InvoiceUserWhereInput = {};
+
+        if (filters.search) {
+            where.OR = [
+                { name: { contains: filters.search, mode: 'insensitive' } },
+                { externalId: { contains: filters.search, mode: 'insensitive' } },
+                { email: { contains: filters.search, mode: 'insensitive' } }
+            ];
+        }
+
+        return Promise.all([
+            this.prisma.invoiceUser.count({ where }),
+            this.prisma.invoiceUser.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (filters.page - 1) * filters.pageSize,
+                take: filters.pageSize,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    externalId: true
                 }
             })
         ]);
