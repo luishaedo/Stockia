@@ -204,5 +204,22 @@ export const createAdminCatalogRoutes = (
         }
     });
 
+    router.delete('/admin/catalogs/:catalog/:id', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const { catalog, id } = req.params;
+        if (!isCatalogKey(catalog)) {
+            return sendError(res, 400, ErrorCodes.BAD_REQUEST, `Unknown catalog '${catalog}'`, undefined, req.traceId);
+        }
+
+        try {
+            const config = CATALOG_CONFIG[catalog];
+            const model = getModelDelegate(prisma, config.model);
+
+            await model.delete({ where: { id } });
+            return res.status(204).send();
+        } catch (error) {
+            return sendError(res, 400, ErrorCodes.BAD_REQUEST, 'Could not delete catalog item', error, req.traceId);
+        }
+    });
+
     return router;
 };

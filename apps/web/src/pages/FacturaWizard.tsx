@@ -6,10 +6,15 @@ import { ColorStep } from '../features/wizard/ColorStep';
 import { FacturaItem, VarianteColor, FacturaEstado } from '@stockia/shared';
 import { AlertTriangle, Loader2, Lock } from 'lucide-react';
 import { useAutosave } from '../hooks/useAutosave';
+import { ApiError, api } from '../services/api';
 
 const getEstadoLabel = (estado: string) => (estado === 'FINAL' ? 'Final' : 'Borrador');
 
 type WizardStep = 'ARTICLE' | 'COLOR';
+
+type SupplierOption = { value: string; label: string };
+type GarmentTypeOption = { value: string; label: string };
+type SizeCurveOption = { value: string; label: string };
 
 export function FacturaWizard() {
     const { id } = useParams<{ id: string }>();
@@ -27,6 +32,11 @@ export function FacturaWizard() {
     });
 
     const [draftColors, setDraftColors] = useState<VarianteColor[]>([]);
+    const [supplierOptions, setSupplierOptions] = useState<SupplierOption[]>([]);
+    const [garmentTypeOptions, setGarmentTypeOptions] = useState<GarmentTypeOption[]>([]);
+    const [sizeCurveOptions, setSizeCurveOptions] = useState<SizeCurveOption[]>([]);
+    const [catalogsLoading, setCatalogsLoading] = useState(false);
+    const [catalogsError, setCatalogsError] = useState<string | null>(null);
 
     const currentFacturaId = state.currentFactura?.id;
 
@@ -35,6 +45,47 @@ export function FacturaWizard() {
             loadFactura(id);
         }
     }, [id, currentFacturaId, loadFactura]);
+
+    useEffect(() => {
+        const loadCatalogOptions = async () => {
+            setCatalogsLoading(true);
+            setCatalogsError(null);
+            try {
+                const [suppliers, garmentTypes, sizeCurves] = await Promise.all([
+                    api.getAdminCatalogCached<Array<{ code: string; name: string }>>('suppliers'),
+                    api.getAdminCatalogCached<Array<{ code: string; description: string }>>('garment-types'),
+                    api.getAdminCatalogCached<Array<{ code: string; description: string; values?: Array<{ value: string }> }>>('size-curves')
+                ]);
+
+                setSupplierOptions(suppliers.map((entry) => ({
+                    value: entry.name,
+                    label: `${entry.code} - ${entry.name}`
+                })));
+
+                setGarmentTypeOptions(garmentTypes.map((entry) => ({
+                    value: entry.description,
+                    label: `${entry.code} - ${entry.description}`
+                })));
+
+                setSizeCurveOptions(sizeCurves.map((entry) => {
+                    const curveValues = (entry.values ?? []).map((size) => size.value).join(',');
+                    const value = curveValues || entry.description;
+                    const label = `${entry.code} - ${entry.description}${curveValues ? ` (${curveValues})` : ''}`;
+
+                    return { value, label };
+                }));
+            } catch (error) {
+                const message = error instanceof ApiError
+                    ? error.message
+                    : 'No pudimos cargar los catálogos para completar el artículo.';
+                setCatalogsError(message);
+            } finally {
+                setCatalogsLoading(false);
+            }
+        };
+
+        void loadCatalogOptions();
+    }, []);
 
     const isFinal = state.currentFactura?.estado === FacturaEstado.FINAL;
 
@@ -149,6 +200,11 @@ export function FacturaWizard() {
             {step === 'ARTICLE' && (
                 <ArticleStep
                     draftItem={draftItem}
+                    supplierOptions={supplierOptions}
+                    garmentTypeOptions={garmentTypeOptions}
+                    sizeCurveOptions={sizeCurveOptions}
+                    catalogsLoading={catalogsLoading}
+                    catalogsError={catalogsError}
                     onChange={handleArticleChange}
                     onNext={() => !isFinal && setStep('COLOR')}
                     readOnly={isFinal}
