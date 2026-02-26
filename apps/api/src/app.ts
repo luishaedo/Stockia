@@ -20,6 +20,7 @@ import { FacturaRepository } from './repositories/facturaRepository.js';
 import { FacturaService } from './services/facturaService.js';
 import { FacturaController } from './controllers/facturaController.js';
 import { sendError } from './middlewares/error.js';
+import { getPrometheusMetrics } from './lib/metrics.js';
 
 export const createApp = (prisma: PrismaClient) => {
     const app = express();
@@ -34,6 +35,11 @@ export const createApp = (prisma: PrismaClient) => {
 
     app.get('/health', (_req, res) => {
         res.status(200).json({ status: 'ok' });
+    });
+
+    app.get('/metrics', (_req, res) => {
+        res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+        res.status(200).send(getPrometheusMetrics());
     });
 
     app.post('/auth/login', loginRateLimitMiddleware, (req, res) => {
