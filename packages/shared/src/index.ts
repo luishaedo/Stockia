@@ -17,8 +17,8 @@ export const VarianteColorSchema = z.object({
 });
 
 export const FacturaItemSchema = z.object({
-    marca: z.string().min(1),
     supplierLabel: z.string().min(1).optional(),
+    marca: z.string().min(1).optional(),
     tipoPrenda: z.string().min(1),
     codigoArticulo: z.string().min(1),
     sizeCurveId: z.string().min(1).optional(),
@@ -36,6 +36,9 @@ export const FacturaItemSchema = z.object({
     }).optional(),
     colores: z.array(VarianteColorSchema)
 }).refine(
+    (item) => Boolean(item.supplierLabel?.trim()) || Boolean(item.marca?.trim()),
+    { message: 'supplierLabel or marca must be provided', path: ['supplierLabel'] }
+).refine(
     (item) => Boolean(item.sizeCurveId?.trim()) || item.curvaTalles.length > 0,
     { message: 'sizeCurveId or curvaTalles must be provided', path: ['sizeCurveId'] }
 ).refine(
@@ -71,7 +74,8 @@ export const CreateFacturaSchema = z.object({
             const seen = new Set<string>();
             for (const item of items) {
                 for (const color of item.colores) {
-                    const key = `${item.marca}|${item.tipoPrenda}|${item.codigoArticulo}|${color.codigoColor}`;
+                    const supplierLabel = item.supplierLabel?.trim() || item.marca?.trim() || '';
+                    const key = `${supplierLabel}|${item.tipoPrenda}|${item.codigoArticulo}|${color.codigoColor}`;
                     if (seen.has(key)) return false;
                     seen.add(key);
                 }

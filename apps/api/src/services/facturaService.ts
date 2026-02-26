@@ -36,6 +36,18 @@ const getSupplierIdFromSnapshot = (snapshot: Prisma.JsonValue | null): string | 
     return typeof id === 'string' && id.trim() ? id : undefined;
 };
 
+
+const normalizeItemSupplierLabel = <T extends { supplierLabel?: string | null; marca?: string | null }>(item: T) => ({
+    ...item,
+    supplierLabel: item.supplierLabel?.trim() || item.marca?.trim() || '',
+    marca: item.marca?.trim() || item.supplierLabel?.trim() || ''
+});
+
+const normalizeFacturaItems = <T extends { items?: Array<{ supplierLabel?: string | null; marca?: string | null }> | null }>(factura: T) => ({
+    ...factura,
+    items: (factura.items || []).map((item) => normalizeItemSupplierLabel(item))
+});
+
 type CatalogValidationResult = {
     normalizedSupplier: string;
     supplierSnapshot: {
@@ -54,7 +66,7 @@ export class FacturaService {
     async listFacturas(filters: FacturaFilters): Promise<FacturaListResponse> {
         const { total, facturas } = await this.repository.list(filters);
         return {
-            items: facturas as any as Factura[],
+            items: facturas.map((factura) => normalizeFacturaItems(factura)) as any as Factura[],
             pagination: {
                 page: filters.page || 1,
                 pageSize: filters.pageSize || 50,
@@ -114,7 +126,7 @@ export class FacturaService {
         if (!factura) {
             throw new DomainError(ErrorCodes.NOT_FOUND, 'Factura not found', 404);
         }
-        return factura;
+        return normalizeFacturaItems(factura);
     }
 
     private async validateCatalogSelections(payload: { supplierId?: string; proveedor?: string }, items: FacturaItem[]): Promise<CatalogValidationResult> {
@@ -258,7 +270,7 @@ export class FacturaService {
             : null;
 
         try {
-            return await this.repository.createDraft({
+            const draft = await this.repository.createDraft({
                 nroFactura: body.nroFactura,
                 proveedor: catalogSelections.normalizedSupplier,
                 supplierSnapshot: catalogSelections.supplierSnapshot,
@@ -266,6 +278,8 @@ export class FacturaService {
                 createdByUserId: createdByUser?.id,
                 items: catalogSelections.normalizedItems
             });
+
+            return normalizeFacturaItems(draft);
         } catch (error: any) {
             if (error.code === 'P2002') {
                 throw new DomainError(ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION, 'Unique Constraint Violation', 409);
@@ -333,7 +347,8 @@ export class FacturaService {
                 await this.repository.syncDraftItems(tx, id, catalogSelections.normalizedItems);
             }
 
-            return tx.factura.findUnique({ where: { id }, include: { items: { include: { colores: true } } } });
+            const updatedDraft = await tx.factura.findUnique({ where: { id }, include: { items: { include: { colores: true } } } });
+            return updatedDraft ? normalizeFacturaItems(updatedDraft) : updatedDraft;
         });
     }
 
@@ -367,6 +382,6 @@ export class FacturaService {
             throw new DomainError(ErrorCodes.OPTIMISTIC_LOCK_CONFLICT, 'Conflict: Data has changed since last retrieval', 409);
         }
 
-        return finalized;
+        return normalizeFacturaItems(finalized);
     }
 }

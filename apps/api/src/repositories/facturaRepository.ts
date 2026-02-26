@@ -5,6 +5,10 @@ import { getItemKey } from '../utils/factura.js';
 export class FacturaRepository {
     constructor(private readonly prisma: PrismaClient) {}
 
+    private getSupplierLabel(item: Pick<FacturaItem, 'supplierLabel' | 'marca'>): string {
+        return item.supplierLabel?.trim() || item.marca?.trim() || '';
+    }
+
     async list(filters: FacturaFilters) {
         const where: Prisma.FacturaWhereInput = {};
         if (filters.nroFactura) where.nroFactura = { contains: filters.nroFactura, mode: 'insensitive' };
@@ -80,7 +84,7 @@ export class FacturaRepository {
                 estado: FacturaEstado.DRAFT,
                 items: {
                     create: data.items.map(item => ({
-                        marca: item.marca,
+                        marca: this.getSupplierLabel(item),
                         tipoPrenda: item.tipoPrenda,
                         codigoArticulo: item.codigoArticulo,
                         curvaTalles: item.curvaTalles,
@@ -117,7 +121,7 @@ export class FacturaRepository {
                 await tx.facturaItem.create({
                     data: {
                         facturaId,
-                        marca: nextItem.marca,
+                        marca: this.getSupplierLabel(nextItem),
                         tipoPrenda: nextItem.tipoPrenda,
                         codigoArticulo: nextItem.codigoArticulo,
                         curvaTalles: nextItem.curvaTalles,

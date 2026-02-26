@@ -25,7 +25,7 @@ export function FacturaWizard() {
     const { conflictState, actions: autosaveActions } = useAutosave();
 
     const [draftItem, setDraftItem] = useState({
-        marca: '',
+        supplierLabel: '',
         tipoPrenda: '',
         codigoArticulo: '',
         curvaTalles: ''
@@ -108,8 +108,8 @@ export function FacturaWizard() {
             : draftItem.curvaTalles.split(',').map(s => s.trim()).filter(Boolean);
 
         const newItem: FacturaItem = {
-            marca: draftItem.marca,
-            supplierLabel: draftItem.marca,
+            supplierLabel: draftItem.supplierLabel,
+            marca: draftItem.supplierLabel,
             tipoPrenda: draftItem.tipoPrenda,
             codigoArticulo: draftItem.codigoArticulo,
             sizeCurveId: selectedCurve?.id,
@@ -133,7 +133,7 @@ export function FacturaWizard() {
 
         setDraftColors([]);
         setStep('ARTICLE');
-        setDraftItem({ marca: '', tipoPrenda: '', codigoArticulo: '', curvaTalles: '' });
+        setDraftItem({ supplierLabel: '', tipoPrenda: '', codigoArticulo: '', curvaTalles: '' });
     };
 
     if (state.status === 'LOADING' || !state.currentFactura) {
