@@ -34,3 +34,9 @@ When both are present, server behavior is:
 - `GET /admin/invoice-users`
   - Query params: `page`, `pageSize`, `search`
   - Purpose: provide server-side user list for admin invoice filters.
+
+## Item naming transition
+- Canonical semantic field: `items[].supplierLabel`.
+- Legacy alias kept for wire compatibility: `items[].marca`.
+- During transition, API normalizes read responses to include both fields.
+- Write payloads may send either field; server resolves with priority: `supplierLabel` then `marca`.

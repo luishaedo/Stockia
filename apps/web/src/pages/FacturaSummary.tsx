@@ -22,7 +22,7 @@ function exportToCSV(factura: any) {
                     factura.proveedor || '',
                     new Date(factura.fecha).toLocaleDateString('es-AR'),
                     item.codigoArticulo,
-                    item.marca,
+                    item.supplierLabel || item.marca || '',
                     item.tipoPrenda,
                     color.codigoColor,
                     color.nombreColor,
@@ -173,7 +173,7 @@ export function FacturaSummary() {
                         {state.currentFactura.items.map((item, idx) => (
                             <div key={idx} className="bg-slate-800/50 p-4 rounded border border-slate-700">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-1">
-                                    <h3 className="font-bold text-white">{item.marca} - {item.tipoPrenda}</h3>
+                                    <h3 className="font-bold text-white">{item.supplierLabel || item.marca || "-"} - {item.tipoPrenda}</h3>
                                     <span className="text-xs text-slate-500">{item.codigoArticulo}</span>
                                 </div>
                                 <div className="flex flex-col gap-2 pl-3 border-l-2 border-slate-700">

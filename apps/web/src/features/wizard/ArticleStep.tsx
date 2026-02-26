@@ -8,7 +8,7 @@ type Option = { value: string; label: string };
 
 interface ArticleStepProps {
     draftItem: {
-        marca: string;
+        supplierLabel: string;
         tipoPrenda: string;
         codigoArticulo: string;
         curvaTalles: string;
@@ -38,7 +38,7 @@ export function ArticleStep({
     const catalogBlockReason = catalogsError
         || (hasMissingCatalogs ? 'Faltan catálogos obligatorios. Primero debés crear Proveedores, Tipos de prenda y Curvas de talle desde Admin.' : null);
 
-    const isValid = draftItem.marca && draftItem.tipoPrenda && draftItem.codigoArticulo && draftItem.curvaTalles && !catalogBlockReason;
+    const isValid = draftItem.supplierLabel && draftItem.tipoPrenda && draftItem.codigoArticulo && draftItem.curvaTalles && !catalogBlockReason;
 
     return (
         <Card title="Paso 1/2 · Datos del artículo" className="max-w-xl mx-auto">
@@ -48,8 +48,8 @@ export function ArticleStep({
                         <label className="block text-sm font-medium mb-1">Proveedor</label>
                         <select
                             className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 disabled:opacity-60"
-                            value={draftItem.marca}
-                            onChange={(e) => onChange('marca', e.target.value)}
+                            value={draftItem.supplierLabel}
+                            onChange={(e) => onChange('supplierLabel', e.target.value)}
                             disabled={readOnly || catalogsLoading || supplierOptions.length === 0}
                         >
                             <option value="">Seleccionar proveedor</option>

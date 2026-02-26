@@ -7,7 +7,8 @@ import { Plus, Check, Trash2 } from 'lucide-react';
 
 interface ColorStepProps {
     itemContext: {
-        marca: string;
+        supplierLabel: string;
+        marca?: string;
         tipoPrenda: string;
         codigoArticulo: string;
         curvaTalles: string[];
@@ -77,7 +78,7 @@ export function ColorStep({
             <Card className="bg-slate-800 border-slate-700">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                     <div>
-                        <h2 className="text-lg font-bold text-white">{itemContext.marca} - {itemContext.tipoPrenda}</h2>
+                        <h2 className="text-lg font-bold text-white">{itemContext.supplierLabel || itemContext.marca || "-"} - {itemContext.tipoPrenda}</h2>
                         <p className="text-slate-400">Código: {itemContext.codigoArticulo}</p>
                     </div>
                     <div className="text-left sm:text-right">
