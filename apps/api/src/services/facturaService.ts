@@ -79,13 +79,7 @@ export class FacturaService {
                         name: invoice.createdByUser.name,
                         email: invoice.createdByUser.email
                     }
-                    : invoice.createdBy
-                        ? {
-                            id: invoice.createdBy,
-                            name: invoice.createdBy,
-                            email: null
-                        }
-                        : null
+                    : null
             })),
             pagination: {
                 page: filters.page,
@@ -262,7 +256,6 @@ export class FacturaService {
                 nroFactura: body.nroFactura,
                 proveedor: catalogSelections.normalizedSupplier,
                 supplierSnapshot: catalogSelections.supplierSnapshot,
-                createdBy: normalizedCreatedBy,
                 createdByUserId: createdByUser?.id,
                 items: catalogSelections.normalizedItems
             });

@@ -66,7 +66,6 @@ export class FacturaRepository {
         nroFactura: string;
         proveedor?: string;
         supplierSnapshot?: { id: string; code: string; label: string };
-        createdBy?: string;
         createdByUserId?: string;
         items: FacturaItem[]
     }) {
@@ -74,7 +73,6 @@ export class FacturaRepository {
             data: {
                 nroFactura: data.nroFactura,
                 proveedor: data.proveedor,
-                createdBy: data.createdBy,
                 createdByUserId: data.createdByUserId,
                 supplierSnapshot: data.supplierSnapshot as Prisma.InputJsonValue | undefined,
                 estado: FacturaEstado.DRAFT,
@@ -209,7 +207,6 @@ export class FacturaRepository {
                     proveedor: true,
                     estado: true,
                     createdAt: true,
-                    createdBy: true,
                     createdByUser: {
                         select: {
                             id: true,

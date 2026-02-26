@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { ApiErrorBody } from '@stockia/shared';
+import { observeHttpError } from '../lib/metrics.js';
 
 export const sendError = (
     res: Response,
@@ -9,6 +10,11 @@ export const sendError = (
     details?: unknown,
     traceId?: string
 ) => {
+    const req = res.req;
+    if (req) {
+        observeHttpError(req, code);
+    }
+
     const error: ApiErrorBody = {
         code,
         message,
