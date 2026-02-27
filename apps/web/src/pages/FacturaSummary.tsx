@@ -5,7 +5,7 @@ import { api, ApiError } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Loader2, ArrowLeft, CheckCircle, Download } from 'lucide-react';
-import { FacturaEstado } from '@stockia/shared';
+import { Factura, FacturaEstado } from '@stockia/shared';
 
 const formatNumber = (value: number) => new Intl.NumberFormat('es-AR').format(value);
 const getEstadoLabel = (estado: string) => (estado === 'FINAL' ? 'Final' : 'Borrador');
@@ -38,6 +38,52 @@ function exportToCSV(factura: any) {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `factura_${factura.nroFactura}_${Date.now()}.csv`;
+    link.click();
+}
+
+const sanitizeFileNamePart = (value: string) => value
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9-_]/g, '');
+
+const formatDatePart = (value: Date | string) => {
+    const date = new Date(value);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+};
+
+function exportToTXT(factura: Factura) {
+    const lines: string[] = [];
+
+    factura.items.forEach(item => {
+        item.colores.forEach(color => {
+            const skuAndColor = `${item.codigoArticulo}${color.codigoColor}`;
+
+            Object.entries(color.cantidadesPorTalle).forEach(([size, quantity]) => {
+                const numericQuantity = Number(quantity);
+                if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
+                    return;
+                }
+
+                for (let i = 0; i < numericQuantity; i += 1) {
+                    lines.push(`${skuAndColor}!!${size}`);
+                }
+            });
+        });
+    });
+
+    const providerPart = sanitizeFileNamePart(factura.proveedor || 'UnknownProvider');
+    const creationDatePart = formatDatePart(factura.createdAt);
+    const invoiceNumberPart = sanitizeFileNamePart(factura.nroFactura);
+    const fileName = `${providerPart}-${creationDatePart}-${invoiceNumberPart}.txt`;
+
+    const txtContent = `${lines.join('\n')}${lines.length > 0 ? '\n' : ''}`;
+    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
     link.click();
 }
 
@@ -106,7 +152,8 @@ export function FacturaSummary() {
         return <Loader2 className="animate-spin h-8 w-8 mx-auto mt-12 text-blue-500" />;
     }
 
-    const isFinal = state.currentFactura.estado === FacturaEstado.FINAL;
+    const factura = state.currentFactura;
+    const isFinal = factura.estado === FacturaEstado.FINAL;
 
     return (
         <div className="flex flex-col gap-4 sm:gap-6 max-w-5xl mx-auto pb-8">
@@ -120,7 +167,7 @@ export function FacturaSummary() {
             <div className="flex flex-col gap-3">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Resumen de factura</h1>
-                    <p className="text-slate-400">{state.currentFactura.nroFactura} • {state.currentFactura.proveedor || 'Sin proveedor'}</p>
+                    <p className="text-slate-400">{factura.nroFactura} • {factura.proveedor || 'Sin proveedor'}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Button variant="ghost" onClick={() => navigate('/facturas')} className="w-full sm:w-auto">
@@ -138,9 +185,13 @@ export function FacturaSummary() {
                             </Button>
                         </>
                     )}
-                    <Button variant="secondary" onClick={() => exportToCSV(state.currentFactura)} className="w-full sm:w-auto sm:ml-auto">
+                    <Button variant="secondary" onClick={() => exportToCSV(factura)} className="w-full sm:w-auto sm:ml-auto">
                         <Download className="h-4 w-4 mr-2" />
                         Exportar CSV
+                    </Button>
+                    <Button variant="secondary" onClick={() => exportToTXT(factura)} className="w-full sm:w-auto">
+                        <Download className="h-4 w-4 mr-2" />
+                        Exportar TXT
                     </Button>
                 </div>
             </div>
@@ -159,7 +210,7 @@ export function FacturaSummary() {
                         <div className="flex justify-between">
                             <span className="text-slate-400">Estado</span>
                             <span className={`font-bold ${isFinal ? 'text-green-400' : 'text-yellow-400'}`}>
-                                {getEstadoLabel(state.currentFactura.estado)}
+                                {getEstadoLabel(factura.estado)}
                             </span>
                         </div>
                     </div>
@@ -167,10 +218,10 @@ export function FacturaSummary() {
 
                 <Card title="Detalle de ítems" className="md:col-span-2 order-2">
                     <div className="flex flex-col gap-4">
-                        {state.currentFactura.items.length === 0 && (
+                        {factura.items.length === 0 && (
                             <p className="text-slate-500 text-center">No hay ítems cargados.</p>
                         )}
-                        {state.currentFactura.items.map((item, idx) => (
+                        {factura.items.map((item, idx) => (
                             <div key={idx} className="bg-slate-800/50 p-4 rounded border border-slate-700">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-1">
                                     <h3 className="font-bold text-white">{item.supplierLabel || item.marca || "-"} - {item.tipoPrenda}</h3>
