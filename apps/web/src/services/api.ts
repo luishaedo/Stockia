@@ -1,343 +1,40 @@
-import {
-    AdminInvoiceUserQuery,
-    AdminInvoiceUsersResponse,
-    AdminInvoiceListResponse,
-    AdminInvoicesQuery,
-    ApiErrorResponse,
-    OperationCatalogsResponse,
-    CreateFacturaDTO,
-    ErrorCodes,
-    Factura,
-    FacturaFilters,
-    FacturaListResponse,
-    UpdateFacturaDraftDTO
-} from '@stockia/shared';
+import { AuthApiService } from './authApi';
+import { FacturasApiService } from './facturasApi';
+import { AdminApiService } from './adminApi';
+import { CatalogsApiService } from './catalogsApi';
+import { ApiError, authTokenStore, HttpClient } from './httpClient';
 
-const envApiUrl = import.meta.env.VITE_API_URL;
-const isProduction = import.meta.env.PROD;
-const apiURL = envApiUrl || 'http://localhost:4000';
+export { ApiError, authTokenStore };
+export type { AdminCatalogKey } from './types';
 
-if (isProduction && !envApiUrl) {
-    throw new Error('Missing VITE_API_URL environment variable in production');
+const client = new HttpClient();
+
+class ApiFacade {
+    private authApi = new AuthApiService(client);
+    private facturasApi = new FacturasApiService(client);
+    private adminApi = new AdminApiService(client);
+    private catalogsApi = new CatalogsApiService(client);
+
+    login = this.authApi.login.bind(this.authApi);
+
+    getFactura = this.facturasApi.getFactura.bind(this.facturasApi);
+    createFactura = this.facturasApi.createFactura.bind(this.facturasApi);
+    updateFacturaDraft = this.facturasApi.updateFacturaDraft.bind(this.facturasApi);
+    getFacturas = this.facturasApi.getFacturas.bind(this.facturasApi);
+    finalizeFactura = this.facturasApi.finalizeFactura.bind(this.facturasApi);
+
+    getAdminInvoices = this.adminApi.getAdminInvoices.bind(this.adminApi);
+    getAdminInvoiceUsers = this.adminApi.getAdminInvoiceUsers.bind(this.adminApi);
+    uploadAdminLogo = this.adminApi.uploadAdminLogo.bind(this.adminApi);
+    resolveAssetUrl = this.adminApi.resolveAssetUrl.bind(this.adminApi);
+
+    getOperationsCatalogs = this.catalogsApi.getOperationsCatalogs.bind(this.catalogsApi);
+    getAdminCatalog = this.catalogsApi.getAdminCatalog.bind(this.catalogsApi);
+    getAdminCatalogCached = this.catalogsApi.getAdminCatalogCached.bind(this.catalogsApi);
+    invalidateCatalogCache = this.catalogsApi.invalidateCatalogCache.bind(this.catalogsApi);
+    createAdminCatalog = this.catalogsApi.createAdminCatalog.bind(this.catalogsApi);
+    updateAdminCatalog = this.catalogsApi.updateAdminCatalog.bind(this.catalogsApi);
+    deleteAdminCatalog = this.catalogsApi.deleteAdminCatalog.bind(this.catalogsApi);
 }
 
-const ACCESS_TOKEN_KEY = 'stockia.accessToken';
-const CATALOG_CACHE_TTL_MS = 60_000;
-const OPERATIONS_CATALOG_TTL_MS = 300_000;
-
-export type AdminCatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
-
-
-export class ApiError extends Error {
-    code: string;
-    status: number;
-    details?: unknown;
-    traceId?: string;
-
-    constructor(message: string, code: string, status: number, details?: unknown, traceId?: string) {
-        super(message);
-        this.name = 'ApiError';
-        this.code = code;
-        this.status = status;
-        this.details = details;
-        this.traceId = traceId;
-    }
-}
-
-const getDefaultMessage = (status: number, fallback: string) => {
-    if (status >= 500) return 'Error interno del servidor';
-    return fallback;
-};
-
-const parseErrorPayload = async (response: Response, fallback: string): Promise<ApiError> => {
-    let payload: ApiErrorResponse | { error?: string; code?: string; details?: unknown } | null = null;
-
-    try {
-        payload = await response.json();
-    } catch {
-        payload = null;
-    }
-
-    if (payload && typeof payload.error === 'object' && payload.error !== null && 'message' in payload.error) {
-        return new ApiError(
-            payload.error.message,
-            payload.error.code || ErrorCodes.BAD_REQUEST,
-            response.status,
-            payload.error.details,
-            payload.error.traceId
-        );
-    }
-
-    if (payload && typeof payload.error === 'string') {
-        const legacyPayload = payload as { error: string; code?: string; details?: unknown };
-        return new ApiError(
-            legacyPayload.error,
-            legacyPayload.code || ErrorCodes.BAD_REQUEST,
-            response.status,
-            legacyPayload.details
-        );
-    }
-
-    return new ApiError(getDefaultMessage(response.status, fallback), ErrorCodes.BAD_REQUEST, response.status);
-};
-
-const getStoredAccessToken = () => window.sessionStorage.getItem(ACCESS_TOKEN_KEY);
-
-const emitAuthChanged = () => window.dispatchEvent(new Event('stockia-auth-changed'));
-
-export const authTokenStore = {
-    get() {
-        return getStoredAccessToken();
-    },
-    set(token: string) {
-        window.sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
-        emitAuthChanged();
-    },
-    clear() {
-        window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-        emitAuthChanged();
-    }
-};
-
-class ApiService {
-    private baseURL = apiURL;
-    private catalogCache = new Map<AdminCatalogKey, { expiresAt: number; data: unknown }>();
-    private operationsCatalogCache: { expiresAt: number; data: OperationCatalogsResponse } | null = null;
-
-    private getAccessTokenOrThrow() {
-        const accessToken = getStoredAccessToken();
-        if (!accessToken) {
-            throw new ApiError('Se requiere autenticación', ErrorCodes.AUTH_TOKEN_MISSING, 401);
-        }
-        return accessToken;
-    }
-
-    private async getAuthHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            authorization: `Bearer ${this.getAccessTokenOrThrow()}`
-        };
-    }
-
-    private async assertOk(response: Response, fallback: string) {
-        if (response.ok) return;
-
-        const parsed = await parseErrorPayload(response, fallback);
-
-        console.error('API request failed', {
-            url: response.url,
-            status: response.status,
-            code: parsed.code,
-            message: parsed.message,
-            details: parsed.details,
-            traceId: parsed.traceId
-        });
-
-        if (parsed.code === ErrorCodes.AUTH_TOKEN_INVALID || parsed.code === ErrorCodes.AUTH_TOKEN_MISSING) {
-            authTokenStore.clear();
-        }
-        throw parsed;
-    }
-
-    async login(username: string, password: string): Promise<string> {
-        const response = await fetch(`${this.baseURL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-
-        await this.assertOk(response, 'No pudimos iniciar sesión');
-        const data = await response.json() as { accessToken: string };
-        authTokenStore.set(data.accessToken);
-        return data.accessToken;
-    }
-
-    async getFactura(id: string): Promise<Factura> {
-        const response = await fetch(`${this.baseURL}/facturas/${id}`, {
-            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
-        });
-        await this.assertOk(response, 'No pudimos obtener la factura');
-        return response.json();
-    }
-
-    async createFactura(data: CreateFacturaDTO): Promise<Factura> {
-        const response = await fetch(`${this.baseURL}/facturas`, {
-            method: 'POST',
-            headers: await this.getAuthHeaders(),
-            body: JSON.stringify(data)
-        });
-        await this.assertOk(response, 'No pudimos crear la factura');
-        return response.json();
-    }
-
-    async updateFacturaDraft(id: string, data: UpdateFacturaDraftDTO): Promise<Factura> {
-        const response = await fetch(`${this.baseURL}/facturas/${id}/draft`, {
-            method: 'PATCH',
-            headers: await this.getAuthHeaders(),
-            body: JSON.stringify(data)
-        });
-        await this.assertOk(response, 'No pudimos guardar los cambios');
-        return response.json();
-    }
-
-    async getFacturas(filters: FacturaFilters = {}): Promise<FacturaListResponse> {
-        const params = new URLSearchParams();
-        if (filters.nroFactura) params.append('nroFactura', filters.nroFactura);
-        if (filters.proveedor) params.append('proveedor', filters.proveedor);
-        if (filters.estado) params.append('estado', filters.estado);
-        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
-        if (filters.dateTo) params.append('dateTo', filters.dateTo);
-        if (filters.page) params.append('page', filters.page.toString());
-        if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());
-        if (filters.sortBy) params.append('sortBy', filters.sortBy);
-        if (filters.sortDir) params.append('sortDir', filters.sortDir);
-
-        const response = await fetch(`${this.baseURL}/facturas?${params.toString()}`, {
-            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
-        });
-        await this.assertOk(response, 'No pudimos cargar las facturas');
-        return response.json();
-    }
-
-    async finalizeFactura(id: string, expectedUpdatedAt: string): Promise<Factura> {
-        const response = await fetch(`${this.baseURL}/facturas/${id}/finalize`, {
-            method: 'PATCH',
-            headers: await this.getAuthHeaders(),
-            body: JSON.stringify({ expectedUpdatedAt })
-        });
-        await this.assertOk(response, 'No pudimos finalizar la factura');
-        return response.json();
-    }
-
-
-    async getOperationsCatalogs(forceRefresh = false): Promise<OperationCatalogsResponse> {
-        const now = Date.now();
-        if (!forceRefresh && this.operationsCatalogCache && this.operationsCatalogCache.expiresAt > now) {
-            return this.operationsCatalogCache.data;
-        }
-
-        const response = await fetch(`${this.baseURL}/operations/catalogs`, {
-            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
-        });
-        await this.assertOk(response, 'No pudimos cargar los catálogos operativos');
-
-        const data = await response.json() as OperationCatalogsResponse;
-        this.operationsCatalogCache = {
-            data,
-            expiresAt: now + OPERATIONS_CATALOG_TTL_MS
-        };
-
-        return data;
-    }
-
-    async getAdminInvoices(filters: Partial<AdminInvoicesQuery> = {}): Promise<AdminInvoiceListResponse> {
-        const params = new URLSearchParams();
-        if (filters.page) params.append('page', filters.page.toString());
-        if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());
-        if (filters.from) params.append('from', filters.from);
-        if (filters.to) params.append('to', filters.to);
-        if (filters.userId) params.append('userId', filters.userId);
-
-        const response = await fetch(`${this.baseURL}/admin/invoices?${params.toString()}`, {
-            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
-        });
-        await this.assertOk(response, 'No pudimos cargar el panel de facturas admin');
-        return response.json();
-    }
-
-    async getAdminInvoiceUsers(filters: Partial<AdminInvoiceUserQuery> = {}): Promise<AdminInvoiceUsersResponse> {
-        const params = new URLSearchParams();
-        if (filters.page) params.append('page', filters.page.toString());
-        if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());
-        if (filters.search) params.append('search', filters.search);
-
-        const response = await fetch(`${this.baseURL}/admin/invoice-users?${params.toString()}`, {
-            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
-        });
-        await this.assertOk(response, 'No pudimos cargar usuarios de facturas admin');
-        return response.json();
-    }
-
-    async getAdminCatalog<T>(catalog: AdminCatalogKey): Promise<T> {
-        const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}`, {
-            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
-        });
-        await this.assertOk(response, 'No pudimos cargar el catálogo');
-        return response.json();
-    }
-
-    async getAdminCatalogCached<T>(catalog: AdminCatalogKey, forceRefresh = false): Promise<T> {
-        const cached = this.catalogCache.get(catalog);
-        const now = Date.now();
-
-        if (!forceRefresh && cached && cached.expiresAt > now) {
-            return cached.data as T;
-        }
-
-        const data = await this.getAdminCatalog<T>(catalog);
-        this.catalogCache.set(catalog, { data, expiresAt: now + CATALOG_CACHE_TTL_MS });
-        return data;
-    }
-
-    invalidateCatalogCache(catalog?: AdminCatalogKey) {
-        if (!catalog) {
-            this.catalogCache.clear();
-            return;
-        }
-        this.catalogCache.delete(catalog);
-    }
-
-    async createAdminCatalog(catalog: AdminCatalogKey, payload: Record<string, unknown>) {
-        const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}`, {
-            method: 'POST',
-            headers: await this.getAuthHeaders(),
-            body: JSON.stringify(payload)
-        });
-        await this.assertOk(response, 'No pudimos crear el registro');
-        this.invalidateCatalogCache(catalog);
-        return response.json();
-    }
-
-    async updateAdminCatalog(catalog: AdminCatalogKey, id: string, payload: Record<string, unknown>) {
-        const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}/${id}`, {
-            method: 'PUT',
-            headers: await this.getAuthHeaders(),
-            body: JSON.stringify(payload)
-        });
-        await this.assertOk(response, 'No pudimos actualizar el registro');
-        this.invalidateCatalogCache(catalog);
-        return response.json();
-    }
-
-    async deleteAdminCatalog(catalog: AdminCatalogKey, id: string): Promise<void> {
-        const response = await fetch(`${this.baseURL}/admin/catalogs/${catalog}/${id}`, {
-            method: 'DELETE',
-            headers: { authorization: `Bearer ${this.getAccessTokenOrThrow()}` }
-        });
-        await this.assertOk(response, 'No pudimos eliminar el registro');
-        this.invalidateCatalogCache(catalog);
-    }
-
-    async uploadAdminLogo(file: File): Promise<{ url: string }> {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch(`${this.baseURL}/admin/uploads/logo`, {
-            method: 'POST',
-            headers: {
-                authorization: `Bearer ${this.getAccessTokenOrThrow()}`
-            },
-            body: formData
-        });
-        await this.assertOk(response, 'No pudimos subir el logo');
-        return response.json();
-    }
-
-    resolveAssetUrl(url?: string | null): string {
-        if (!url) return '';
-        if (url.startsWith('http://') || url.startsWith('https://')) return url;
-        return `${this.baseURL}${url.startsWith('/') ? '' : '/'}${url}`;
-    }
-}
-
-export const api = new ApiService();
+export const api = new ApiFacade();
