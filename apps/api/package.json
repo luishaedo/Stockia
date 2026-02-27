@@ -10,7 +10,11 @@
         "prisma:generate": "prisma generate",
         "prisma:push": "prisma db push",
         "verify:auth-policy": "node --loader ts-node/esm test-scripts/verify-auth-policy.ts",
-        "smoke:ci": "bash test-scripts/smoke-ci.sh"
+        "smoke:ci": "bash test-scripts/smoke-ci.sh",
+        "verify:log-policy": "node --loader ts-node/esm test-scripts/verify-log-policy.ts",
+        "verify:phase1": "node --loader ts-node/esm test-scripts/verify-phase1.ts",
+        "verify:phase2": "node --loader ts-node/esm test-scripts/verify-phase2.ts",
+        "verify:phase3": "node --loader ts-node/esm test-scripts/verify-phase3.ts"
     },
     "dependencies": {
         "cors": "^2.8.5",
