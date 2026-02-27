@@ -19,7 +19,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-node dist/index.js &
+LOG_FILE="${LOG_FILE:-/tmp/smoke-api.log}"
+node dist/index.js >"$LOG_FILE" 2>&1 &
 API_PID=$!
 
 for _ in {1..30}; do
@@ -75,6 +76,20 @@ auth_status=$(curl -s -o /tmp/smoke_post_auth.out -w "%{http_code}" -X POST "$BA
 if [[ "$auth_status" != "201" && "$auth_status" != "400" ]]; then
   echo "Expected 201 or 400 for auth POST /facturas, got $auth_status"
   cat /tmp/smoke_post_auth.out
+  exit 1
+fi
+
+
+echo "Smoke: logs should be redacted"
+if grep -Eiq "Bearer [A-Za-z0-9._\-]+" "$LOG_FILE"; then
+  echo "Detected bearer token in logs"
+  cat "$LOG_FILE"
+  exit 1
+fi
+
+if grep -Eiq '"(authorization|cookie|set-cookie|token|secret|password|credentials)"[[:space:]]*:[[:space:]]*"[^[]' "$LOG_FILE"; then
+  echo "Detected sensitive fields without redaction in logs"
+  cat "$LOG_FILE"
   exit 1
 fi
 

@@ -1,13 +1,18 @@
+import { sanitizeForLogs } from './redaction.js';
+
 type LogPayload = Record<string, unknown>;
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
 const emit = (level: LogLevel, message: string, payload?: LogPayload) => {
+    const safeMessage = sanitizeForLogs(message);
+    const safePayload = payload ? sanitizeForLogs(payload) : undefined;
+
     const logRecord = {
         level,
-        message,
+        message: safeMessage,
         timestamp: new Date().toISOString(),
-        ...payload
+        ...(safePayload ?? {})
     };
 
     const line = JSON.stringify(logRecord);

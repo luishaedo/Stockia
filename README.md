@@ -228,6 +228,20 @@ npm run prisma:generate -w api
 - Change `PORT` in `apps/api/.env` and update `VITE_API_URL` accordingly.
 
 
+
+## Pull request quality gate (Definition of Done)
+
+Before merging, every PR must pass all required CI jobs:
+
+- `build`
+- `verify:auth-policy`
+- `smoke:ci`
+
+Required checks must be enforced in GitHub branch protection settings for `main`/`master`.
+
+Verification governance and deprecated scripts are documented in `docs/verification-governance.md`.
+Log redaction policy is documented in `docs/log-redaction-policy.md`.
+
 ## Deployment
 
 ### Render (API)
