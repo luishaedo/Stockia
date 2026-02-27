@@ -8,6 +8,16 @@ const DEFAULT_VERSION = 'W/"0"';
 export class CatalogsApiService {
     constructor(private client: HttpClient) {}
 
+    async preloadAdminCatalogsIncremental(catalogs: AdminCatalogKey[]) {
+        for (const catalog of catalogs) {
+            try {
+                await this.getAdminCatalogCached(catalog);
+            } catch {
+                // Best-effort preload: do not interrupt user flow.
+            }
+        }
+    }
+
 
     private async getCatalogVersion(catalog: AdminCatalogKey): Promise<string> {
         const response = await fetch(`${this.client.getBaseURL()}/admin/catalogs/${catalog}/version`, {

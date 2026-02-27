@@ -17,7 +17,8 @@
         "verify:phase3": "node --loader ts-node/esm test-scripts/verify-phase3.ts",
         "verify:security-contract": "bash test-scripts/verify-security-contract.sh",
         "verify:invoice-lifecycle": "node --loader ts-node/esm test-scripts/verify-invoice-lifecycle.ts",
-        "verify:contract-shared": "node --loader ts-node/esm test-scripts/verify-contract-shared.ts"
+        "verify:contract-shared": "node --loader ts-node/esm test-scripts/verify-contract-shared.ts",
+        "verify:route-contracts": "node --loader ts-node/esm test-scripts/verify-route-contracts.ts"
     },
     "dependencies": {
         "cors": "^2.8.5",

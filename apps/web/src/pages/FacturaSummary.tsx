@@ -102,7 +102,7 @@ export function FacturaSummary() {
         setFinalizing(false);
     };
 
-    if (state.status === 'LOADING' || !state.currentFactura) {
+    if (state.isLoading || !state.currentFactura) {
         return <Loader2 className="animate-spin h-8 w-8 mx-auto mt-12 text-blue-500" />;
     }
 

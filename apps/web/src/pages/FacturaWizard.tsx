@@ -136,7 +136,7 @@ export function FacturaWizard() {
         setDraftItem({ supplierLabel: '', tipoPrenda: '', codigoArticulo: '', curvaTalles: '' });
     };
 
-    if (state.status === 'LOADING' || !state.currentFactura) {
+    if (state.isLoading || !state.currentFactura) {
         return (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
@@ -202,7 +202,7 @@ export function FacturaWizard() {
                         <span className="text-xs text-slate-500 px-2 py-1 bg-slate-900 rounded border border-slate-700">
                             {conflictState.hasConflict
                                 ? 'Conflicto'
-                                : state.status === 'SAVING'
+                                : state.isSaving
                                     ? 'Guardando...'
                                     : state.status === 'ERROR'
                                         ? 'Error al guardar'

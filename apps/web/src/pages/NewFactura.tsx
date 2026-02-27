@@ -101,7 +101,7 @@ export function NewFactura() {
                     <div className="mt-2">
                         <Button
                             type="submit"
-                            isLoading={state.status === 'SAVING'}
+                            isLoading={state.isSaving}
                             icon={<ArrowRight className="h-4 w-4" />}
                             className="w-full sm:w-auto"
                             disabled={loadingSuppliers || suppliers.length === 0}

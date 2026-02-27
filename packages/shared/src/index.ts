@@ -258,6 +258,32 @@ export interface PaginatedResponse<T> {
     };
 }
 
+export type SharedRouteContract = {
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+    path: string;
+    requiresAdminToken: boolean;
+};
+
+export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
+    { method: 'GET', path: '/facturas', requiresAdminToken: true },
+    { method: 'GET', path: '/admin/invoices', requiresAdminToken: true },
+    { method: 'GET', path: '/admin/invoice-users', requiresAdminToken: true },
+    { method: 'GET', path: '/providers', requiresAdminToken: true },
+    { method: 'GET', path: '/size-tables', requiresAdminToken: true },
+    { method: 'GET', path: '/facturas/:id', requiresAdminToken: true },
+    { method: 'POST', path: '/facturas', requiresAdminToken: true },
+    { method: 'PATCH', path: '/facturas/:id/draft', requiresAdminToken: true },
+    { method: 'PATCH', path: '/facturas/:id/finalize', requiresAdminToken: true },
+    { method: 'GET', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
+    { method: 'POST', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
+    { method: 'PUT', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
+    { method: 'DELETE', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
+    { method: 'POST', path: '/admin/uploads/logo', requiresAdminToken: true },
+    { method: 'GET', path: '/operations/catalogs', requiresAdminToken: true },
+    { method: 'GET', path: '/admin/catalogs/:catalog/version', requiresAdminToken: true },
+    { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: true }
+];
+
 export type FacturaListResponse = PaginatedResponse<Factura>;
 
 // Error Codes

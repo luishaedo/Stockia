@@ -6,7 +6,9 @@ import { api } from '../services/api';
 
 interface FacturaState {
     currentFactura: Factura | null;
-    status: 'IDLE' | 'LOADING' | 'SAVING' | 'ERROR';
+    status: 'IDLE' | 'ERROR';
+    isLoading: boolean;
+    isSaving: boolean;
     error: string | null;
     lastSavedAt: string | null; // For optimistic locking
 }
@@ -14,6 +16,8 @@ interface FacturaState {
 type Action =
     | { type: 'SET_FACTURA'; payload: Factura }
     | { type: 'UPDATE_DRAFT_LOCAL'; payload: Partial<Factura> }
+    | { type: 'START_LOADING' }
+    | { type: 'FINISH_LOADING' }
     | { type: 'START_SAVING' }
     | { type: 'FINISH_SAVING'; payload: { updatedAt: string } }
     | { type: 'SET_ERROR'; payload: string };
@@ -21,6 +25,8 @@ type Action =
 const initialState: FacturaState = {
     currentFactura: null,
     status: 'IDLE',
+    isLoading: false,
+    isSaving: false,
     error: null,
     lastSavedAt: null,
 };
@@ -35,6 +41,8 @@ function facturaReducer(state: FacturaState, action: Action): FacturaState {
                 currentFactura: action.payload,
                 lastSavedAt: action.payload.updatedAt as string,
                 status: 'IDLE',
+                isLoading: false,
+                isSaving: false,
                 error: null
             };
         case 'UPDATE_DRAFT_LOCAL': // Optimistic update
@@ -43,16 +51,21 @@ function facturaReducer(state: FacturaState, action: Action): FacturaState {
                 ...state,
                 currentFactura: { ...state.currentFactura, ...action.payload }
             };
+        case 'START_LOADING':
+            return { ...state, isLoading: true, error: null };
+        case 'FINISH_LOADING':
+            return { ...state, isLoading: false };
         case 'START_SAVING':
-            return { ...state, status: 'SAVING' };
+            return { ...state, isSaving: true, error: null };
         case 'FINISH_SAVING':
             return {
                 ...state,
                 status: 'IDLE',
+                isSaving: false,
                 lastSavedAt: action.payload.updatedAt
             };
         case 'SET_ERROR':
-            return { ...state, status: 'ERROR', error: action.payload };
+            return { ...state, status: 'ERROR', isLoading: false, isSaving: false, error: action.payload };
         default:
             return state;
     }
@@ -74,12 +87,14 @@ export function FacturaProvider({ children }: { children: React.ReactNode }) {
     const [state, dispatch] = useReducer(facturaReducer, initialState);
 
     const loadFactura = useCallback(async (id: string) => {
-        dispatch({ type: 'START_SAVING' }); // Reusing saving state for loading temporarily or add LOADING
+        dispatch({ type: 'START_LOADING' });
         try {
             const factura = await api.getFactura(id);
             dispatch({ type: 'SET_FACTURA', payload: factura });
         } catch (e: any) {
             dispatch({ type: 'SET_ERROR', payload: e.message });
+        } finally {
+            dispatch({ type: 'FINISH_LOADING' });
         }
     }, []);
 
