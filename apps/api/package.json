@@ -14,7 +14,8 @@
         "verify:log-policy": "node --loader ts-node/esm test-scripts/verify-log-policy.ts",
         "verify:phase1": "node --loader ts-node/esm test-scripts/verify-phase1.ts",
         "verify:phase2": "node --loader ts-node/esm test-scripts/verify-phase2.ts",
-        "verify:phase3": "node --loader ts-node/esm test-scripts/verify-phase3.ts"
+        "verify:phase3": "node --loader ts-node/esm test-scripts/verify-phase3.ts",
+        "verify:security-contract": "bash test-scripts/verify-security-contract.sh"
     },
     "dependencies": {
         "cors": "^2.8.5",
