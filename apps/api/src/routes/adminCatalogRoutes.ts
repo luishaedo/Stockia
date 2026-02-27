@@ -2,6 +2,7 @@ import { RequestHandler, Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes } from '@stockia/shared';
 import { sendError } from '../middlewares/error.js';
+import { catalogVersionStore } from '../lib/catalogVersion.js';
 
 const CATALOGS = ['suppliers', 'size-curves', 'families', 'categories', 'garment-types', 'materials', 'classifications'] as const;
 type CatalogKey = (typeof CATALOGS)[number];
@@ -34,6 +35,8 @@ type CatalogPayload = {
 };
 
 const isCatalogKey = (value: string): value is CatalogKey => (CATALOGS as readonly string[]).includes(value);
+const impactsOperationsCatalogs = (catalog: CatalogKey) =>
+    catalog === 'suppliers' || catalog === 'families' || catalog === 'size-curves';
 
 const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 
@@ -104,6 +107,7 @@ export const createAdminCatalogRoutes = (
         }
 
         try {
+            res.setHeader('ETag', catalogVersionStore.getAdminCatalogVersion(catalog));
             const config = CATALOG_CONFIG[catalog];
             const model = getModelDelegate(prisma, config.model);
 
@@ -120,6 +124,15 @@ export const createAdminCatalogRoutes = (
         } catch (error) {
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load catalog data', error, req.traceId);
         }
+    });
+
+    router.get('/admin/catalogs/:catalog/version', readRateLimitMiddleware, requireAuth, async (req, res) => {
+        const { catalog } = req.params;
+        if (!isCatalogKey(catalog)) {
+            return sendError(res, 400, ErrorCodes.BAD_REQUEST, `Unknown catalog '${catalog}'`, undefined, req.traceId);
+        }
+
+        return res.json({ version: catalogVersionStore.getAdminCatalogVersion(catalog) });
     });
 
     router.post('/admin/catalogs/:catalog', writeRateLimitMiddleware, requireAuth, async (req, res) => {
@@ -150,10 +163,18 @@ export const createAdminCatalogRoutes = (
                     },
                     include: { values: { orderBy: { sortOrder: 'asc' } } }
                 });
+                catalogVersionStore.bumpAdminCatalogVersion(catalog);
+                if (impactsOperationsCatalogs(catalog)) {
+                    catalogVersionStore.bumpOperationsCatalogVersion();
+                }
                 return res.status(201).json(record);
             }
 
             const record = await model.create({ data });
+            catalogVersionStore.bumpAdminCatalogVersion(catalog);
+            if (impactsOperationsCatalogs(catalog)) {
+                catalogVersionStore.bumpOperationsCatalogVersion();
+            }
             return res.status(201).json(record);
         } catch (error) {
             return sendError(res, 400, ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION, 'Could not create catalog item', error, req.traceId);
@@ -193,11 +214,18 @@ export const createAdminCatalogRoutes = (
                         include: { values: { orderBy: { sortOrder: 'asc' } } }
                     });
                 });
-
+                catalogVersionStore.bumpAdminCatalogVersion(catalog);
+                if (impactsOperationsCatalogs(catalog)) {
+                    catalogVersionStore.bumpOperationsCatalogVersion();
+                }
                 return res.json(record);
             }
 
             const record = await model.update({ where: { id }, data });
+            catalogVersionStore.bumpAdminCatalogVersion(catalog);
+            if (impactsOperationsCatalogs(catalog)) {
+                catalogVersionStore.bumpOperationsCatalogVersion();
+            }
             return res.json(record);
         } catch (error) {
             return sendError(res, 400, ErrorCodes.BAD_REQUEST, 'Could not update catalog item', error, req.traceId);
@@ -215,6 +243,10 @@ export const createAdminCatalogRoutes = (
             const model = getModelDelegate(prisma, config.model);
 
             await model.delete({ where: { id } });
+            catalogVersionStore.bumpAdminCatalogVersion(catalog);
+            if (impactsOperationsCatalogs(catalog)) {
+                catalogVersionStore.bumpOperationsCatalogVersion();
+            }
             return res.status(204).send();
         } catch (error) {
             return sendError(res, 400, ErrorCodes.BAD_REQUEST, 'Could not delete catalog item', error, req.traceId);

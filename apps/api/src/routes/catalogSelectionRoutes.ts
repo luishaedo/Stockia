@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { RequestHandler, Router } from 'express';
 import { ErrorCodes } from '@stockia/shared';
 import { sendError } from '../middlewares/error.js';
+import { catalogVersionStore } from '../lib/catalogVersion.js';
 
 const OPERATIONS_CATALOG_TTL_MS = 300_000;
 
@@ -57,6 +58,7 @@ export const createCatalogSelectionRoutes = (
 
     router.get('/operations/catalogs', readRateLimitMiddleware, requireAuth, async (req, res) => {
         try {
+            res.setHeader('ETag', catalogVersionStore.getOperationsCatalogVersion());
             const now = Date.now();
             if (operationsCatalogCache && operationsCatalogCache.expiresAt > now) {
                 return res.json(operationsCatalogCache.data);
@@ -98,6 +100,10 @@ export const createCatalogSelectionRoutes = (
         } catch (error) {
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load operations catalogs', error, req.traceId);
         }
+    });
+
+    router.get('/operations/catalogs/version', readRateLimitMiddleware, requireAuth, async (_req, res) => {
+        return res.json({ version: catalogVersionStore.getOperationsCatalogVersion() });
     });
 
     return router;
