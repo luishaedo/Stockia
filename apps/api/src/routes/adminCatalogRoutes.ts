@@ -3,94 +3,14 @@ import { PrismaClient } from '@prisma/client';
 import { ErrorCodes } from '@stockia/shared';
 import { sendError } from '../middlewares/error.js';
 import { catalogVersionStore } from '../lib/catalogVersion.js';
-
-const CATALOGS = ['suppliers', 'size-curves', 'families', 'categories', 'garment-types', 'materials', 'classifications'] as const;
-type CatalogKey = (typeof CATALOGS)[number];
-
-type CatalogField = 'name' | 'description' | 'logoUrl' | 'longDescription';
-
-type CatalogConfig = {
-    model: string;
-    requiredFields: CatalogField[];
-    optionalFields: CatalogField[];
-};
-
-const CATALOG_CONFIG: Record<CatalogKey, CatalogConfig> = {
-    suppliers: { model: 'supplier', requiredFields: ['name'], optionalFields: ['logoUrl'] },
-    'size-curves': { model: 'sizeCurve', requiredFields: ['description'], optionalFields: [] },
-    families: { model: 'family', requiredFields: ['description'], optionalFields: [] },
-    categories: { model: 'category', requiredFields: ['description'], optionalFields: ['logoUrl', 'longDescription'] },
-    'garment-types': { model: 'garmentType', requiredFields: ['description'], optionalFields: [] },
-    materials: { model: 'material', requiredFields: ['description'], optionalFields: [] },
-    classifications: { model: 'classification', requiredFields: ['description'], optionalFields: [] }
-};
-
-type CatalogPayload = {
-    code?: string;
-    name?: string;
-    description?: string;
-    logoUrl?: string;
-    longDescription?: string;
-    values?: string[];
-};
-
-const isCatalogKey = (value: string): value is CatalogKey => (CATALOGS as readonly string[]).includes(value);
-const impactsOperationsCatalogs = (catalog: CatalogKey) =>
-    catalog === 'suppliers' || catalog === 'families' || catalog === 'size-curves';
-
-const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
-
-const getModelDelegate = (prisma: PrismaClient, model: string): Record<string, (...args: unknown[]) => Promise<unknown>> => {
-    const delegate = (prisma as unknown as Record<string, unknown>)[model];
-    if (!delegate || typeof delegate !== 'object') {
-        throw new Error(`Prisma model delegate '${model}' not found`);
-    }
-    return delegate as Record<string, (...args: unknown[]) => Promise<unknown>>;
-};
-
-const normalizeSizeValues = (rawValues: unknown): string[] => {
-    if (!Array.isArray(rawValues)) return [];
-    return rawValues
-        .filter(value => typeof value === 'string')
-        .map(value => value.trim())
-        .filter(Boolean);
-};
-
-const buildDataPayload = (catalog: CatalogKey, payload: CatalogPayload) => {
-    const config = CATALOG_CONFIG[catalog];
-    const data: Record<string, unknown> = { code: payload.code?.trim() };
-
-    for (const field of [...config.requiredFields, ...config.optionalFields]) {
-        const value = payload[field];
-        if (typeof value === 'string') {
-            data[field] = value.trim();
-        }
-    }
-
-    return data;
-};
-
-const validatePayload = (catalog: CatalogKey, payload: CatalogPayload) => {
-    if (!isNonEmptyString(payload.code)) {
-        return 'Field code is required';
-    }
-
-    const config = CATALOG_CONFIG[catalog];
-    for (const field of config.requiredFields) {
-        if (!isNonEmptyString(payload[field])) {
-            return `Field ${field} is required`;
-        }
-    }
-
-    if (catalog === 'size-curves') {
-        const values = normalizeSizeValues(payload.values);
-        if (values.length === 0) {
-            return 'Field values is required and must include at least one size value';
-        }
-    }
-
-    return null;
-};
+import {
+    CatalogPayload,
+    buildCatalogDataPayload,
+    createAdminCatalogHandlers,
+    impactsOperationsCatalogs,
+    isCatalogKey,
+    validateCatalogPayload
+} from '../services/adminCatalogHandlers.js';
 
 export const createAdminCatalogRoutes = (
     prisma: PrismaClient,
@@ -99,6 +19,7 @@ export const createAdminCatalogRoutes = (
     writeRateLimitMiddleware: RequestHandler
 ) => {
     const router = Router();
+    const handlers = createAdminCatalogHandlers(prisma);
 
     router.get('/admin/catalogs/:catalog', readRateLimitMiddleware, requireAuth, async (req, res) => {
         const { catalog } = req.params;
@@ -108,18 +29,7 @@ export const createAdminCatalogRoutes = (
 
         try {
             res.setHeader('ETag', catalogVersionStore.getAdminCatalogVersion(catalog));
-            const config = CATALOG_CONFIG[catalog];
-            const model = getModelDelegate(prisma, config.model);
-
-            if (catalog === 'size-curves') {
-                const records = await model.findMany({
-                    include: { values: { orderBy: { sortOrder: 'asc' } } },
-                    orderBy: { code: 'asc' }
-                });
-                return res.json(records);
-            }
-
-            const records = await model.findMany({ orderBy: { code: 'asc' } });
+            const records = await handlers[catalog].list();
             return res.json(records);
         } catch (error) {
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load catalog data', error, req.traceId);
@@ -142,35 +52,14 @@ export const createAdminCatalogRoutes = (
         }
 
         const payload = req.body as CatalogPayload;
-        const validationError = validatePayload(catalog, payload);
+        const validationError = validateCatalogPayload(catalog, payload);
         if (validationError) {
             return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, validationError, undefined, req.traceId);
         }
 
         try {
-            const config = CATALOG_CONFIG[catalog];
-            const model = getModelDelegate(prisma, config.model);
-            const data = buildDataPayload(catalog, payload);
-
-            if (catalog === 'size-curves') {
-                const values = normalizeSizeValues(payload.values);
-                const record = await model.create({
-                    data: {
-                        ...data,
-                        values: {
-                            create: values.map((value, index) => ({ value, sortOrder: index }))
-                        }
-                    },
-                    include: { values: { orderBy: { sortOrder: 'asc' } } }
-                });
-                catalogVersionStore.bumpAdminCatalogVersion(catalog);
-                if (impactsOperationsCatalogs(catalog)) {
-                    catalogVersionStore.bumpOperationsCatalogVersion();
-                }
-                return res.status(201).json(record);
-            }
-
-            const record = await model.create({ data });
+            const data = buildCatalogDataPayload(catalog, payload);
+            const record = await handlers[catalog].create({ ...data, values: payload.values });
             catalogVersionStore.bumpAdminCatalogVersion(catalog);
             if (impactsOperationsCatalogs(catalog)) {
                 catalogVersionStore.bumpOperationsCatalogVersion();
@@ -188,40 +77,14 @@ export const createAdminCatalogRoutes = (
         }
 
         const payload = req.body as CatalogPayload;
-        const validationError = validatePayload(catalog, payload);
+        const validationError = validateCatalogPayload(catalog, payload);
         if (validationError) {
             return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, validationError, undefined, req.traceId);
         }
 
         try {
-            const config = CATALOG_CONFIG[catalog];
-            const model = getModelDelegate(prisma, config.model);
-            const data = buildDataPayload(catalog, payload);
-
-            if (catalog === 'size-curves') {
-                const values = normalizeSizeValues(payload.values);
-
-                const record = await prisma.$transaction(async (tx) => {
-                    await tx.sizeCurveValue.deleteMany({ where: { sizeCurveId: id } });
-                    return tx.sizeCurve.update({
-                        where: { id },
-                        data: {
-                            ...data,
-                            values: {
-                                create: values.map((value, index) => ({ value, sortOrder: index }))
-                            }
-                        },
-                        include: { values: { orderBy: { sortOrder: 'asc' } } }
-                    });
-                });
-                catalogVersionStore.bumpAdminCatalogVersion(catalog);
-                if (impactsOperationsCatalogs(catalog)) {
-                    catalogVersionStore.bumpOperationsCatalogVersion();
-                }
-                return res.json(record);
-            }
-
-            const record = await model.update({ where: { id }, data });
+            const data = buildCatalogDataPayload(catalog, payload);
+            const record = await handlers[catalog].update(id, { ...data, values: payload.values });
             catalogVersionStore.bumpAdminCatalogVersion(catalog);
             if (impactsOperationsCatalogs(catalog)) {
                 catalogVersionStore.bumpOperationsCatalogVersion();
@@ -239,10 +102,7 @@ export const createAdminCatalogRoutes = (
         }
 
         try {
-            const config = CATALOG_CONFIG[catalog];
-            const model = getModelDelegate(prisma, config.model);
-
-            await model.delete({ where: { id } });
+            await handlers[catalog].remove(id);
             catalogVersionStore.bumpAdminCatalogVersion(catalog);
             if (impactsOperationsCatalogs(catalog)) {
                 catalogVersionStore.bumpOperationsCatalogVersion();
