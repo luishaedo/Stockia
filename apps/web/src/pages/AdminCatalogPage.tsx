@@ -76,6 +76,11 @@ export function AdminCatalogPage() {
     useEffect(() => {
         resetForm();
         void loadItems(selectedCatalog);
+
+        const nextCatalogs = catalogOptions
+            .map(option => option.key)
+            .filter(catalog => catalog !== selectedCatalog);
+        void api.preloadAdminCatalogsIncremental(nextCatalogs);
     }, [selectedCatalog]);
 
     const handleEdit = (item: CatalogItem) => {

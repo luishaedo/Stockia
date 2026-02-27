@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFactura } from '../context/FacturaContext';
 import { api, ApiError } from '../services/api';
+import { reportAutosaveError } from '../services/autosaveTelemetry';
 import { ErrorCodes, UpdateFacturaDraftDTO } from '@stockia/shared';
 
 type DraftPayload = Omit<UpdateFacturaDraftDTO, 'expectedUpdatedAt'>;
@@ -59,7 +60,10 @@ export function useAutosave(timeout = 2000) {
             pendingPayloadRef.current = null;
             setConflictState({ hasConflict: false, message: null });
         } catch (error: unknown) {
-            console.error('Autosave reloadFromServer failed', error);
+            reportAutosaveError('reload', error, {
+                facturaId: state.currentFactura?.id,
+                message: 'Autosave reloadFromServer failed'
+            });
             dispatch({ type: 'SET_ERROR', payload: getTechnicalErrorMessage('No se pudo recargar', error) });
         }
     };
@@ -77,7 +81,10 @@ export function useAutosave(timeout = 2000) {
             }
             await saveDraft(pendingPayloadRef.current, latestExpectedUpdatedAt);
         } catch (error: unknown) {
-            console.error('Autosave keepLocalChanges failed', error);
+            reportAutosaveError('keep-local', error, {
+                facturaId: state.currentFactura?.id,
+                message: 'Autosave keepLocalChanges failed'
+            });
             dispatch({ type: 'SET_ERROR', payload: getTechnicalErrorMessage('No se pudo reintentar', error) });
         }
     };
@@ -92,7 +99,10 @@ export function useAutosave(timeout = 2000) {
                 conflictExpectedUpdatedAt.current || state.lastSavedAt || (state.currentFactura.updatedAt as string)
             );
         } catch (error: unknown) {
-            console.error('Autosave retrySave failed', error);
+            reportAutosaveError('retry', error, {
+                facturaId: state.currentFactura?.id,
+                message: 'Autosave retrySave failed'
+            });
             dispatch({ type: 'SET_ERROR', payload: getTechnicalErrorMessage('No se pudo reintentar', error) });
         }
     };
@@ -144,6 +154,12 @@ export function useAutosave(timeout = 2000) {
                     lastSavedState.current = currentState;
                     success = true;
                 } catch (error: unknown) {
+                    reportAutosaveError('save', error, {
+                        facturaId: state.currentFactura?.id,
+                        attempt: attempt + 1,
+                        message: 'Autosave saveDraft failed'
+                    });
+
                     if (error instanceof ApiError) {
                         console.error('Autosave saveDraft failed', {
                             code: error.code,

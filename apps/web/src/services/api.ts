@@ -29,6 +29,7 @@ class ApiFacade {
     resolveAssetUrl = this.adminApi.resolveAssetUrl.bind(this.adminApi);
 
     getOperationsCatalogs = this.catalogsApi.getOperationsCatalogs.bind(this.catalogsApi);
+    preloadAdminCatalogsIncremental = this.catalogsApi.preloadAdminCatalogsIncremental.bind(this.catalogsApi);
     getAdminCatalog = this.catalogsApi.getAdminCatalog.bind(this.catalogsApi);
     getAdminCatalogCached = this.catalogsApi.getAdminCatalogCached.bind(this.catalogsApi);
     invalidateCatalogCache = this.catalogsApi.invalidateCatalogCache.bind(this.catalogsApi);
