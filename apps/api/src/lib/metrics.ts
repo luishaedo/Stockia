@@ -11,6 +11,8 @@ type HistogramData = {
 const REQUEST_COUNTER = new Map<CounterKey, number>();
 const ERROR_COUNTER = new Map<CounterKey, number>();
 const LATENCY_HISTOGRAM = new Map<string, HistogramData>();
+const LEGACY_ALIAS_COUNTER = new Map<CounterKey, number>();
+const LEGACY_ALIAS_ERROR_COUNTER = new Map<CounterKey, number>();
 
 const LATENCY_BUCKETS_MS = [25, 50, 100, 250, 500, 1000, 2000, 5000];
 
@@ -91,5 +93,34 @@ export const getPrometheusMetrics = () => {
         lines.push(`request_latency_ms_count{${encodeLabels({ method, route })}} ${value.count}`);
     });
 
+    lines.push('# HELP legacy_alias_request_count Total legacy alias requests by route, alias, consumer and status code.');
+    lines.push('# TYPE legacy_alias_request_count counter');
+    LEGACY_ALIAS_COUNTER.forEach((value, key) => {
+        const [routeName, aliasName, consumerId, statusCode] = key.split('|');
+        lines.push(`legacy_alias_request_count{${encodeLabels({ route_name: routeName, alias_name: aliasName, consumer_id: consumerId, status_code: statusCode })}} ${value}`);
+    });
+
+    lines.push('# HELP legacy_alias_error_count Total legacy alias errors by route, alias and consumer.');
+    lines.push('# TYPE legacy_alias_error_count counter');
+    LEGACY_ALIAS_ERROR_COUNTER.forEach((value, key) => {
+        const [routeName, aliasName, consumerId] = key.split('|');
+        lines.push(`legacy_alias_error_count{${encodeLabels({ route_name: routeName, alias_name: aliasName, consumer_id: consumerId })}} ${value}`);
+    });
+
     return `${lines.join('\n')}\n`;
+};
+
+type LegacyAliasMetricInput = {
+    routeName: string;
+    aliasName: string;
+    consumerId: string;
+    statusCode: number;
+    hasError: boolean;
+};
+
+export const observeLegacyAliasRequest = ({ routeName, aliasName, consumerId, statusCode, hasError }: LegacyAliasMetricInput) => {
+    incrementCounter(LEGACY_ALIAS_COUNTER, `${routeName}|${aliasName}|${consumerId}|${statusCode}`);
+    if (hasError) {
+        incrementCounter(LEGACY_ALIAS_ERROR_COUNTER, `${routeName}|${aliasName}|${consumerId}`);
+    }
 };

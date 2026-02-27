@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { RequestHandler, Router } from 'express';
+import { Request, RequestHandler, Router } from 'express';
 import { ErrorCodes } from '@stockia/shared';
 import { sendError } from '../middlewares/error.js';
 import { catalogVersionStore } from '../lib/catalogVersion.js';
+import { applyDeprecationHeaders, LEGACY_ROUTE_POLICIES } from '../lib/deprecation.js';
+import { observeLegacyAliasRequest } from '../lib/metrics.js';
 
 const OPERATIONS_CATALOG_TTL_MS = 300_000;
 
@@ -20,6 +22,30 @@ type OperationsCatalogCache = {
 
 let operationsCatalogCache: OperationsCatalogCache = null;
 
+const resolveConsumerId = (req: Request) => {
+    const fromClientId = req.header('x-client-id');
+    if (typeof fromClientId === 'string' && fromClientId.trim().length > 0) {
+        return fromClientId.trim();
+    }
+
+    const fromApiKey = req.header('x-api-key');
+    if (typeof fromApiKey === 'string' && fromApiKey.trim().length > 0) {
+        return fromApiKey.trim().slice(0, 8);
+    }
+
+    return 'anonymous';
+};
+
+const observeLegacyResponse = (req: Request, routeName: string, aliasName: string, statusCode: number, hasError: boolean) => {
+    observeLegacyAliasRequest({
+        routeName,
+        aliasName,
+        consumerId: resolveConsumerId(req),
+        statusCode,
+        hasError
+    });
+};
+
 export const createCatalogSelectionRoutes = (
     prisma: PrismaClient,
     requireAuth: RequestHandler,
@@ -27,32 +53,38 @@ export const createCatalogSelectionRoutes = (
 ) => {
     const router = Router();
 
-    router.get('/providers', readRateLimitMiddleware, requireAuth, async (_req, res) => {
+    router.get('/providers', readRateLimitMiddleware, requireAuth, async (req, res) => {
+        applyDeprecationHeaders(res, LEGACY_ROUTE_POLICIES.providers);
         try {
             const providers = await prisma.supplier.findMany({
                 orderBy: [{ name: 'asc' }],
                 select: { id: true, code: true, name: true, logoUrl: true, createdAt: true, updatedAt: true }
             });
 
+            observeLegacyResponse(req, 'GET /providers', 'providers', 200, false);
             return res.json(providers);
         } catch (error) {
-            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load providers', error, _req.traceId);
+            observeLegacyResponse(req, 'GET /providers', 'providers', 500, true);
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load providers', error, req.traceId);
         }
     });
 
-    router.get('/size-tables', readRateLimitMiddleware, requireAuth, async (_req, res) => {
+    router.get('/size-tables', readRateLimitMiddleware, requireAuth, async (req, res) => {
+        applyDeprecationHeaders(res, LEGACY_ROUTE_POLICIES.sizeTables);
         try {
             const sizeTables = await prisma.sizeCurve.findMany({
                 orderBy: [{ code: 'asc' }],
                 include: { values: { orderBy: { sortOrder: 'asc' } } }
             });
 
+            observeLegacyResponse(req, 'GET /size-tables', 'size-tables', 200, false);
             return res.json(sizeTables.map(table => ({
                 ...table,
                 sizes: table.values.map(value => value.value)
             })));
         } catch (error) {
-            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load size tables', error, _req.traceId);
+            observeLegacyResponse(req, 'GET /size-tables', 'size-tables', 500, true);
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load size tables', error, req.traceId);
         }
     });
 
