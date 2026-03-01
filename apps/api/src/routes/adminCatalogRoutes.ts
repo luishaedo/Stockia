@@ -12,6 +12,40 @@ import {
     validateCatalogPayload
 } from '../services/adminCatalogHandlers.js';
 
+const mapCatalogWriteError = (error: unknown): { status: number; code: string; message: string } => {
+    const prismaError = error as { code?: string };
+
+    if (prismaError?.code === 'P2002') {
+        return {
+            status: 409,
+            code: ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION,
+            message: 'A catalog item with this code already exists'
+        };
+    }
+
+    if (prismaError?.code === 'P2025') {
+        return {
+            status: 404,
+            code: ErrorCodes.NOT_FOUND,
+            message: 'Catalog item not found'
+        };
+    }
+
+    if (prismaError?.code === 'P2009' || prismaError?.code === 'P2012') {
+        return {
+            status: 400,
+            code: ErrorCodes.VALIDATION_FAILED,
+            message: 'Invalid catalog payload'
+        };
+    }
+
+    return {
+        status: 500,
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'Unexpected error while processing catalog item'
+    };
+};
+
 export const createAdminCatalogRoutes = (
     prisma: PrismaClient,
     requireAuth: RequestHandler,
@@ -59,14 +93,16 @@ export const createAdminCatalogRoutes = (
 
         try {
             const data = buildCatalogDataPayload(catalog, payload);
-            const record = await handlers[catalog].create({ ...data, values: payload.values });
+            const valuesData = catalog === 'size-curves' ? { values: payload.values } : {};
+            const record = await handlers[catalog].create({ ...data, ...valuesData });
             catalogVersionStore.bumpAdminCatalogVersion(catalog);
             if (impactsOperationsCatalogs(catalog)) {
                 catalogVersionStore.bumpOperationsCatalogVersion();
             }
             return res.status(201).json(record);
         } catch (error) {
-            return sendError(res, 400, ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION, 'Could not create catalog item', error, req.traceId);
+            const mapped = mapCatalogWriteError(error);
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
 
@@ -84,14 +120,16 @@ export const createAdminCatalogRoutes = (
 
         try {
             const data = buildCatalogDataPayload(catalog, payload);
-            const record = await handlers[catalog].update(id, { ...data, values: payload.values });
+            const valuesData = catalog === 'size-curves' ? { values: payload.values } : {};
+            const record = await handlers[catalog].update(id, { ...data, ...valuesData });
             catalogVersionStore.bumpAdminCatalogVersion(catalog);
             if (impactsOperationsCatalogs(catalog)) {
                 catalogVersionStore.bumpOperationsCatalogVersion();
             }
             return res.json(record);
         } catch (error) {
-            return sendError(res, 400, ErrorCodes.BAD_REQUEST, 'Could not update catalog item', error, req.traceId);
+            const mapped = mapCatalogWriteError(error);
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
 
