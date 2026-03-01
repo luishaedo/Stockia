@@ -117,7 +117,7 @@ export function AdminCatalogPage() {
             ...(isSupplier ? { name: description } : { description })
         };
 
-        if (isCategory || isSupplier) payload.logoUrl = logoUrl;
+        if ((isCategory || isSupplier) && logoUrl.trim()) payload.logoUrl = logoUrl.trim();
         if (isCategory) payload.longDescription = longDescription;
         if (isSizeCurve) payload.values = sizeValues.split(',').map(value => value.trim()).filter(Boolean);
 
