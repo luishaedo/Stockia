@@ -42,7 +42,7 @@ export const createApp = (prisma: PrismaClient) => {
         res.status(200).send(getPrometheusMetrics());
     });
 
-    app.post('/auth/login', loginRateLimitMiddleware, (req, res) => {
+    const authLoginHandler: express.RequestHandler = (req, res) => {
         const { username, password } = req.body ?? {};
         const configuredUsername = process.env.AUTH_USERNAME;
         const configuredPassword = process.env.AUTH_PASSWORD;
@@ -57,16 +57,26 @@ export const createApp = (prisma: PrismaClient) => {
 
         const accessToken = issueAuthToken({ sub: username, role: 'admin' }, process.env.JWT_SECRET);
         return res.json({ accessToken, tokenType: 'Bearer' });
-    });
+    };
+
+    app.post('/auth/login', loginRateLimitMiddleware, authLoginHandler);
+    app.post('/api/auth/login', loginRateLimitMiddleware, authLoginHandler);
 
     const repository = new FacturaRepository(prisma);
     const service = new FacturaService(repository);
     const controller = new FacturaController(service);
 
     app.use(createFacturaRoutes(controller, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use('/api', createFacturaRoutes(controller, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
+
     app.use(createCatalogSelectionRoutes(prisma, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware));
+    app.use('/api', createCatalogSelectionRoutes(prisma, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware));
+
     app.use(createAdminCatalogRoutes(prisma, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use('/api', createAdminCatalogRoutes(prisma, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
+
     app.use(createAdminUploadRoutes(requireAuthToken(process.env.JWT_SECRET), writeRateLimitMiddleware));
+    app.use('/api', createAdminUploadRoutes(requireAuthToken(process.env.JWT_SECRET), writeRateLimitMiddleware));
 
     return app;
 };
