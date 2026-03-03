@@ -26,6 +26,11 @@ export const createApp = (prisma: PrismaClient) => {
     const app = express();
     app.set('trust proxy', 1);
 
+  // TEMP DEBUG: bypass auth only for catalog endpoints to isolate catalog creation issues.
+    // Revert by replacing this middleware with requireAuthToken(process.env.JWT_SECRET).
+    const allowCatalogsWithoutAuth: express.RequestHandler = (_req, _res, next) => next();
+
+    
     app.use(buildCorsMiddleware());
     app.use(securityHeadersMiddleware);
     app.use(express.json());
