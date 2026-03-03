@@ -4,7 +4,7 @@ services:
     runtime: node
     rootDir: .
     buildCommand: npm ci && npm run build -w @stockia/shared && npm run build -w api
-    startCommand: npm run start -w api
+    startCommand: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm run start -w api
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
