@@ -5,6 +5,7 @@ import { sendError } from '../middlewares/error.js';
 import { catalogVersionStore } from '../lib/catalogVersion.js';
 import { applyDeprecationHeaders, LEGACY_ROUTE_POLICIES } from '../lib/deprecation.js';
 import { observeLegacyAliasRequest } from '../lib/metrics.js';
+import { logger } from '../lib/logger.js';
 
 const OPERATIONS_CATALOG_TTL_MS = 300_000;
 
@@ -65,6 +66,7 @@ export const createCatalogSelectionRoutes = (
             return res.json(providers);
         } catch (error) {
             observeLegacyResponse(req, 'GET /providers', 'providers', 500, true);
+            logger.error({ err: error, traceId: req.traceId, operation: 'listProviders' }, 'Failed to load providers catalog');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load providers', error, req.traceId);
         }
     });
@@ -84,6 +86,7 @@ export const createCatalogSelectionRoutes = (
             })));
         } catch (error) {
             observeLegacyResponse(req, 'GET /size-tables', 'size-tables', 500, true);
+            logger.error({ err: error, traceId: req.traceId, operation: 'listSizeTables' }, 'Failed to load size tables catalog');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load size tables', error, req.traceId);
         }
     });
@@ -130,6 +133,7 @@ export const createCatalogSelectionRoutes = (
 
             return res.json(response);
         } catch (error) {
+            logger.error({ err: error, traceId: req.traceId, operation: 'getOperationsCatalogs' }, 'Failed to load operations catalogs');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load operations catalogs', error, req.traceId);
         }
     });

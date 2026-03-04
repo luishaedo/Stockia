@@ -28,6 +28,19 @@ const catalogOptions: Array<{ key: CatalogKey; label: string }> = [
 
 const getDisplayDescription = (item: CatalogItem) => item.name || item.description || '';
 
+const formatCatalogError = (error: unknown, fallback: string) => {
+    if (error instanceof ApiError) {
+        const traceInfo = error.traceId ? ` (traceId: ${error.traceId})` : '';
+        return `${error.message} [${error.code}]${traceInfo}`;
+    }
+
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+
+    return fallback;
+};
+
 export function AdminCatalogPage() {
     const [selectedCatalog, setSelectedCatalog] = useState<CatalogKey>('suppliers');
     const [items, setItems] = useState<CatalogItem[]>([]);
@@ -66,7 +79,8 @@ export function AdminCatalogPage() {
             const data = await api.getAdminCatalogCached<CatalogItem[]>(catalog, true);
             setItems(data);
         } catch (err) {
-            const message = err instanceof ApiError ? err.message : 'No pudimos cargar el catálogo';
+            console.error('[AdminCatalogPage] loadItems failed', { catalog, err });
+            const message = formatCatalogError(err, 'No pudimos cargar el catálogo');
             setError(message);
         } finally {
             setLoading(false);
@@ -101,7 +115,8 @@ export function AdminCatalogPage() {
             const response = await api.uploadAdminLogo(file);
             setLogoUrl(response.url);
         } catch (err) {
-            const message = err instanceof ApiError ? err.message : 'No pudimos subir el logo';
+            console.error('[AdminCatalogPage] handleLogoUpload failed', { selectedCatalog, err });
+            const message = formatCatalogError(err, 'No pudimos subir el logo');
             setError(message);
         } finally {
             setUploadingLogo(false);
@@ -130,7 +145,8 @@ export function AdminCatalogPage() {
             resetForm();
             await loadItems(selectedCatalog);
         } catch (err) {
-            const message = err instanceof ApiError ? err.message : 'No pudimos guardar los datos';
+            console.error('[AdminCatalogPage] handleSubmit failed', { selectedCatalog, editingId, payload, err });
+            const message = formatCatalogError(err, 'No pudimos guardar los datos');
             setError(message);
         }
     };
@@ -142,7 +158,8 @@ export function AdminCatalogPage() {
             if (editingId === id) resetForm();
             await loadItems(selectedCatalog);
         } catch (err) {
-            const message = err instanceof ApiError ? err.message : 'No pudimos eliminar el registro';
+            console.error('[AdminCatalogPage] handleDelete failed', { selectedCatalog, id, err });
+            const message = formatCatalogError(err, 'No pudimos eliminar el registro');
             setError(message);
         }
     };
