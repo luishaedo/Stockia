@@ -38,21 +38,31 @@ export class CatalogsApiService {
 
 
     private async getCatalogVersion(catalog: AdminCatalogKey): Promise<string> {
-        const response = await this.fetchWithApiPrefixFallback(`/admin/catalogs/${catalog}/version`, {
-            headers: this.client.getAccessTokenHeader()
-        });
-        await this.client.assertOk(response, 'No pudimos validar versión de catálogo');
-        const data = await response.json() as { version: string };
-        return data.version;
+        const path = `/admin/catalogs/${catalog}/version`;
+        try {
+            const response = await this.fetchWithApiPrefixFallback(path, {
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos validar versión de catálogo');
+            const data = await response.json() as { version: string };
+            return data.version;
+        } catch (error) {
+            return this.logAndThrowRequestError('getCatalogVersion', path, error);
+        }
     }
 
     private async getOperationsVersion(): Promise<string> {
-        const response = await this.fetchWithApiPrefixFallback('/operations/catalogs/version', {
-            headers: this.client.getAccessTokenHeader()
-        });
-        await this.client.assertOk(response, 'No pudimos validar versión de catálogos operativos');
-        const data = await response.json() as { version: string };
-        return data.version;
+        const path = '/operations/catalogs/version';
+        try {
+            const response = await this.fetchWithApiPrefixFallback(path, {
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos validar versión de catálogos operativos');
+            const data = await response.json() as { version: string };
+            return data.version;
+        } catch (error) {
+            return this.logAndThrowRequestError('getOperationsVersion', path, error);
+        }
     }
 
     async getOperationsCatalogs(forceRefresh = false): Promise<OperationCatalogsResponse> {
@@ -66,24 +76,34 @@ export class CatalogsApiService {
             catalogCacheStore.invalidateOperationsCatalogs();
         }
 
-        const response = await this.fetchWithApiPrefixFallback('/operations/catalogs', {
-            headers: this.client.getAccessTokenHeader()
-        });
-        await this.client.assertOk(response, 'No pudimos cargar los catálogos operativos');
+        const path = '/operations/catalogs';
+        try {
+            const response = await this.fetchWithApiPrefixFallback(path, {
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos cargar los catálogos operativos');
 
-        const data = await response.json() as OperationCatalogsResponse;
-        const responseVersion = response.headers.get('ETag') ?? DEFAULT_VERSION;
-        catalogCacheStore.setOperationsCatalogs(data, responseVersion);
+            const data = await response.json() as OperationCatalogsResponse;
+            const responseVersion = response.headers.get('ETag') ?? DEFAULT_VERSION;
+            catalogCacheStore.setOperationsCatalogs(data, responseVersion);
 
-        return data;
+            return data;
+        } catch (error) {
+            return this.logAndThrowRequestError('getOperationsCatalogs', path, error);
+        }
     }
 
     async getAdminCatalog<T>(catalog: AdminCatalogKey): Promise<T> {
-        const response = await this.fetchWithApiPrefixFallback(`/admin/catalogs/${catalog}`, {
-            headers: this.client.getAccessTokenHeader()
-        });
-        await this.client.assertOk(response, 'No pudimos cargar el catálogo');
-        return response.json();
+        const path = `/admin/catalogs/${catalog}`;
+        try {
+            const response = await this.fetchWithApiPrefixFallback(path, {
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos cargar el catálogo');
+            return response.json();
+        } catch (error) {
+            return this.logAndThrowRequestError('getAdminCatalog', path, error);
+        }
     }
 
     async getAdminCatalogCached<T>(catalog: AdminCatalogKey, forceRefresh = false): Promise<T> {
@@ -97,15 +117,20 @@ export class CatalogsApiService {
             catalogCacheStore.invalidateAdminCatalog(catalog);
         }
 
-        const response = await this.fetchWithApiPrefixFallback(`/admin/catalogs/${catalog}`, {
-            headers: this.client.getAccessTokenHeader()
-        });
-        await this.client.assertOk(response, 'No pudimos cargar el catálogo');
-        const data = await response.json() as T;
-        const responseVersion = response.headers.get('ETag') ?? DEFAULT_VERSION;
+        const path = `/admin/catalogs/${catalog}`;
+        try {
+            const response = await this.fetchWithApiPrefixFallback(path, {
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos cargar el catálogo');
+            const data = await response.json() as T;
+            const responseVersion = response.headers.get('ETag') ?? DEFAULT_VERSION;
 
-        catalogCacheStore.setAdminCatalog(catalog, data, responseVersion);
-        return data;
+            catalogCacheStore.setAdminCatalog(catalog, data, responseVersion);
+            return data;
+        } catch (error) {
+            return this.logAndThrowRequestError('getAdminCatalogCached', path, error);
+        }
     }
 
     invalidateCatalogCache(catalog?: AdminCatalogKey) {
@@ -116,33 +141,57 @@ export class CatalogsApiService {
     }
 
     async createAdminCatalog(catalog: AdminCatalogKey, payload: Record<string, unknown>) {
-        const response = await this.fetchWithApiPrefixFallback(`/admin/catalogs/${catalog}`, {
-            method: 'POST',
-            headers: await this.client.getAuthHeaders(),
-            body: JSON.stringify(payload)
-        });
-        await this.client.assertOk(response, 'No pudimos crear el registro');
-        this.invalidateCatalogCache(catalog);
-        return response.json();
+        const path = `/admin/catalogs/${catalog}`;
+        try {
+            const response = await this.fetchWithApiPrefixFallback(path, {
+                method: 'POST',
+                headers: await this.client.getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            await this.client.assertOk(response, 'No pudimos crear el registro');
+            this.invalidateCatalogCache(catalog);
+            return response.json();
+        } catch (error) {
+            return this.logAndThrowRequestError('createAdminCatalog', path, error);
+        }
     }
 
     async updateAdminCatalog(catalog: AdminCatalogKey, id: string, payload: Record<string, unknown>) {
-        const response = await this.fetchWithApiPrefixFallback(`/admin/catalogs/${catalog}/${id}`, {
-            method: 'PUT',
-            headers: await this.client.getAuthHeaders(),
-            body: JSON.stringify(payload)
-        });
-        await this.client.assertOk(response, 'No pudimos actualizar el registro');
-        this.invalidateCatalogCache(catalog);
-        return response.json();
+        const path = `/admin/catalogs/${catalog}/${id}`;
+        try {
+            const response = await this.fetchWithApiPrefixFallback(path, {
+                method: 'PUT',
+                headers: await this.client.getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            await this.client.assertOk(response, 'No pudimos actualizar el registro');
+            this.invalidateCatalogCache(catalog);
+            return response.json();
+        } catch (error) {
+            return this.logAndThrowRequestError('updateAdminCatalog', path, error);
+        }
     }
 
     async deleteAdminCatalog(catalog: AdminCatalogKey, id: string): Promise<void> {
-        const response = await this.fetchWithApiPrefixFallback(`/admin/catalogs/${catalog}/${id}`, {
-            method: 'DELETE',
-            headers: this.client.getAccessTokenHeader()
+        const path = `/admin/catalogs/${catalog}/${id}`;
+        try {
+            const response = await this.fetchWithApiPrefixFallback(path, {
+                method: 'DELETE',
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos eliminar el registro');
+            this.invalidateCatalogCache(catalog);
+        } catch (error) {
+            return this.logAndThrowRequestError('deleteAdminCatalog', path, error);
+        }
+    }
+    private async logAndThrowRequestError(context: string, path: string, error: unknown): Promise<never> {
+        console.error('[CatalogsApiService] request failed', {
+            context,
+            path,
+            baseUrl: this.client.getBaseURL(),
+            error
         });
-        await this.client.assertOk(response, 'No pudimos eliminar el registro');
-        this.invalidateCatalogCache(catalog);
+        throw error;
     }
 }

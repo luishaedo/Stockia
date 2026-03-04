@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { ErrorCodes } from '@stockia/shared';
 import { sendError } from '../middlewares/error.js';
 import { catalogVersionStore } from '../lib/catalogVersion.js';
+import { logger } from '../lib/logger.js';
 import {
     CatalogPayload,
     buildCatalogDataPayload,
@@ -66,6 +67,10 @@ export const createAdminCatalogRoutes = (
             const records = await handlers[catalog].list();
             return res.json(records);
         } catch (error) {
+            logger.error(
+                { err: error, traceId: req.traceId, catalog, operation: 'listAdminCatalog' },
+                'Failed to load admin catalog data'
+            );
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load catalog data', error, req.traceId);
         }
     });
@@ -102,6 +107,16 @@ export const createAdminCatalogRoutes = (
             return res.status(201).json(record);
         } catch (error) {
             const mapped = mapCatalogWriteError(error);
+            logger.error(
+                {
+                    err: error,
+                    traceId: req.traceId,
+                    catalog,
+                    operation: 'createAdminCatalogItem',
+                    payload
+                },
+                'Failed to create admin catalog item'
+            );
             return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
@@ -129,6 +144,17 @@ export const createAdminCatalogRoutes = (
             return res.json(record);
         } catch (error) {
             const mapped = mapCatalogWriteError(error);
+            logger.error(
+                {
+                    err: error,
+                    traceId: req.traceId,
+                    catalog,
+                    catalogItemId: id,
+                    operation: 'updateAdminCatalogItem',
+                    payload
+                },
+                'Failed to update admin catalog item'
+            );
             return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
@@ -147,6 +173,16 @@ export const createAdminCatalogRoutes = (
             }
             return res.status(204).send();
         } catch (error) {
+            logger.error(
+                {
+                    err: error,
+                    traceId: req.traceId,
+                    catalog,
+                    catalogItemId: id,
+                    operation: 'deleteAdminCatalogItem'
+                },
+                'Failed to delete admin catalog item'
+            );
             return sendError(res, 400, ErrorCodes.BAD_REQUEST, 'Could not delete catalog item', error, req.traceId);
         }
     });
