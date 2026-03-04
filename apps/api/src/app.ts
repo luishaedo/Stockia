@@ -26,9 +26,7 @@ export const createApp = (prisma: PrismaClient) => {
     const app = express();
     app.set('trust proxy', 1);
 
-    // TEMP DEBUG: bypass auth only for catalog endpoints to isolate catalog creation issues.
-    // Revert by replacing this middleware with requireAuthToken(process.env.JWT_SECRET).
-    const allowCatalogsWithoutAuth: express.RequestHandler = (_req, _res, next) => next();
+    const authMiddleware = requireAuthToken(process.env.JWT_SECRET);
 
     app.use(buildCorsMiddleware());
     app.use(securityHeadersMiddleware);
@@ -70,17 +68,17 @@ export const createApp = (prisma: PrismaClient) => {
     const service = new FacturaService(repository);
     const controller = new FacturaController(service);
 
-    app.use(createFacturaRoutes(controller, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
-    app.use('/api', createFacturaRoutes(controller, requireAuthToken(process.env.JWT_SECRET), readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use(createFacturaRoutes(controller, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use('/api', createFacturaRoutes(controller, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
 
-    app.use(createCatalogSelectionRoutes(prisma, allowCatalogsWithoutAuth, readRateLimitMiddleware));
-    app.use('/api', createCatalogSelectionRoutes(prisma, allowCatalogsWithoutAuth, readRateLimitMiddleware));
+    app.use(createCatalogSelectionRoutes(prisma, authMiddleware, readRateLimitMiddleware));
+    app.use('/api', createCatalogSelectionRoutes(prisma, authMiddleware, readRateLimitMiddleware));
 
-    app.use(createAdminCatalogRoutes(prisma, allowCatalogsWithoutAuth, readRateLimitMiddleware, writeRateLimitMiddleware));
-    app.use('/api', createAdminCatalogRoutes(prisma, allowCatalogsWithoutAuth, readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use(createAdminCatalogRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use('/api', createAdminCatalogRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
 
-    app.use(createAdminUploadRoutes(requireAuthToken(process.env.JWT_SECRET), writeRateLimitMiddleware));
-    app.use('/api', createAdminUploadRoutes(requireAuthToken(process.env.JWT_SECRET), writeRateLimitMiddleware));
+    app.use(createAdminUploadRoutes(authMiddleware, writeRateLimitMiddleware));
+    app.use('/api', createAdminUploadRoutes(authMiddleware, writeRateLimitMiddleware));
 
     return app;
 };
