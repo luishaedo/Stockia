@@ -8,6 +8,7 @@
         "build": "tsc",
         "start": "node dist/index.js",
         "prisma:generate": "prisma generate",
+        "prisma:migrate:deploy": "prisma migrate deploy",
         "prisma:push": "prisma db push",
         "verify:auth-policy": "node --loader ts-node/esm test-scripts/verify-auth-policy.ts",
         "smoke:ci": "bash test-scripts/smoke-ci.sh",
