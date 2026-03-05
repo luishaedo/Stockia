@@ -1,0 +1,51 @@
+.heading {
+  margin: 22px 0 14px;
+  font-size: 2rem;
+  line-height: 1.2;
+  color: #111827;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+}
+
+.taskCard {
+  background: #f4f4f5;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #d4d4d8;
+}
+
+.meta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #52525b;
+}
+
+.title {
+  margin: 4px 0;
+  font-size: 1.1rem;
+  color: #09090b;
+}
+
+.description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #3f3f46;
+}
+
+.cta {
+  border: 0;
+  border-radius: 14px;
+  background: #09090b;
+  color: #f8fafc;
+  min-height: 42px;
+  min-width: 96px;
+  padding: 0 14px;
+  font-weight: 600;
+}

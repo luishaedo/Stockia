@@ -1,8 +1,9 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package } from 'lucide-react';
+import { FileText, Grid2x2, ListTodo, LogOut, Menu, Package, Plus, Search } from 'lucide-react';
+import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext';
-import { Button } from '../ui/Button';
+import styles from './MainLayout.module.css';
 
 interface MainLayoutProps {
     children: ReactNode;
@@ -20,29 +21,55 @@ export function MainLayout({ children }: MainLayoutProps) {
         navigate('/login', { replace: true });
     };
 
+    const links = [
+        { to: '/facturas', icon: FileText, label: 'Facturas' },
+        { to: '/admin', icon: Grid2x2, label: 'Catálogos' },
+        { to: '/admin/facturas', icon: ListTodo, label: 'Admin' }
+    ];
+
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
-            <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
-                <div className="container max-w-7xl mx-auto px-3 sm:px-4 h-16 flex items-center justify-between">
-                    <Link to="/" className="flex items-center space-x-2 text-lg sm:text-xl font-bold text-white hover:text-blue-400 transition-colors">
-                        <Package className="h-6 w-6 text-blue-500" />
-                        <span>Stockia</span>
-                    </Link>
-                    <nav className="flex items-center gap-2">
-                        {isAuthenticated && !isLoginPage && (
-                            <>
-                                <Link to="/facturas" className="text-sm text-slate-300 hover:text-white">Facturas</Link>
-                                <Link to="/admin" className="text-sm text-slate-300 hover:text-white">Catálogos</Link>
-                                <Link to="/admin/facturas" className="text-sm text-slate-300 hover:text-white">Admin Facturas</Link>
-                                <Button variant="ghost" size="sm" onClick={handleLogout}>Cerrar sesión</Button>
-                            </>
+        <div className={styles.appFrame}>
+            <div className={styles.shell}>
+                {!isLoginPage && (
+                    <header className={styles.topBar}>
+                        <Link to="/facturas" className={styles.brand}>
+                            <span className={styles.brandIcon}><Package size={20} /></span>
+                            <span>Stockia</span>
+                        </Link>
+                        {isAuthenticated && (
+                            <div className={styles.topActions}>
+                                <button type="button" className={styles.iconButton} aria-label="Open navigation menu">
+                                    <Menu size={22} />
+                                </button>
+                                <button type="button" className={styles.logoutButton} onClick={handleLogout} aria-label="Log out">
+                                    <LogOut size={14} />
+                                </button>
+                            </div>
                         )}
+                    </header>
+                )}
+
+                <main className={styles.content}>{children}</main>
+
+                {isAuthenticated && !isLoginPage && (
+                    <nav className={styles.bottomNav} aria-label="Primary navigation">
+                        <Link to="/facturas" className={clsx(styles.navLink, location.pathname === '/facturas' && styles.navLinkActive)} aria-label="Go to invoices">
+                            <FileText size={21} />
+                        </Link>
+                        <Link to="/facturas?openSearch=true" className={styles.navLink} aria-label="Open invoice search">
+                            <Search size={21} />
+                        </Link>
+                        <Link to="/facturas/new" className={styles.navCenter} aria-label="Create invoice">
+                            <Plus size={22} />
+                        </Link>
+                        {links.map(({ to, icon: Icon, label }) => (
+                            <Link key={to} to={to} className={clsx(styles.navLink, location.pathname === to && styles.navLinkActive)} aria-label={label}>
+                                <Icon size={21} />
+                            </Link>
+                        )).slice(1)}
                     </nav>
-                </div>
-            </header>
-            <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-                {children}
-            </main>
+                )}
+            </div>
         </div>
     );
 }
