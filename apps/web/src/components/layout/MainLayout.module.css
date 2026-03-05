@@ -1,0 +1,139 @@
+.appFrame {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #ececec 0%, #dcdcdc 100%);
+  color: #0f172a;
+  padding: 16px;
+}
+
+.shell {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: calc(100vh - 32px);
+  border: 2px solid #d4d4d8;
+  border-radius: 32px;
+  background: #f4f4f5;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 18px;
+  border-bottom: 1px solid #d4d4d8;
+  background: #f8fafc;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.8rem;
+}
+
+.brandIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #111827;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconButton {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: #e4e4e7;
+  color: #18181b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoutButton {
+  border: 0;
+  background: transparent;
+  font-size: 0.75rem;
+  color: #475569;
+  cursor: pointer;
+}
+
+.content {
+  flex: 1;
+  padding: 12px;
+  padding-bottom: 86px;
+}
+
+.bottomNav {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #d4d4d8;
+  background: #f8fafc;
+}
+
+.navLink {
+  border: 0;
+  background: transparent;
+  color: #71717a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.navLinkActive {
+  color: #111827;
+}
+
+.navCenter {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 0;
+  background: #09090b;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  text-decoration: none;
+}
+
+@media (min-width: 900px) {
+  .shell {
+    max-width: 1100px;
+    border-radius: 28px;
+  }
+
+  .content {
+    padding: 24px;
+    padding-bottom: 90px;
+  }
+
+  .brand {
+    font-size: 2rem;
+  }
+}
