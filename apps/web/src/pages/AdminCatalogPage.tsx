@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { api, ApiError } from '../services/api';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Card } from '../components/ui/Card';
+import styles from './AdminCatalogPage.module.css';
 
 type CatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
 
@@ -16,14 +15,14 @@ type CatalogItem = {
     values?: { value: string; sortOrder: number }[];
 };
 
-const catalogOptions: Array<{ key: CatalogKey; label: string }> = [
-    { key: 'suppliers', label: 'Proveedores' },
-    { key: 'size-curves', label: 'Curvas de talles' },
-    { key: 'families', label: 'Familias' },
-    { key: 'categories', label: 'Categorías' },
-    { key: 'garment-types', label: 'Tipos de prenda' },
-    { key: 'materials', label: 'Materiales' },
-    { key: 'classifications', label: 'Clasificaciones' }
+const catalogOptions: Array<{ key: CatalogKey; label: string; emoji: string }> = [
+    { key: 'suppliers', label: 'Proveedores', emoji: '🏢' },
+    { key: 'size-curves', label: 'Curvas de talles', emoji: '📏' },
+    { key: 'garment-types', label: 'Tipos de prenda', emoji: '👕' },
+    { key: 'families', label: 'Familias', emoji: '📁' },
+    { key: 'categories', label: 'Categorías', emoji: '🏷️' },
+    { key: 'materials', label: 'Materiales', emoji: '🧵' },
+    { key: 'classifications', label: 'Clasificaciones', emoji: '📚' }
 ];
 
 const getDisplayDescription = (item: CatalogItem) => item.name || item.description || '';
@@ -60,7 +59,7 @@ export function AdminCatalogPage() {
     const isSizeCurve = selectedCatalog === 'size-curves';
     const requiresLogo = isCategory || isSupplier;
 
-    const title = useMemo(() => catalogOptions.find(option => option.key === selectedCatalog)?.label ?? selectedCatalog, [selectedCatalog]);
+    const title = useMemo(() => catalogOptions.find((option) => option.key === selectedCatalog)?.label ?? selectedCatalog, [selectedCatalog]);
 
     const resetForm = () => {
         setEditingId(null);
@@ -79,7 +78,6 @@ export function AdminCatalogPage() {
             const data = await api.getAdminCatalogCached<CatalogItem[]>(catalog, true);
             setItems(data);
         } catch (err) {
-            console.error('[AdminCatalogPage] loadItems failed', { catalog, err });
             const message = formatCatalogError(err, 'No pudimos cargar el catálogo');
             setError(message);
         } finally {
@@ -91,9 +89,7 @@ export function AdminCatalogPage() {
         resetForm();
         void loadItems(selectedCatalog);
 
-        const nextCatalogs = catalogOptions
-            .map(option => option.key)
-            .filter(catalog => catalog !== selectedCatalog);
+        const nextCatalogs = catalogOptions.map((option) => option.key).filter((catalog) => catalog !== selectedCatalog);
         void api.preloadAdminCatalogsIncremental(nextCatalogs);
     }, [selectedCatalog]);
 
@@ -103,7 +99,7 @@ export function AdminCatalogPage() {
         setDescription(item.name || item.description || '');
         setLogoUrl(item.logoUrl || '');
         setLongDescription(item.longDescription || '');
-        setSizeValues(item.values?.map(entry => entry.value).join(',') || '');
+        setSizeValues(item.values?.map((entry) => entry.value).join(',') || '');
     };
 
     const handleLogoUpload = async (file?: File) => {
@@ -115,7 +111,6 @@ export function AdminCatalogPage() {
             const response = await api.uploadAdminLogo(file);
             setLogoUrl(response.url);
         } catch (err) {
-            console.error('[AdminCatalogPage] handleLogoUpload failed', { selectedCatalog, err });
             const message = formatCatalogError(err, 'No pudimos subir el logo');
             setError(message);
         } finally {
@@ -127,14 +122,10 @@ export function AdminCatalogPage() {
         event.preventDefault();
         setError(null);
 
-        const payload: Record<string, unknown> = {
-            code,
-            ...(isSupplier ? { name: description } : { description })
-        };
-
+        const payload: Record<string, unknown> = { code, ...(isSupplier ? { name: description } : { description }) };
         if ((isCategory || isSupplier) && logoUrl.trim()) payload.logoUrl = logoUrl.trim();
         if (isCategory) payload.longDescription = longDescription;
-        if (isSizeCurve) payload.values = sizeValues.split(',').map(value => value.trim()).filter(Boolean);
+        if (isSizeCurve) payload.values = sizeValues.split(',').map((value) => value.trim()).filter(Boolean);
 
         try {
             if (editingId) {
@@ -145,7 +136,6 @@ export function AdminCatalogPage() {
             resetForm();
             await loadItems(selectedCatalog);
         } catch (err) {
-            console.error('[AdminCatalogPage] handleSubmit failed', { selectedCatalog, editingId, payload, err });
             const message = formatCatalogError(err, 'No pudimos guardar los datos');
             setError(message);
         }
@@ -158,102 +148,72 @@ export function AdminCatalogPage() {
             if (editingId === id) resetForm();
             await loadItems(selectedCatalog);
         } catch (err) {
-            console.error('[AdminCatalogPage] handleDelete failed', { selectedCatalog, id, err });
             const message = formatCatalogError(err, 'No pudimos eliminar el registro');
             setError(message);
         }
     };
 
     return (
-        <div className="space-y-6">
-            <Card>
-                <h1 className="text-2xl font-bold mb-2">Administración de catálogos</h1>
-                <p className="text-slate-300">Alta y edición de catálogos maestros para evitar carga manual en el stockeador.</p>
-            </Card>
+        <section>
+            <header className={styles.hero}>
+                <button type="button" className={styles.backButton}><ArrowLeft size={18} /></button>
+                <h1>Catálogos</h1>
+                <p>Administración de datos maestros</p>
+            </header>
 
-            <Card>
-                <label className="block text-sm font-medium mb-2">Catálogo</label>
-                <select
-                    className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2"
-                    value={selectedCatalog}
-                    onChange={(event) => setSelectedCatalog(event.target.value as CatalogKey)}
-                >
-                    {catalogOptions.map(option => (
-                        <option key={option.key} value={option.key}>{option.label}</option>
+            <div className={styles.content}>
+                <h2 className={styles.sectionTitle}>Seleccioná el catálogo</h2>
+                <div className={styles.catalogGrid}>
+                    {catalogOptions.map((option) => (
+                        <button
+                            key={option.key}
+                            type="button"
+                            onClick={() => setSelectedCatalog(option.key)}
+                            className={selectedCatalog === option.key ? styles.catalogCardActive : styles.catalogCard}
+                        >
+                            <span>{option.emoji}</span>
+                            <span>{option.label}</span>
+                        </button>
                     ))}
-                </select>
-            </Card>
+                </div>
 
-            <Card>
-                <h2 className="text-xl font-semibold mb-4">{editingId ? `Editar en ${title}` : `Nuevo en ${title}`}</h2>
-                <form onSubmit={handleSubmit} className="space-y-3">
-                    <Input label="Código" value={code} onChange={e => setCode(e.target.value)} required />
-                    <Input label={isSupplier ? 'Nombre' : 'Descripción'} value={description} onChange={e => setDescription(e.target.value)} required />
-
+                <form onSubmit={handleSubmit} className={styles.formCard}>
+                    <input className={styles.input} placeholder="Código" value={code} onChange={(e) => setCode(e.target.value)} required />
+                    <input className={styles.input} placeholder={isSupplier ? 'Nombre' : 'Descripción'} value={description} onChange={(e) => setDescription(e.target.value)} required />
                     {requiresLogo && (
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium">Logo (upload)</label>
-                            <input
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                onChange={(event) => void handleLogoUpload(event.target.files?.[0])}
-                                className="block w-full text-sm text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-slate-800 file:text-slate-100"
-                            />
-                            {uploadingLogo && <p className="text-xs text-slate-400">Subiendo logo...</p>}
-                            {!!logoUrl && (
-                                <div className="text-xs text-slate-300">
-                                    <p className="mb-2">Logo cargado:</p>
-                                    <img src={api.resolveAssetUrl(logoUrl)} alt="Uploaded logo" className="h-12 w-12 object-contain bg-slate-950 border border-slate-700 rounded" />
-                                </div>
-                            )}
-                        </div>
+                        <>
+                            <input className={styles.inputFile} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(event) => void handleLogoUpload(event.target.files?.[0])} />
+                            {uploadingLogo && <p className={styles.mutedText}>Subiendo logo...</p>}
+                        </>
                     )}
+                    {isCategory && <input className={styles.input} placeholder="Descripción larga" value={longDescription} onChange={(e) => setLongDescription(e.target.value)} />}
+                    {isSizeCurve && <input className={styles.input} placeholder="Valores de talle separados por coma" value={sizeValues} onChange={(e) => setSizeValues(e.target.value)} required />}
 
-                    {isCategory && (
-                        <Input label="Descripción larga" value={longDescription} onChange={e => setLongDescription(e.target.value)} />
-                    )}
-
-                    {isSizeCurve && (
-                        <Input label="Valores de talle (separados por coma)" value={sizeValues} onChange={e => setSizeValues(e.target.value)} required />
-                    )}
-
-                    <div className="flex gap-2">
-                        <Button type="submit">{editingId ? 'Actualizar' : 'Crear'}</Button>
-                        {editingId && <Button type="button" variant="secondary" onClick={resetForm}>Cancelar edición</Button>}
-                    </div>
+                    <button type="submit" className={styles.primaryButton}><Plus size={16} /> {editingId ? `Actualizar ${title}` : `Agregar ${title}`}</button>
                 </form>
-                {error && <p className="text-red-400 mt-3">{error}</p>}
-            </Card>
+                {error && <p className={styles.errorText}>{error}</p>}
 
-            <Card>
-                <h2 className="text-xl font-semibold mb-4">Registros de {title}</h2>
-                {loading ? <p>Cargando...</p> : (
-                    <div className="space-y-2">
-                        {items.map(item => (
-                            <div key={item.id} className="border border-slate-700 rounded-md p-3 flex justify-between items-center gap-3">
-                                <div>
-                                    <p className="font-semibold">{item.code} - {getDisplayDescription(item)}</p>
-                                    {item.logoUrl && (
-                                        <div className="text-xs text-slate-400 flex items-center gap-2 mt-1">
-                                            <img src={api.resolveAssetUrl(item.logoUrl)} alt={`Logo for ${getDisplayDescription(item)}`} className="h-8 w-8 object-contain bg-slate-950 border border-slate-700 rounded" />
-                                            <span>{item.logoUrl}</span>
-                                        </div>
-                                    )}
-                                    {item.longDescription && <p className="text-xs text-slate-400">{item.longDescription}</p>}
-                                    {item.values && item.values.length > 0 && (
-                                        <p className="text-xs text-slate-400">Talles: {item.values.map(size => size.value).join(', ')}</p>
-                                    )}
+                <h2 className={styles.sectionTitle}>{title} registrados</h2>
+                {loading ? <p className={styles.mutedText}>Cargando...</p> : (
+                    <div className={styles.itemsList}>
+                        {items.map((item) => (
+                            <article key={item.id} className={styles.itemCard}>
+                                <div className={styles.itemMain}>
+                                    <span className={styles.itemCode}>{item.code}</span>
+                                    <div>
+                                        <p className={styles.itemTitle}>{getDisplayDescription(item)}</p>
+                                        {item.values && item.values.length > 0 && <p className={styles.itemMeta}>{item.values.map((size) => size.value).join('-')}</p>}
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button size="sm" variant="secondary" onClick={() => handleEdit(item)}>Editar</Button>
-                                    <Button size="sm" variant="ghost" onClick={() => void handleDelete(item.id)}>Eliminar</Button>
+                                <div className={styles.actions}>
+                                    <button type="button" className={styles.iconButton} onClick={() => handleEdit(item)}><Pencil size={14} /></button>
+                                    <button type="button" className={styles.iconButtonDanger} onClick={() => void handleDelete(item.id)}><Trash2 size={14} /></button>
                                 </div>
-                            </div>
+                            </article>
                         ))}
-                        {!items.length && <p className="text-amber-300">No hay registros cargados. Debés crear al menos uno para habilitar el stockeador.</p>}
                     </div>
                 )}
-            </Card>
-        </div>
+            </div>
+        </section>
     );
 }

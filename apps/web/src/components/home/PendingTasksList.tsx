@@ -1,5 +1,5 @@
-import { Pencil } from 'lucide-react';
-import { Factura } from '@stockia/shared';
+import { ChevronRight } from 'lucide-react';
+import { Factura, FacturaEstado } from '@stockia/shared';
 import styles from './PendingTasksList.module.css';
 
 interface PendingTasksListProps {
@@ -14,24 +14,25 @@ export function PendingTasksList({ items, onOpenDraft, onOpenSummary }: PendingT
             <h2 className={styles.heading}>Tareas</h2>
             <div className={styles.list}>
                 {items.map((factura) => {
-                    const isDraft = factura.estado !== 'FINAL';
+                    const isDraft = factura.estado === FacturaEstado.DRAFT;
                     return (
                         <article key={factura.id} className={styles.taskCard}>
-                            <div className={styles.taskInfo}>
+                            <div className={styles.headerRow}>
                                 <p className={styles.meta}>{new Intl.DateTimeFormat('es-AR').format(new Date(factura.fecha))}</p>
-                                <h3 className={styles.title}>{factura.nroFactura}</h3>
-                                <p className={styles.description}>{factura.proveedor || 'Sin proveedor asignado'}</p>
+                                <span className={isDraft ? styles.badgeDraft : styles.badgeFinal}>{isDraft ? 'Borrador' : 'Final'}</span>
+                            </div>
+                            <h3 className={styles.title}>{factura.nroFactura}</h3>
+                            <div className={styles.subtitleRow}>
+                                <p className={styles.description}>{factura.proveedor || 'Sin proveedor'}</p>
+                                <span className={styles.itemsCount}>{factura.items?.length || 0} items</span>
                             </div>
                             <button
                                 type="button"
                                 className={styles.cta}
                                 onClick={() => (isDraft ? onOpenDraft(factura) : onOpenSummary(factura))}
                             >
-                                {isDraft ? 'Continuar' : 'Revisar'}
+                                {isDraft ? 'Continuar' : 'Ver detalle'} <ChevronRight size={16} />
                             </button>
-                            <span className={styles.editIndicator} aria-hidden="true">
-                                <Pencil size={16} />
-                            </span>
                         </article>
                     );
                 })}

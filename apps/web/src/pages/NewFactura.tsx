@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useFactura } from '../context/FacturaContext';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { AlertCircle, ArrowRight } from 'lucide-react';
 import { ApiError, api } from '../services/api';
+import styles from './NewFactura.module.css';
 
 export function NewFactura() {
     const navigate = useNavigate();
@@ -60,63 +58,68 @@ export function NewFactura() {
     };
 
     return (
-        <div className="max-w-md mx-auto mt-6 sm:mt-12 px-1 sm:px-0">
-            <Card title="Nueva factura" className="shadow-lg">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <Input
-                        label="Nro. factura *"
+        <section>
+            <header className={styles.hero}>
+                <button type="button" className={styles.backButton} onClick={() => navigate(-1)}>
+                    <ArrowLeft size={18} />
+                </button>
+                <h1>Nueva factura</h1>
+                <p>Ingresá los datos básicos para comenzar</p>
+            </header>
+
+            <form onSubmit={handleSubmit} className={styles.formCard}>
+                <div>
+                    <label className={styles.label}>Nro. factura *</label>
+                    <input
+                        className={styles.input}
                         value={nroFactura}
                         onChange={(e) => setNroFactura(e.target.value)}
                         placeholder="Ej: A-0001-12345678"
-                        error={error}
                     />
+                </div>
 
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Proveedor *</label>
-                        <select
-                            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 disabled:opacity-60"
-                            value={supplierId}
-                            onChange={(e) => setSupplierId(e.target.value)}
-                            disabled={loadingSuppliers || suppliers.length === 0}
-                        >
-                            <option value="">{loadingSuppliers ? 'Cargando proveedores...' : 'Seleccioná un proveedor'}</option>
-                            {suppliers.map((supplier) => (
-                                <option key={supplier.id} value={supplier.id}>{supplier.label}</option>
-                            ))}
-                        </select>
+                <div>
+                    <label className={styles.label}>Proveedor *</label>
+                    <div className={styles.suppliersGrid}>
+                        {suppliers.map((supplier) => {
+                            const active = supplierId === supplier.id;
+                            return (
+                                <button
+                                    key={supplier.id}
+                                    type="button"
+                                    onClick={() => setSupplierId(supplier.id)}
+                                    className={active ? styles.supplierCardActive : styles.supplierCard}
+                                    disabled={loadingSuppliers}
+                                >
+                                    {active && <CheckCircle2 size={18} className={styles.checkIcon} />}
+                                    <span className={styles.supplierAvatar}>{supplier.label.charAt(0)}</span>
+                                    <span className={styles.supplierName}>{supplier.label}</span>
+                                </button>
+                            );
+                        })}
                     </div>
+                </div>
 
-                    {(suppliersError || suppliers.length === 0) && !loadingSuppliers && (
-                        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100">
-                            <div className="flex items-start gap-2">
-                                <AlertCircle className="h-4 w-4 mt-0.5" />
-                                <div>
-                                    <p>{suppliersError || 'No hay proveedores cargados. Debés crear uno antes de generar facturas.'}</p>
-                                    <Link to="/admin" className="underline text-amber-200 hover:text-amber-100">Ir a Administración de catálogos</Link>
-                                </div>
-                            </div>
+                {(suppliersError || suppliers.length === 0) && !loadingSuppliers && (
+                    <div className={styles.warning}>
+                        <AlertCircle size={16} />
+                        <div>
+                            <p>{suppliersError || 'No hay proveedores cargados. Debés crear uno antes de generar facturas.'}</p>
+                            <Link to="/admin">Ir a Administración de catálogos</Link>
                         </div>
-                    )}
-
-                    <div className="mt-2">
-                        <Button
-                            type="submit"
-                            isLoading={state.isSaving}
-                            icon={<ArrowRight className="h-4 w-4" />}
-                            className="w-full sm:w-auto"
-                            disabled={loadingSuppliers || suppliers.length === 0}
-                        >
-                            Comenzar carga
-                        </Button>
                     </div>
+                )}
 
-                    {state.error && (
-                        <div className="text-red-500 text-sm mt-2 p-2 bg-red-500/10 rounded">
-                            {state.error}
-                        </div>
-                    )}
-                </form>
-            </Card>
-        </div>
+                <button
+                    type="submit"
+                    className={styles.submitButton}
+                    disabled={state.isSaving || loadingSuppliers || suppliers.length === 0}
+                >
+                    {state.isSaving ? 'Creando...' : 'Comenzar carga'} <ArrowRight size={16} />
+                </button>
+
+                {(error || state.error) && <p className={styles.errorText}>{error || state.error}</p>}
+            </form>
+        </section>
     );
 }

@@ -1,0 +1,153 @@
+.wrapper {
+  background: #fff;
+  border: 1px solid #d8dee9;
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.title {
+  margin: 0;
+  color: #1e1b4b;
+}
+
+.subtitle {
+  margin: 4px 0 14px;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.label,
+.blockTitle {
+  display: block;
+  margin: 8px 0;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.supplierGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.optionCard,
+.optionActive {
+  min-height: 92px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+}
+
+.optionActive {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(145deg, #4f46e5, #7c3aed);
+}
+
+.optionAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.checkIcon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.garmentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.garmentCard,
+.garmentActive {
+  min-height: 78px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.garmentActive {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.curveList {
+  display: grid;
+  gap: 8px;
+}
+
+.curveCard,
+.curveActive {
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  text-align: left;
+  padding: 0 12px;
+}
+
+.curveActive {
+  background: #ede9fe;
+  border-color: #8b5cf6;
+}
+
+.warning {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 0.85rem;
+}
+
+.warning p { margin: 0 0 4px; }
+
+.submitButton {
+  margin-top: 14px;
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(155deg, #4f46e5, #9333ea);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}

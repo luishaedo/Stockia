@@ -11,16 +11,12 @@
     margin-top: 0;
     margin-bottom: 1rem;
     font-size: 1.125rem;
-    color: white;
-    font-weight: 600;
+    color: #0f172a;
+    font-weight: 700;
 }
 
 @media (min-width: 640px) {
     .card {
-        padding: 1.5rem;
-    }
-
-    .title {
-        font-size: 1.25rem;
+        padding: 1.25rem;
     }
 }

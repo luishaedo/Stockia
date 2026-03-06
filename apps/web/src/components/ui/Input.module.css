@@ -7,8 +7,8 @@
 
 .label {
     font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-text-muted);
+    font-weight: 600;
+    color: #334155;
 }
 
 .input {
@@ -17,17 +17,15 @@
     border-radius: var(--radius-md);
     border: 1px solid var(--color-border);
     background-color: var(--color-bg-input);
-    color: white;
-    font-family: inherit;
-    font-size: 0.875rem;
+    color: #0f172a;
+    font-size: 0.95rem;
     width: 100%;
-    box-sizing: border-box;
 }
 
 .input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
 }
 
 .error {
