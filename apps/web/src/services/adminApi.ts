@@ -11,6 +11,7 @@ export class AdminApiService {
         if (filters.from) params.append('from', filters.from);
         if (filters.to) params.append('to', filters.to);
         if (filters.userId) params.append('userId', filters.userId);
+        if (filters.search) params.append('search', filters.search);
 
         const response = await fetch(`${this.client.getBaseURL()}/admin/invoices?${params.toString()}`, {
             headers: this.client.getAccessTokenHeader()
@@ -42,6 +43,23 @@ export class AdminApiService {
             body: formData
         });
         await this.client.assertOk(response, 'No pudimos subir el logo');
+        return response.json();
+    }
+
+    async deleteAdminInvoice(id: string): Promise<void> {
+        const response = await fetch(`${this.client.getBaseURL()}/admin/invoices/${id}`, {
+            method: 'DELETE',
+            headers: this.client.getAccessTokenHeader()
+        });
+        await this.client.assertOk(response, 'No pudimos eliminar la factura');
+    }
+
+    async exportAdminInvoice(id: string) {
+        const response = await fetch(`${this.client.getBaseURL()}/admin/invoices/${id}/export`, {
+            method: 'PATCH',
+            headers: this.client.getAccessTokenHeader()
+        });
+        await this.client.assertOk(response, 'No pudimos exportar la factura');
         return response.json();
     }
 

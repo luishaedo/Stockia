@@ -116,6 +116,24 @@ export class FacturaController {
         }
     };
 
+    deleteAdminInvoice = async (req: Request, res: Response) => {
+        try {
+            const response = await this.service.deleteAdminInvoice(req.params.id);
+            res.json(response);
+        } catch (error) {
+            this.handleError(error, req, res);
+        }
+    };
+
+    exportAdminInvoice = async (req: Request, res: Response) => {
+        try {
+            const response = await this.service.exportAdminInvoice(req.params.id);
+            res.json(response);
+        } catch (error) {
+            this.handleError(error, req, res);
+        }
+    };
+
     private handleError(error: unknown, req: Request, res: Response) {
         if (error instanceof DomainError) {
             logger.warn(

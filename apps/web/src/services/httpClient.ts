@@ -103,6 +103,15 @@ export class HttpClient {
         return { authorization: `Bearer ${this.getAccessTokenOrThrow()}` };
     }
 
+    getOptionalAccessTokenHeader(): Record<string, string> {
+        const accessToken = getStoredAccessToken();
+        if (!accessToken) {
+            return {};
+        }
+
+        return { authorization: `Bearer ${accessToken}` };
+    }
+
     async assertOk(response: Response, fallback: string) {
         if (response.ok) return;
 

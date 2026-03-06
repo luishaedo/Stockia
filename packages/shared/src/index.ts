@@ -123,7 +123,8 @@ export const AdminInvoicesQuerySchema = z.object({
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
     from: z.string().datetime().optional(),
     to: z.string().datetime().optional(),
-    userId: z.string().min(1).optional()
+    userId: z.string().min(1).optional(),
+    search: z.string().min(1).optional()
 }).refine(
     (data) => {
         if (!data.from || !data.to) return true;
@@ -164,9 +165,12 @@ export const AdminInvoiceSchema = z.object({
     supplier: z.string().nullable(),
     status: z.string().min(1),
     createdAt: z.union([z.string().datetime(), z.date()]),
+    updatedAt: z.union([z.string().datetime(), z.date()]),
+    exportedAt: z.union([z.string().datetime(), z.date()]).nullable(),
     createdBy: z.object({
         id: z.string().min(1),
         name: z.string().min(1),
+        externalId: z.string().min(1),
         email: z.string().email().nullable()
     }).nullable()
 });
@@ -265,23 +269,25 @@ export type SharedRouteContract = {
 };
 
 export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
-    { method: 'GET', path: '/facturas', requiresAdminToken: true },
+    { method: 'GET', path: '/facturas', requiresAdminToken: false },
+    { method: 'DELETE', path: '/admin/invoices/:id', requiresAdminToken: true },
+    { method: 'PATCH', path: '/admin/invoices/:id/export', requiresAdminToken: true },
     { method: 'GET', path: '/admin/invoices', requiresAdminToken: true },
     { method: 'GET', path: '/admin/invoice-users', requiresAdminToken: true },
-    { method: 'GET', path: '/providers', requiresAdminToken: true },
-    { method: 'GET', path: '/size-tables', requiresAdminToken: true },
-    { method: 'GET', path: '/facturas/:id', requiresAdminToken: true },
-    { method: 'POST', path: '/facturas', requiresAdminToken: true },
-    { method: 'PATCH', path: '/facturas/:id/draft', requiresAdminToken: true },
-    { method: 'PATCH', path: '/facturas/:id/finalize', requiresAdminToken: true },
+    { method: 'GET', path: '/providers', requiresAdminToken: false },
+    { method: 'GET', path: '/size-tables', requiresAdminToken: false },
+    { method: 'GET', path: '/facturas/:id', requiresAdminToken: false },
+    { method: 'POST', path: '/facturas', requiresAdminToken: false },
+    { method: 'PATCH', path: '/facturas/:id/draft', requiresAdminToken: false },
+    { method: 'PATCH', path: '/facturas/:id/finalize', requiresAdminToken: false },
     { method: 'GET', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
     { method: 'POST', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
     { method: 'PUT', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
     { method: 'POST', path: '/admin/uploads/logo', requiresAdminToken: true },
-    { method: 'GET', path: '/operations/catalogs', requiresAdminToken: true },
+    { method: 'GET', path: '/operations/catalogs', requiresAdminToken: false },
     { method: 'GET', path: '/admin/catalogs/:catalog/version', requiresAdminToken: true },
-    { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: true }
+    { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: false }
 ];
 
 export type FacturaListResponse = PaginatedResponse<Factura>;

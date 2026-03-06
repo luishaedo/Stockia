@@ -31,22 +31,22 @@ export function MainLayout({ children }: MainLayoutProps) {
                         <Link to="/" className={styles.brand}>
                             <span>Stockia</span>
                         </Link>
-                        {isAuthenticated && (
-                            <div className={styles.topActions}>
-                                <Link to="/admin" className={styles.iconButton} aria-label="Open admin">
-                                    <KeyRound size={20} />
-                                </Link>
+                        <div className={styles.topActions}>
+                            <Link to="/admin" className={styles.iconButton} aria-label="Open admin">
+                                <KeyRound size={20} />
+                            </Link>
+                            {isAuthenticated && (
                                 <button type="button" className={styles.logoutButton} onClick={handleLogout} aria-label="Log out">
                                     <LogOut size={14} />
                                 </button>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </header>
                 )}
 
                 <main className={styles.content}>{children}</main>
 
-                {isAuthenticated && !isLoginPage && (
+                {!isLoginPage && (
                     <nav className={styles.bottomNav} aria-label="Primary navigation">
                         <Link to="/" className={clsx(styles.navLink, isHomeActive && styles.navLinkActive)} aria-label="Go to invoices">
                             <FileText size={21} />
@@ -60,9 +60,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                         <Link to="/admin" className={clsx(styles.navLink, location.pathname === '/admin' && styles.navLinkActive)} aria-label="Catálogos">
                             <Grid2x2 size={21} />
                         </Link>
-                        <button type="button" className={styles.navLink} aria-label="Artículos">
+                        <Link to="/articulos" className={clsx(styles.navLink, location.pathname === '/articulos' && styles.navLinkActive)} aria-label="Artículos">
                             <Shapes size={21} />
-                        </button>
+                        </Link>
                     </nav>
                 )}
             </div>

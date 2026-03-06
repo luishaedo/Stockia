@@ -10,6 +10,7 @@ import { FacturasListPage } from './pages/FacturasListPage';
 import { LoginPage } from './pages/LoginPage';
 import { AdminCatalogPage } from './pages/AdminCatalogPage';
 import { AdminInvoicesPage } from './pages/AdminInvoicesPage';
+import { ArticlesPage } from './pages/ArticlesPage';
 import './index.css';
 
 function App() {
@@ -22,19 +23,11 @@ function App() {
                             <Route path="/login" element={<LoginPage />} />
                             <Route
                                 path="/"
-                                element={(
-                                    <ProtectedRoute>
-                                        <FacturasListPage />
-                                    </ProtectedRoute>
-                                )}
+                                element={<FacturasListPage />}
                             />
                             <Route
                                 path="/facturas"
-                                element={(
-                                    <ProtectedRoute>
-                                        <Navigate to="/" replace />
-                                    </ProtectedRoute>
-                                )}
+                                element={<Navigate to="/" replace />}
                             />
                             <Route
                                 path="/admin/facturas"
@@ -54,28 +47,17 @@ function App() {
                             />
                             <Route
                                 path="/facturas/new"
-                                element={(
-                                    <ProtectedRoute>
-                                        <NewFactura />
-                                    </ProtectedRoute>
-                                )}
+                                element={<NewFactura />}
                             />
                             <Route
                                 path="/facturas/:id/wizard"
-                                element={(
-                                    <ProtectedRoute>
-                                        <FacturaWizard />
-                                    </ProtectedRoute>
-                                )}
+                                element={<FacturaWizard />}
                             />
                             <Route
                                 path="/facturas/:id/summary"
-                                element={(
-                                    <ProtectedRoute>
-                                        <FacturaSummary />
-                                    </ProtectedRoute>
-                                )}
+                                element={<FacturaSummary />}
                             />
+                            <Route path="/articulos" element={<ArticlesPage />} />
                         </Routes>
                     </MainLayout>
                 </Router>

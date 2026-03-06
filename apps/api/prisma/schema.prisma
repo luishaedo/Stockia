@@ -24,6 +24,7 @@ model Factura {
   estado      FacturaEstado @default(DRAFT)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  exportedAt  DateTime?
 
   items       FacturaItem[]
 

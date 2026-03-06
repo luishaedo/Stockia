@@ -1,0 +1,2 @@
+ALTER TABLE "Factura"
+ADD COLUMN "exportedAt" TIMESTAMP(3);
