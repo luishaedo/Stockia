@@ -119,10 +119,14 @@
 
   .content {
     padding: 24px;
-    padding-bottom: 90px;
+    padding-bottom: 24px;
   }
 
   .brand {
     font-size: 2rem;
+  }
+
+  .bottomNav {
+    display: none;
   }
 }

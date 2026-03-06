@@ -21,6 +21,10 @@
   border: 1px solid #d4d4d8;
 }
 
+.taskInfo {
+  min-width: 0;
+}
+
 .meta {
   margin: 0;
   font-size: 0.75rem;
@@ -48,4 +52,58 @@
   min-width: 96px;
   padding: 0 14px;
   font-weight: 600;
+}
+
+.editIndicator {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .taskCard {
+    position: relative;
+    min-height: 190px;
+    border-radius: 14px;
+    align-items: flex-start;
+    flex-direction: column;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .taskCard:hover {
+    opacity: 0.82;
+    transform: translateY(-2px);
+  }
+
+  .taskInfo {
+    flex: 1;
+  }
+
+  .cta {
+    width: 100%;
+  }
+
+  .editIndicator {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(9, 9, 11, 0.9);
+    color: #f8fafc;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+
+  .taskCard:hover .editIndicator {
+    opacity: 1;
+  }
 }
