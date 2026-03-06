@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FacturaEstado, FacturaFilters, FacturaListResponse } from '@stockia/shared';
-import { ClipboardList, FileSearch, FileText, Shapes } from 'lucide-react';
+import { ClipboardList, FileSearch, FileText, ReceiptText, Shapes } from 'lucide-react';
 import { ApiError, api } from '../services/api';
 import { PendingTasksList } from '../components/home/PendingTasksList';
 import { QuickActionsGrid } from '../components/home/QuickActionsGrid';
@@ -16,6 +16,14 @@ export function FacturasListPage() {
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [supplierOptions, setSupplierOptions] = useState<Array<{ code: string; name: string }>>([]);
     const [supplierOptionsError, setSupplierOptionsError] = useState<string | null>(null);
+
+    const [isDesktop, setIsDesktop] = useState(() => {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        return window.matchMedia('(min-width: 900px)').matches;
+    });
     const [filters, setFilters] = useState<FacturaFilters>({
         page: 1,
         pageSize: 5,
@@ -46,6 +54,21 @@ export function FacturasListPage() {
         }
     }, [location.search]);
 
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const mediaQuery = window.matchMedia('(min-width: 900px)');
+        const updateViewport = () => setIsDesktop(mediaQuery.matches);
+
+        updateViewport();
+        mediaQuery.addEventListener('change', updateViewport);
+
+        return () => mediaQuery.removeEventListener('change', updateViewport);
+    }, []);
+
     useEffect(() => {
         const loadSuppliers = async () => {
             try {
@@ -65,6 +88,9 @@ export function FacturasListPage() {
         { key: 'new', label: 'Nueva', icon: FileText, onClick: () => navigate('/facturas/new') },
         { key: 'search', label: 'Buscar', icon: FileSearch, onClick: () => setIsFilterPanelOpen((value) => !value) },
         { key: 'catalogs', label: 'Catalogos', icon: ClipboardList, onClick: () => navigate('/admin') },
+        ...(isDesktop
+            ? [{ key: 'admin-invoices', label: 'Facturas', icon: ReceiptText, onClick: () => navigate('/admin/facturas') }]
+            : []),
         { key: 'articles', label: 'Artículos', icon: Shapes, onClick: () => {} }
     ];
 

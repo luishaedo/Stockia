@@ -29,3 +29,10 @@
 .label {
   font-size: 0.95rem;
 }
+
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
