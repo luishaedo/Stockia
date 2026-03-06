@@ -11,6 +11,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AdminCatalogPage } from './pages/AdminCatalogPage';
 import { AdminInvoicesPage } from './pages/AdminInvoicesPage';
 import { ArticlesPage } from './pages/ArticlesPage';
+import { SearchFacturasPage } from './pages/SearchFacturasPage';
 import './index.css';
 
 function App() {
@@ -58,6 +59,7 @@ function App() {
                                 element={<FacturaSummary />}
                             />
                             <Route path="/articulos" element={<ArticlesPage />} />
+                            <Route path="/buscar" element={<SearchFacturasPage />} />
                         </Routes>
                     </MainLayout>
                 </Router>

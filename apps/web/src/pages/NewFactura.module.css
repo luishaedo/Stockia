@@ -1,0 +1,147 @@
+.hero {
+  background: linear-gradient(155deg, #4f46e5, #9333ea);
+  border-radius: 0 0 28px 28px;
+  padding: 22px 18px 24px;
+  color: #fff;
+}
+
+.hero h1 {
+  margin: 4px 0;
+  font-size: 2rem;
+}
+
+.hero p {
+  margin: 0;
+  color: #ddd6fe;
+}
+
+.backButton {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.formCard {
+  margin: 16px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.suppliersGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.supplierCard,
+.supplierCardActive {
+  min-height: 112px;
+  border: 1px solid #cfd8e3;
+  background: #fff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+
+.supplierCardActive {
+  background: linear-gradient(155deg, #4f46e5, #7c3aed);
+  color: #fff;
+  border-color: transparent;
+}
+
+.supplierAvatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.supplierCardActive .supplierAvatar {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.supplierName {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.checkIcon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.warning {
+  display: flex;
+  gap: 8px;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 0.85rem;
+}
+
+.warning p {
+  margin: 0 0 4px;
+}
+
+.warning a {
+  color: #78350f;
+}
+
+.submitButton {
+  min-height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(155deg, #4f46e5, #9333ea);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.errorText {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.88rem;
+}

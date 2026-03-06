@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import styles from './ArticleStep.module.css';
 
 type Option = { value: string; label: string };
 
@@ -23,6 +21,8 @@ interface ArticleStepProps {
     readOnly?: boolean;
 }
 
+const GARMENT_EMOJIS = ['👕', '👖', '🧥', '🩳', '🧢', '🧦', '🥾', '🎽', '🧤'];
+
 export function ArticleStep({
     draftItem,
     supplierOptions,
@@ -41,86 +41,93 @@ export function ArticleStep({
     const isValid = draftItem.supplierLabel && draftItem.tipoPrenda && draftItem.codigoArticulo && draftItem.curvaTalles && !catalogBlockReason;
 
     return (
-        <Card title="Paso 1/2 · Datos del artículo" className="max-w-xl mx-auto">
-            <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Proveedor</label>
-                        <select
-                            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 disabled:opacity-60"
-                            value={draftItem.supplierLabel}
-                            onChange={(e) => onChange('supplierLabel', e.target.value)}
-                            disabled={readOnly || catalogsLoading || supplierOptions.length === 0}
+        <section className={styles.wrapper}>
+            <h2 className={styles.title}>Paso 1 · Datos del artículo</h2>
+            <p className={styles.subtitle}>Seleccioná proveedor, tipo de prenda y curva.</p>
+
+            <label className={styles.label}>Código de artículo</label>
+            <input
+                className={styles.input}
+                value={draftItem.codigoArticulo}
+                onChange={(e) => onChange('codigoArticulo', e.target.value)}
+                placeholder="Ej: NK-1002"
+                disabled={readOnly}
+            />
+
+            <h3 className={styles.blockTitle}>Proveedor</h3>
+            <div className={styles.supplierGrid}>
+                {supplierOptions.map((option) => {
+                    const active = draftItem.supplierLabel === option.value;
+                    return (
+                        <button
+                            key={option.value}
+                            type="button"
+                            className={active ? styles.optionActive : styles.optionCard}
+                            onClick={() => onChange('supplierLabel', option.value)}
+                            disabled={readOnly || catalogsLoading}
                         >
-                            <option value="">Seleccionar proveedor</option>
-                            {supplierOptions.map((option) => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Tipo de prenda</label>
-                        <select
-                            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 disabled:opacity-60"
-                            value={draftItem.tipoPrenda}
-                            onChange={(e) => onChange('tipoPrenda', e.target.value)}
-                            disabled={readOnly || catalogsLoading || garmentTypeOptions.length === 0}
-                        >
-                            <option value="">Seleccionar tipo</option>
-                            {garmentTypeOptions.map((option) => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                <Input
-                    label="Código de artículo"
-                    value={draftItem.codigoArticulo}
-                    onChange={(e) => onChange('codigoArticulo', e.target.value)}
-                    placeholder="Ej: NK-1002"
-                    disabled={readOnly}
-                />
-
-                <div>
-                    <label className="block text-sm font-medium mb-1">Curva de talles</label>
-                    <select
-                        className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 disabled:opacity-60"
-                        value={draftItem.curvaTalles}
-                        onChange={(e) => onChange('curvaTalles', e.target.value)}
-                        disabled={readOnly || catalogsLoading || sizeCurveOptions.length === 0}
-                    >
-                        <option value="">Seleccionar curva</option>
-                        {sizeCurveOptions.map((option) => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {catalogBlockReason && (
-                    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100">
-                        <div className="flex items-start gap-2">
-                            <AlertCircle className="h-4 w-4 mt-0.5" />
-                            <div>
-                                <p>{catalogBlockReason}</p>
-                                <Link to="/admin" className="underline text-amber-200 hover:text-amber-100">Ir a Administración de catálogos</Link>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div className="mt-2">
-                    <Button
-                        onClick={onNext}
-                        disabled={!isValid || readOnly || catalogsLoading}
-                        icon={<ArrowRight className="h-4 w-4" />}
-                        className="w-full sm:w-auto"
-                    >
-                        Continuar: agregar colores
-                    </Button>
-                </div>
+                            {active && <CheckCircle2 size={17} className={styles.checkIcon} />}
+                            <span className={styles.optionAvatar}>{option.label.charAt(0)}</span>
+                            <span>{option.label}</span>
+                        </button>
+                    );
+                })}
             </div>
-        </Card>
+
+            <h3 className={styles.blockTitle}>Tipo de prenda</h3>
+            <div className={styles.garmentGrid}>
+                {garmentTypeOptions.map((option, index) => {
+                    const active = draftItem.tipoPrenda === option.value;
+                    return (
+                        <button
+                            key={option.value}
+                            type="button"
+                            className={active ? styles.garmentActive : styles.garmentCard}
+                            onClick={() => onChange('tipoPrenda', option.value)}
+                            disabled={readOnly || catalogsLoading}
+                        >
+                            <span>{GARMENT_EMOJIS[index % GARMENT_EMOJIS.length]}</span>
+                            <span>{option.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            <h3 className={styles.blockTitle}>Curva de talles</h3>
+            <div className={styles.curveList}>
+                {sizeCurveOptions.map((option) => {
+                    const active = draftItem.curvaTalles === option.value;
+                    return (
+                        <button
+                            key={option.value}
+                            type="button"
+                            className={active ? styles.curveActive : styles.curveCard}
+                            onClick={() => onChange('curvaTalles', option.value)}
+                            disabled={readOnly || catalogsLoading}
+                        >
+                            <span>{option.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {catalogBlockReason && (
+                <div className={styles.warning}>
+                    <AlertCircle size={15} />
+                    <div>
+                        <p>{catalogBlockReason}</p>
+                        <Link to="/admin">Ir a Administración de catálogos</Link>
+                    </div>
+                </div>
+            )}
+
+            <button
+                onClick={onNext}
+                disabled={!isValid || readOnly || catalogsLoading}
+                className={styles.submitButton}
+            >
+                Continuar: agregar colores <ArrowRight size={16} />
+            </button>
+        </section>
     );
 }

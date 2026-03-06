@@ -1,103 +1,52 @@
-.page {
-  background: #d4d4d8;
-  border-radius: 20px;
-  padding: 16px;
+.hero {
+  background: linear-gradient(150deg, #4f46e5 0%, #6d28d9 70%);
+  border-radius: 0 0 28px 28px;
+  padding: 30px 20px 22px;
 }
 
-.welcome {
-  margin: 0 0 14px;
+.brand {
+  margin: 0;
+  color: #fff;
   font-size: 2rem;
-  color: #09090b;
+  font-weight: 700;
 }
 
-.filterPanel {
-  margin-top: 16px;
-  padding: 14px;
-  border-radius: 14px;
-  background: #e4e4e7;
-  border: 1px solid #d4d4d8;
-}
-
-.filterGrid {
-  display: grid;
-  gap: 10px;
-}
-
-.fieldLabel {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #27272a;
-}
-
-.input,
-.select {
-  width: 100%;
-  min-height: 40px;
-  border-radius: 10px;
-  border: 1px solid #a1a1aa;
-  padding: 0 12px;
-  font-size: 0.95rem;
-  background: #fafafa;
-}
-
-.filterActions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.controlButton {
-  flex: 1;
-  border: 0;
-  border-radius: 10px;
-  min-height: 40px;
-  font-weight: 600;
-}
-
-.primaryButton {
-  background: #09090b;
-  color: #fafafa;
-}
-
-.secondaryButton {
-  background: #f4f4f5;
-  color: #09090b;
-  border: 1px solid #a1a1aa;
+.subtitle {
+  margin: 4px 0 20px;
+  color: #ddd6fe;
+  font-size: 1rem;
 }
 
 .loading {
-  margin: 22px 0;
+  margin: 26px 0;
   text-align: center;
-  color: #3f3f46;
+  color: #475569;
 }
 
 .pagination {
+  margin: 18px 0;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 8px;
+}
+
+.pageButton {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 12px;
+  min-height: 40px;
+  padding: 0 14px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.pageButton:disabled {
+  opacity: 0.45;
 }
 
 .pageInfo {
   margin: 0;
-  font-size: 0.8rem;
-  color: #3f3f46;
-}
-
-.errorText {
-  margin: 6px 0 0;
-  font-size: 0.75rem;
-  color: #b45309;
-}
-
-@media (min-width: 900px) {
-  .filterGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .welcome {
-    font-size: 2.4rem;
-  }
+  font-size: 0.82rem;
+  color: #64748b;
 }

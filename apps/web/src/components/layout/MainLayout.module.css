@@ -1,132 +1,95 @@
 .appFrame {
   min-height: 100vh;
-  background: linear-gradient(180deg, #ececec 0%, #dcdcdc 100%);
+  background: #e5e7eb;
   color: #0f172a;
-  padding: 16px;
 }
 
 .shell {
   width: 100%;
   max-width: 430px;
   margin: 0 auto;
-  min-height: calc(100vh - 32px);
-  border: 2px solid #d4d4d8;
-  border-radius: 32px;
-  background: #f4f4f5;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
-  overflow: hidden;
+  min-height: 100vh;
+  background: #f3f4f6;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.18);
   display: flex;
   flex-direction: column;
-}
-
-.topBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 18px;
-  border-bottom: 1px solid #d4d4d8;
-  background: #f8fafc;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  color: #0f172a;
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 1.8rem;
-}
-
-.topActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.iconButton {
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 10px;
-  background: #e4e4e7;
-  color: #18181b;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-}
-
-.logoutButton {
-  border: 0;
-  background: transparent;
-  font-size: 0.75rem;
-  color: #475569;
-  cursor: pointer;
+  overflow: hidden;
 }
 
 .content {
   flex: 1;
-  padding: 12px;
-  padding-bottom: 86px;
+  padding-bottom: 90px;
 }
 
 .bottomNav {
-  position: sticky;
+  position: fixed;
   bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(430px, 100%);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
-  gap: 8px;
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid #d4d4d8;
-  background: #f8fafc;
+  background: #fff;
+  border-top: 1px solid #d1d5db;
+  z-index: 20;
 }
 
 .navLink {
-  border: 0;
-  background: transparent;
-  color: #71717a;
+  color: #94a3b8;
+  text-decoration: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-decoration: none;
-  min-height: 44px;
+  font-size: 0.72rem;
+  gap: 6px;
+  min-height: 48px;
 }
 
 .navLinkActive {
-  color: #111827;
+  color: #4f46e5;
+  font-weight: 600;
 }
 
 .navCenter {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 999px;
-  border: 0;
-  background: #09090b;
+  background: linear-gradient(145deg, #4f46e5, #9333ea);
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto;
+  margin: -34px auto 0;
   text-decoration: none;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.45);
+}
+
+.navSpacer {
+  min-height: 48px;
 }
 
 @media (min-width: 900px) {
   .shell {
-    max-width: 1100px;
-    border-radius: 28px;
+    max-width: 1200px;
+    padding: 16px;
+    background: #f8fafc;
   }
 
   .content {
-    padding: 24px;
-    padding-bottom: 24px;
-  }
-
-  .brand {
-    font-size: 2rem;
+    padding-bottom: 20px;
   }
 
   .bottomNav {
-    display: none;
+    position: sticky;
+    transform: none;
+    left: auto;
+    width: 100%;
+    max-width: 420px;
+    margin: 12px auto 0;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
   }
 }
