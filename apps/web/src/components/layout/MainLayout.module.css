@@ -31,22 +31,10 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
   color: #0f172a;
   text-decoration: none;
   font-weight: 700;
   font-size: 1.8rem;
-}
-
-.brandIcon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #111827;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .topActions {
@@ -65,6 +53,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  text-decoration: none;
 }
 
 .logoutButton {

@@ -10,7 +10,7 @@ interface PendingTasksListProps {
 export function PendingTasksList({ items, onOpenDraft, onOpenSummary }: PendingTasksListProps) {
     return (
         <section>
-            <h2 className={styles.heading}>Pending Tasks</h2>
+            <h2 className={styles.heading}>Tareas</h2>
             <div className={styles.list}>
                 {items.map((factura) => {
                     const isDraft = factura.estado !== 'FINAL';
@@ -26,7 +26,7 @@ export function PendingTasksList({ items, onOpenDraft, onOpenSummary }: PendingT
                                 className={styles.cta}
                                 onClick={() => (isDraft ? onOpenDraft(factura) : onOpenSummary(factura))}
                             >
-                                {isDraft ? 'Continue' : 'Review'}
+                                {isDraft ? 'Continuar' : 'Revisar'}
                             </button>
                         </article>
                     );
