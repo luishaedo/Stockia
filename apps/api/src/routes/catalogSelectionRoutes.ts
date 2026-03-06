@@ -49,12 +49,11 @@ const observeLegacyResponse = (req: Request, routeName: string, aliasName: strin
 
 export const createCatalogSelectionRoutes = (
     prisma: PrismaClient,
-    requireAuth: RequestHandler,
     readRateLimitMiddleware: RequestHandler
 ) => {
     const router = Router();
 
-    router.get('/providers', readRateLimitMiddleware, requireAuth, async (req, res) => {
+    router.get('/providers', readRateLimitMiddleware, async (req, res) => {
         applyDeprecationHeaders(res, LEGACY_ROUTE_POLICIES.providers);
         try {
             const providers = await prisma.supplier.findMany({
@@ -71,7 +70,7 @@ export const createCatalogSelectionRoutes = (
         }
     });
 
-    router.get('/size-tables', readRateLimitMiddleware, requireAuth, async (req, res) => {
+    router.get('/size-tables', readRateLimitMiddleware, async (req, res) => {
         applyDeprecationHeaders(res, LEGACY_ROUTE_POLICIES.sizeTables);
         try {
             const sizeTables = await prisma.sizeCurve.findMany({
@@ -91,7 +90,7 @@ export const createCatalogSelectionRoutes = (
         }
     });
 
-    router.get('/operations/catalogs', readRateLimitMiddleware, requireAuth, async (req, res) => {
+    router.get('/operations/catalogs', readRateLimitMiddleware, async (req, res) => {
         try {
             res.setHeader('ETag', catalogVersionStore.getOperationsCatalogVersion());
             const now = Date.now();
@@ -138,7 +137,7 @@ export const createCatalogSelectionRoutes = (
         }
     });
 
-    router.get('/operations/catalogs/version', readRateLimitMiddleware, requireAuth, async (_req, res) => {
+    router.get('/operations/catalogs/version', readRateLimitMiddleware, async (_req, res) => {
         return res.json({ version: catalogVersionStore.getOperationsCatalogVersion() });
     });
 

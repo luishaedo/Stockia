@@ -185,7 +185,7 @@ export class FacturaRepository {
         });
     }
 
-    listAdminInvoices(filters: { page: number; pageSize: number; from?: string; to?: string; userId?: string }) {
+    listAdminInvoices(filters: { page: number; pageSize: number; from?: string; to?: string; userId?: string; search?: string }) {
         const where: Prisma.FacturaWhereInput = {};
 
         if (filters.from || filters.to) {
@@ -195,7 +195,19 @@ export class FacturaRepository {
         }
 
         if (filters.userId) {
-            where.createdByUserId = filters.userId;
+            where.createdByUser = {
+                externalId: {
+                    equals: filters.userId,
+                    mode: 'insensitive'
+                }
+            };
+        }
+
+        if (filters.search) {
+            where.OR = [
+                { nroFactura: { contains: filters.search, mode: 'insensitive' } },
+                { proveedor: { contains: filters.search, mode: 'insensitive' } }
+            ];
         }
 
         return Promise.all([
@@ -211,6 +223,8 @@ export class FacturaRepository {
                     proveedor: true,
                     estado: true,
                     createdAt: true,
+                    updatedAt: true,
+                    exportedAt: true,
                     createdByUser: {
                         select: {
                             id: true,
@@ -269,6 +283,20 @@ export class FacturaRepository {
         return this.prisma.factura.findUnique({
             where: { id },
             include: { items: { include: { colores: true } } }
+        });
+    }
+
+    async deleteById(id: string) {
+        return this.prisma.factura.delete({ where: { id } });
+    }
+
+    async markAsExported(id: string) {
+        return this.prisma.factura.update({
+            where: { id },
+            data: {
+                exportedAt: new Date()
+            },
+            include: { items: { include: { colores: true } }, createdByUser: true }
         });
     }
 }

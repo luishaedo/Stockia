@@ -41,7 +41,7 @@ export class CatalogsApiService {
         const path = `/admin/catalogs/${catalog}/version`;
         try {
             const response = await this.fetchWithApiPrefixFallback(path, {
-                headers: this.client.getAccessTokenHeader()
+                headers: this.client.getOptionalAccessTokenHeader()
             });
             await this.client.assertOk(response, 'No pudimos validar versión de catálogo');
             const data = await response.json() as { version: string };
@@ -55,7 +55,7 @@ export class CatalogsApiService {
         const path = '/operations/catalogs/version';
         try {
             const response = await this.fetchWithApiPrefixFallback(path, {
-                headers: this.client.getAccessTokenHeader()
+                headers: this.client.getOptionalAccessTokenHeader()
             });
             await this.client.assertOk(response, 'No pudimos validar versión de catálogos operativos');
             const data = await response.json() as { version: string };
@@ -79,7 +79,7 @@ export class CatalogsApiService {
         const path = '/operations/catalogs';
         try {
             const response = await this.fetchWithApiPrefixFallback(path, {
-                headers: this.client.getAccessTokenHeader()
+                headers: this.client.getOptionalAccessTokenHeader()
             });
             await this.client.assertOk(response, 'No pudimos cargar los catálogos operativos');
 

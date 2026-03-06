@@ -6,7 +6,7 @@ export class FacturasApiService {
 
     async getFactura(id: string): Promise<Factura> {
         const response = await fetch(`${this.client.getBaseURL()}/facturas/${id}`, {
-            headers: this.client.getAccessTokenHeader()
+            headers: this.client.getOptionalAccessTokenHeader()
         });
         await this.client.assertOk(response, 'No pudimos obtener la factura');
         return response.json();
@@ -45,7 +45,7 @@ export class FacturasApiService {
         if (filters.sortDir) params.append('sortDir', filters.sortDir);
 
         const response = await fetch(`${this.client.getBaseURL()}/facturas?${params.toString()}`, {
-            headers: this.client.getAccessTokenHeader()
+            headers: this.client.getOptionalAccessTokenHeader()
         });
         await this.client.assertOk(response, 'No pudimos cargar las facturas');
         return response.json();

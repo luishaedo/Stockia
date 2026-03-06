@@ -25,6 +25,8 @@ class ApiFacade {
 
     getAdminInvoices = this.adminApi.getAdminInvoices.bind(this.adminApi);
     getAdminInvoiceUsers = this.adminApi.getAdminInvoiceUsers.bind(this.adminApi);
+    deleteAdminInvoice = this.adminApi.deleteAdminInvoice.bind(this.adminApi);
+    exportAdminInvoice = this.adminApi.exportAdminInvoice.bind(this.adminApi);
     uploadAdminLogo = this.adminApi.uploadAdminLogo.bind(this.adminApi);
     resolveAssetUrl = this.adminApi.resolveAssetUrl.bind(this.adminApi);
 

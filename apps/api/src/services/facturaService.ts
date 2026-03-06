@@ -85,10 +85,13 @@ export class FacturaService {
                 supplier: invoice.proveedor,
                 status: invoice.estado,
                 createdAt: invoice.createdAt,
+                updatedAt: invoice.updatedAt,
+                exportedAt: invoice.exportedAt,
                 createdBy: invoice.createdByUser
                     ? {
                         id: invoice.createdByUser.id,
                         name: invoice.createdByUser.name,
+                        externalId: invoice.createdByUser.externalId,
                         email: invoice.createdByUser.email
                     }
                     : null
@@ -376,5 +379,25 @@ export class FacturaService {
         }
 
         return normalizeFacturaItems(finalized);
+    }
+
+    async deleteAdminInvoice(id: string) {
+        const factura = await this.repository.findById(id);
+        if (!factura) {
+            throw new DomainError(ErrorCodes.NOT_FOUND, 'Factura not found', 404);
+        }
+
+        await this.repository.deleteById(id);
+        return { ok: true };
+    }
+
+    async exportAdminInvoice(id: string) {
+        const factura = await this.repository.findById(id);
+        if (!factura) {
+            throw new DomainError(ErrorCodes.NOT_FOUND, 'Factura not found', 404);
+        }
+
+        const exported = await this.repository.markAsExported(id);
+        return normalizeFacturaItems(exported);
     }
 }
