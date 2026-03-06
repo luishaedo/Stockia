@@ -2,6 +2,7 @@ import { AuthApiService } from './authApi';
 import { FacturasApiService } from './facturasApi';
 import { AdminApiService } from './adminApi';
 import { CatalogsApiService } from './catalogsApi';
+import { ArticlesApiService } from './articlesApi';
 import { ApiError, authTokenStore, HttpClient } from './httpClient';
 
 export { ApiError, authTokenStore };
@@ -14,6 +15,7 @@ class ApiFacade {
     private facturasApi = new FacturasApiService(client);
     private adminApi = new AdminApiService(client);
     private catalogsApi = new CatalogsApiService(client);
+    private articlesApi = new ArticlesApiService(client);
 
     login = this.authApi.login.bind(this.authApi);
 
@@ -38,6 +40,10 @@ class ApiFacade {
     createAdminCatalog = this.catalogsApi.createAdminCatalog.bind(this.catalogsApi);
     updateAdminCatalog = this.catalogsApi.updateAdminCatalog.bind(this.catalogsApi);
     deleteAdminCatalog = this.catalogsApi.deleteAdminCatalog.bind(this.catalogsApi);
+
+    searchArticles = this.articlesApi.searchArticles.bind(this.articlesApi);
+    createArticle = this.articlesApi.createArticle.bind(this.articlesApi);
+    cloneArticle = this.articlesApi.cloneArticle.bind(this.articlesApi);
 }
 
 export const api = new ApiFacade();
