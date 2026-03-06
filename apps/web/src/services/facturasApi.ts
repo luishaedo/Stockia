@@ -4,6 +4,13 @@ import { HttpClient } from './httpClient';
 export class FacturasApiService {
     constructor(private client: HttpClient) {}
 
+    private getJsonHeadersWithOptionalAuth() {
+        return {
+            'Content-Type': 'application/json',
+            ...this.client.getOptionalAccessTokenHeader()
+        };
+    }
+
     async getFactura(id: string): Promise<Factura> {
         const response = await fetch(`${this.client.getBaseURL()}/facturas/${id}`, {
             headers: this.client.getOptionalAccessTokenHeader()
@@ -15,7 +22,7 @@ export class FacturasApiService {
     async createFactura(data: CreateFacturaDTO): Promise<Factura> {
         const response = await fetch(`${this.client.getBaseURL()}/facturas`, {
             method: 'POST',
-            headers: await this.client.getAuthHeaders(),
+            headers: this.getJsonHeadersWithOptionalAuth(),
             body: JSON.stringify(data)
         });
         await this.client.assertOk(response, 'No pudimos crear la factura');
@@ -25,7 +32,7 @@ export class FacturasApiService {
     async updateFacturaDraft(id: string, data: UpdateFacturaDraftDTO): Promise<Factura> {
         const response = await fetch(`${this.client.getBaseURL()}/facturas/${id}/draft`, {
             method: 'PATCH',
-            headers: await this.client.getAuthHeaders(),
+            headers: this.getJsonHeadersWithOptionalAuth(),
             body: JSON.stringify(data)
         });
         await this.client.assertOk(response, 'No pudimos guardar los cambios');
@@ -54,7 +61,7 @@ export class FacturasApiService {
     async finalizeFactura(id: string, expectedUpdatedAt: string): Promise<Factura> {
         const response = await fetch(`${this.client.getBaseURL()}/facturas/${id}/finalize`, {
             method: 'PATCH',
-            headers: await this.client.getAuthHeaders(),
+            headers: this.getJsonHeadersWithOptionalAuth(),
             body: JSON.stringify({ expectedUpdatedAt })
         });
         await this.client.assertOk(response, 'No pudimos finalizar la factura');
