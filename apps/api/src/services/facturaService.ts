@@ -169,6 +169,58 @@ export class FacturaService {
         const curves = requiresLegacyCurveLookup ? await this.repository.findAllSizeCurves() : [];
 
         const normalizedItems = await Promise.all(items.map(async (item) => {
+            const articleId = item.articleId?.trim();
+            if (articleId) {
+                const article = await this.repository.findArticleById(articleId);
+                if (!article) {
+                    throw new DomainError(
+                        ErrorCodes.VALIDATION_FAILED,
+                        `Invalid article for item ${item.codigoArticulo}. Select an existing article.`,
+                        422
+                    );
+                }
+
+                if (article.supplierId !== supplier.id) {
+                    throw new DomainError(
+                        ErrorCodes.VALIDATION_FAILED,
+                        `Article ${article.sku} does not belong to selected supplier.`,
+                        422
+                    );
+                }
+
+                const curveValues = normalizedValues(article.sizeCurve.values.map(value => value.value));
+
+                return {
+                    ...item,
+                    articleId: article.id,
+                    codigoArticulo: article.sku,
+                    marca: supplier.name,
+                    curvaTalles: curveValues,
+                    sizeCurveId: article.sizeCurve.id,
+                    articleSnapshot: {
+                        sku: article.sku,
+                        description: article.description,
+                        supplier: {
+                            id: article.supplier.id,
+                            code: article.supplier.code,
+                            label: article.supplier.name
+                        },
+                        sizeCurve: {
+                            id: article.sizeCurve.id,
+                            code: article.sizeCurve.code,
+                            label: article.sizeCurve.description,
+                            values: curveValues
+                        }
+                    },
+                    sizeCurveSnapshot: {
+                        id: article.sizeCurve.id,
+                        code: article.sizeCurve.code,
+                        label: article.sizeCurve.description,
+                        values: curveValues
+                    }
+                };
+            }
+
             const sizeCurveId = item.sizeCurveId?.trim();
             if (sizeCurveId) {
                 const sizeCurve = await this.repository.findSizeCurveById(sizeCurveId);

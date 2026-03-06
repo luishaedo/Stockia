@@ -17,6 +17,22 @@ export const VarianteColorSchema = z.object({
 });
 
 export const FacturaItemSchema = z.object({
+    articleId: z.string().min(1).optional(),
+    articleSnapshot: z.object({
+        sku: z.string().min(1),
+        description: z.string().min(1),
+        supplier: z.object({
+            id: z.string().min(1),
+            code: z.string().min(1),
+            label: z.string().min(1)
+        }),
+        sizeCurve: z.object({
+            id: z.string().min(1),
+            code: z.string().min(1),
+            label: z.string().min(1),
+            values: z.array(z.string().min(1)).min(1)
+        })
+    }).optional(),
     supplierLabel: z.string().min(1).optional(),
     marca: z.string().min(1).optional(),
     tipoPrenda: z.string().min(1),
@@ -36,11 +52,11 @@ export const FacturaItemSchema = z.object({
     }).optional(),
     colores: z.array(VarianteColorSchema)
 }).refine(
-    (item) => Boolean(item.supplierLabel?.trim()) || Boolean(item.marca?.trim()),
-    { message: 'supplierLabel or marca must be provided', path: ['supplierLabel'] }
+    (item) => Boolean(item.articleId?.trim()) || Boolean(item.supplierLabel?.trim()) || Boolean(item.marca?.trim()),
+    { message: 'articleId, supplierLabel or marca must be provided', path: ['articleId'] }
 ).refine(
-    (item) => Boolean(item.sizeCurveId?.trim()) || item.curvaTalles.length > 0,
-    { message: 'sizeCurveId or curvaTalles must be provided', path: ['sizeCurveId'] }
+    (item) => Boolean(item.articleId?.trim()) || Boolean(item.sizeCurveId?.trim()) || item.curvaTalles.length > 0,
+    { message: 'articleId, sizeCurveId or curvaTalles must be provided', path: ['articleId'] }
 ).refine(
     (item) => {
         // Validate quantities align with curva
@@ -75,7 +91,8 @@ export const CreateFacturaSchema = z.object({
             for (const item of items) {
                 for (const color of item.colores) {
                     const supplierLabel = item.supplierLabel?.trim() || item.marca?.trim() || '';
-                    const key = `${supplierLabel}|${item.tipoPrenda}|${item.codigoArticulo}|${color.codigoColor}`;
+                    const itemKey = item.articleId?.trim() ? `article:${item.articleId.trim()}` : `${supplierLabel}|${item.tipoPrenda}|${item.codigoArticulo}`;
+                    const key = `${itemKey}|${color.codigoColor}`;
                     if (seen.has(key)) return false;
                     seen.add(key);
                 }
@@ -116,6 +133,31 @@ export const OperationCatalogsResponseSchema = z.object({
     suppliers: z.array(OperationCatalogEntrySchema),
     colors: z.array(OperationCatalogEntrySchema),
     curves: z.array(OperationCatalogEntrySchema)
+});
+
+export const ArticleSearchQuerySchema = z.object({
+    supplierId: z.string().min(1),
+    q: z.string().trim().optional(),
+    limit: z.coerce.number().int().min(1).max(50).default(20)
+});
+
+const ArticlePayloadSchema = z.object({
+    sku: z.string().min(1),
+    description: z.string().min(1),
+    supplierId: z.string().min(1),
+    familyId: z.string().min(1),
+    materialId: z.string().min(1),
+    categoryId: z.string().min(1),
+    classificationId: z.string().min(1),
+    garmentTypeId: z.string().min(1),
+    sizeCurveId: z.string().min(1)
+});
+
+export const CreateArticleSchema = ArticlePayloadSchema;
+
+export const CloneArticleSchema = ArticlePayloadSchema.partial().extend({
+    sku: z.string().min(1),
+    description: z.string().min(1)
 });
 
 export const AdminInvoicesQuerySchema = z.object({
@@ -221,6 +263,9 @@ export type AdminInvoiceUser = z.infer<typeof AdminInvoiceUserSchema>;
 export type AdminInvoiceUsersResponse = z.infer<typeof AdminInvoiceUsersResponseSchema>;
 export type OperationCatalogEntry = z.infer<typeof OperationCatalogEntrySchema>;
 export type OperationCatalogsResponse = z.infer<typeof OperationCatalogsResponseSchema>;
+export type ArticleSearchQuery = z.infer<typeof ArticleSearchQuerySchema>;
+export type CreateArticleDTO = z.infer<typeof CreateArticleSchema>;
+export type CloneArticleDTO = z.infer<typeof CloneArticleSchema>;
 
 export interface Factura {
     id: string;
@@ -287,7 +332,10 @@ export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'POST', path: '/admin/uploads/logo', requiresAdminToken: true },
     { method: 'GET', path: '/operations/catalogs', requiresAdminToken: false },
     { method: 'GET', path: '/admin/catalogs/:catalog/version', requiresAdminToken: true },
-    { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: false }
+    { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: false },
+    { method: 'POST', path: '/articles', requiresAdminToken: false },
+    { method: 'GET', path: '/articles/search', requiresAdminToken: false },
+    { method: 'POST', path: '/articles/:id/clone', requiresAdminToken: false }
 ];
 
 export type FacturaListResponse = PaginatedResponse<Factura>;
