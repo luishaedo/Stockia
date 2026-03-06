@@ -1,9 +1,11 @@
 import { DuplicateHandler, FacturaItem, VarianteColor } from '@stockia/shared';
 
-const getSupplierLabel = (item: Pick<FacturaItem, 'supplierLabel' | 'marca'>) => item.supplierLabel?.trim() || item.marca?.trim() || '';
+const getSupplierLabel = (item: { supplierLabel?: string | null; marca?: string | null }) => item.supplierLabel?.trim() || item.marca?.trim() || '';
 
-export const getItemKey = (item: Pick<FacturaItem, 'supplierLabel' | 'marca' | 'tipoPrenda' | 'codigoArticulo'>) =>
-    `${getSupplierLabel(item)}|${item.tipoPrenda}|${item.codigoArticulo}`;
+export const getItemKey = (item: { articleId?: string | null; supplierLabel?: string | null; marca?: string | null; tipoPrenda: string; codigoArticulo: string }) =>
+    item.articleId?.trim()
+        ? `article:${item.articleId.trim()}`
+        : `${getSupplierLabel(item)}|${item.tipoPrenda}|${item.codigoArticulo}`;
 
 export const mergeItems = (items: FacturaItem[], handler: DuplicateHandler = 'ERROR'): FacturaItem[] => {
     const itemMap = new Map<string, FacturaItem>();

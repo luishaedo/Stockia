@@ -16,6 +16,7 @@ import { createFacturaRoutes } from './routes/facturaRoutes.js';
 import { createAdminCatalogRoutes } from './routes/adminCatalogRoutes.js';
 import { createAdminUploadRoutes } from './routes/adminUploadRoutes.js';
 import { createCatalogSelectionRoutes } from './routes/catalogSelectionRoutes.js';
+import { createArticleRoutes } from './routes/articleRoutes.js';
 import { FacturaRepository } from './repositories/facturaRepository.js';
 import { FacturaService } from './services/facturaService.js';
 import { FacturaController } from './controllers/facturaController.js';
@@ -73,6 +74,9 @@ export const createApp = (prisma: PrismaClient) => {
 
     app.use(createCatalogSelectionRoutes(prisma, readRateLimitMiddleware));
     app.use('/api', createCatalogSelectionRoutes(prisma, readRateLimitMiddleware));
+
+    app.use(createArticleRoutes(prisma, readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use('/api', createArticleRoutes(prisma, readRateLimitMiddleware, writeRateLimitMiddleware));
 
     app.use(createAdminCatalogRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
     app.use('/api', createAdminCatalogRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));

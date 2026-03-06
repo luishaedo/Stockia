@@ -66,6 +66,16 @@ export class FacturaRepository {
         });
     }
 
+    findArticleById(id: string) {
+        return this.prisma.article.findUnique({
+            where: { id },
+            include: {
+                supplier: true,
+                sizeCurve: { include: { values: { orderBy: { sortOrder: 'asc' } } } }
+            }
+        });
+    }
+
     createDraft(data: {
         nroFactura: string;
         proveedor?: string;
@@ -85,6 +95,8 @@ export class FacturaRepository {
                         marca: this.getSupplierLabel(item),
                         tipoPrenda: item.tipoPrenda,
                         codigoArticulo: item.codigoArticulo,
+                        articleId: item.articleId,
+                        articleSnapshot: item.articleSnapshot as Prisma.InputJsonValue | undefined,
                         curvaTalles: item.curvaTalles,
                         garmentTypeSnapshot: item.garmentTypeSnapshot as Prisma.InputJsonValue | undefined,
                         sizeCurveSnapshot: item.sizeCurveSnapshot as Prisma.InputJsonValue | undefined,
@@ -122,6 +134,8 @@ export class FacturaRepository {
                         marca: this.getSupplierLabel(nextItem),
                         tipoPrenda: nextItem.tipoPrenda,
                         codigoArticulo: nextItem.codigoArticulo,
+                        articleId: nextItem.articleId,
+                        articleSnapshot: nextItem.articleSnapshot as Prisma.InputJsonValue | undefined,
                         curvaTalles: nextItem.curvaTalles,
                         garmentTypeSnapshot: nextItem.garmentTypeSnapshot as Prisma.InputJsonValue | undefined,
                         sizeCurveSnapshot: nextItem.sizeCurveSnapshot as Prisma.InputJsonValue | undefined,
@@ -141,9 +155,11 @@ export class FacturaRepository {
 
             await tx.facturaItem.update({
                 where: { id: existingItem.id },
-                data: {
-                    curvaTalles: nextItem.curvaTalles,
-                    garmentTypeSnapshot: nextItem.garmentTypeSnapshot as Prisma.InputJsonValue | undefined,
+                    data: {
+                        articleId: nextItem.articleId,
+                        articleSnapshot: nextItem.articleSnapshot as Prisma.InputJsonValue | undefined,
+                        curvaTalles: nextItem.curvaTalles,
+                        garmentTypeSnapshot: nextItem.garmentTypeSnapshot as Prisma.InputJsonValue | undefined,
                     sizeCurveSnapshot: nextItem.sizeCurveSnapshot as Prisma.InputJsonValue | undefined
                 }
             });
