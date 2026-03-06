@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FileText, Grid2x2, ListTodo, LogOut, Menu, Package, Plus, Search } from 'lucide-react';
+import { FileText, Grid2x2, KeyRound, LogOut, Plus, Search, Shapes } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 import styles from './MainLayout.module.css';
@@ -21,26 +21,21 @@ export function MainLayout({ children }: MainLayoutProps) {
         navigate('/login', { replace: true });
     };
 
-    const links = [
-        { to: '/facturas', icon: FileText, label: 'Facturas' },
-        { to: '/admin', icon: Grid2x2, label: 'Catálogos' },
-        { to: '/admin/facturas', icon: ListTodo, label: 'Admin' }
-    ];
+    const isHomeActive = location.pathname === '/' || location.pathname.startsWith('/facturas');
 
     return (
         <div className={styles.appFrame}>
             <div className={styles.shell}>
                 {!isLoginPage && (
                     <header className={styles.topBar}>
-                        <Link to="/facturas" className={styles.brand}>
-                            <span className={styles.brandIcon}><Package size={20} /></span>
+                        <Link to="/" className={styles.brand}>
                             <span>Stockia</span>
                         </Link>
                         {isAuthenticated && (
                             <div className={styles.topActions}>
-                                <button type="button" className={styles.iconButton} aria-label="Open navigation menu">
-                                    <Menu size={22} />
-                                </button>
+                                <Link to="/admin" className={styles.iconButton} aria-label="Open admin">
+                                    <KeyRound size={20} />
+                                </Link>
                                 <button type="button" className={styles.logoutButton} onClick={handleLogout} aria-label="Log out">
                                     <LogOut size={14} />
                                 </button>
@@ -53,20 +48,21 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                 {isAuthenticated && !isLoginPage && (
                     <nav className={styles.bottomNav} aria-label="Primary navigation">
-                        <Link to="/facturas" className={clsx(styles.navLink, location.pathname === '/facturas' && styles.navLinkActive)} aria-label="Go to invoices">
+                        <Link to="/" className={clsx(styles.navLink, isHomeActive && styles.navLinkActive)} aria-label="Go to invoices">
                             <FileText size={21} />
                         </Link>
-                        <Link to="/facturas?openSearch=true" className={styles.navLink} aria-label="Open invoice search">
+                        <Link to="/?openSearch=true" className={styles.navLink} aria-label="Open invoice search">
                             <Search size={21} />
                         </Link>
                         <Link to="/facturas/new" className={styles.navCenter} aria-label="Create invoice">
                             <Plus size={22} />
                         </Link>
-                        {links.map(({ to, icon: Icon, label }) => (
-                            <Link key={to} to={to} className={clsx(styles.navLink, location.pathname === to && styles.navLinkActive)} aria-label={label}>
-                                <Icon size={21} />
-                            </Link>
-                        )).slice(1)}
+                        <Link to="/admin" className={clsx(styles.navLink, location.pathname === '/admin' && styles.navLinkActive)} aria-label="Catálogos">
+                            <Grid2x2 size={21} />
+                        </Link>
+                        <button type="button" className={styles.navLink} aria-label="Artículos">
+                            <Shapes size={21} />
+                        </button>
                     </nav>
                 )}
             </div>

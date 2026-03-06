@@ -24,7 +24,7 @@ function App() {
                                 path="/"
                                 element={(
                                     <ProtectedRoute>
-                                        <Navigate to="/facturas" replace />
+                                        <FacturasListPage />
                                     </ProtectedRoute>
                                 )}
                             />
@@ -32,7 +32,7 @@ function App() {
                                 path="/facturas"
                                 element={(
                                     <ProtectedRoute>
-                                        <FacturasListPage />
+                                        <Navigate to="/" replace />
                                     </ProtectedRoute>
                                 )}
                             />

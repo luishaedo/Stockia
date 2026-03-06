@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FacturaEstado, FacturaFilters, FacturaListResponse } from '@stockia/shared';
-import { ClipboardList, FileSearch, FileText, ShieldCheck } from 'lucide-react';
+import { ClipboardList, FileSearch, FileText, Shapes } from 'lucide-react';
 import { ApiError, api } from '../services/api';
 import { PendingTasksList } from '../components/home/PendingTasksList';
 import { QuickActionsGrid } from '../components/home/QuickActionsGrid';
@@ -18,7 +18,7 @@ export function FacturasListPage() {
     const [supplierOptionsError, setSupplierOptionsError] = useState<string | null>(null);
     const [filters, setFilters] = useState<FacturaFilters>({
         page: 1,
-        pageSize: 20,
+        pageSize: 5,
         sortBy: 'fecha',
         sortDir: 'desc'
     });
@@ -65,14 +65,14 @@ export function FacturasListPage() {
         { key: 'new', label: 'Nueva', icon: FileText, onClick: () => navigate('/facturas/new') },
         { key: 'search', label: 'Buscar', icon: FileSearch, onClick: () => setIsFilterPanelOpen((value) => !value) },
         { key: 'catalogs', label: 'Catalogos', icon: ClipboardList, onClick: () => navigate('/admin') },
-        { key: 'admin', label: 'Admin', icon: ShieldCheck, onClick: () => navigate('/admin/facturas') }
+        { key: 'articles', label: 'Artículos', icon: Shapes, onClick: () => {} }
     ];
 
     const taskItems = useMemo(() => data?.items ?? [], [data?.items]);
 
     return (
         <section className={styles.page}>
-            <h1 className={styles.welcome}>bienvenido, usuario</h1>
+            <h1 className={styles.welcome}>home</h1>
 
             <QuickActionsGrid items={quickActions} />
 
@@ -132,7 +132,7 @@ export function FacturasListPage() {
                             type="button"
                             className={`${styles.controlButton} ${styles.secondaryButton}`}
                             onClick={() => {
-                                setFilters({ page: 1, pageSize: 20, sortBy: 'fecha', sortDir: 'desc' });
+                                setFilters({ page: 1, pageSize: 5, sortBy: 'fecha', sortDir: 'desc' });
                                 void loadFacturas();
                             }}
                         >
@@ -152,27 +152,29 @@ export function FacturasListPage() {
                         onOpenSummary={(factura) => navigate(`/facturas/${factura.id}/summary`)}
                     />
 
-                    {data.pagination && (
+                    {data.pagination && data.pagination.totalPages > 1 && (
                         <div className={styles.pagination}>
-                            <button
-                                type="button"
-                                className={`${styles.controlButton} ${styles.secondaryButton}`}
-                                disabled={data.pagination.page === 1}
-                                onClick={() => setFilters({ ...filters, page: (filters.page || 1) - 1 })}
-                            >
-                                Anterior
-                            </button>
+                            {data.pagination.page > 1 && (
+                                <button
+                                    type="button"
+                                    className={`${styles.controlButton} ${styles.secondaryButton}`}
+                                    onClick={() => setFilters({ ...filters, page: (filters.page || 1) - 1 })}
+                                >
+                                    Anterior
+                                </button>
+                            )}
                             <p className={styles.pageInfo}>
                                 Página {data.pagination.page} de {data.pagination.totalPages}
                             </p>
-                            <button
-                                type="button"
-                                className={`${styles.controlButton} ${styles.secondaryButton}`}
-                                disabled={data.pagination.page >= data.pagination.totalPages}
-                                onClick={() => setFilters({ ...filters, page: (filters.page || 1) + 1 })}
-                            >
-                                Siguiente
-                            </button>
+                            {data.pagination.page < data.pagination.totalPages && (
+                                <button
+                                    type="button"
+                                    className={`${styles.controlButton} ${styles.secondaryButton}`}
+                                    onClick={() => setFilters({ ...filters, page: (filters.page || 1) + 1 })}
+                                >
+                                    Siguiente
+                                </button>
+                            )}
                         </div>
                     )}
                 </>
