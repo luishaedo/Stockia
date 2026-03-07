@@ -42,7 +42,7 @@
 .content {
   flex: 1;
   padding-top: var(--space-3);
-  padding-bottom: 90px;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
 }
 
 .bottomNav {
@@ -54,7 +54,7 @@
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-items: center;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
   background: #fff;
   border-top: 1px solid #d1d5db;
   z-index: 20;
@@ -89,6 +89,19 @@
   margin: -34px auto 0;
   text-decoration: none;
   box-shadow: 0 10px 20px rgba(99, 102, 241, 0.45);
+}
+
+@media (max-width: 420px) {
+  .navLink {
+    font-size: 0.68rem;
+    min-height: 44px;
+  }
+
+  .navCenter {
+    width: 52px;
+    height: 52px;
+    margin-top: -30px;
+  }
 }
 
 @media (min-width: 900px) {

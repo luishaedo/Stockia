@@ -151,3 +151,26 @@
   justify-content: center;
   gap: 8px;
 }
+
+
+.garmentCard span,
+.garmentActive span {
+  text-align: center;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .garmentGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 460px) {
+  .wrapper {
+    padding: 14px;
+  }
+
+  .garmentGrid {
+    grid-template-columns: 1fr;
+  }
+}

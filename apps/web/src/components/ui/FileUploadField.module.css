@@ -75,3 +75,13 @@
   font-size: 0.75rem;
   color: #64748b;
 }
+
+@media (max-width: 480px) {
+  .uploadRow {
+    grid-template-columns: 1fr;
+  }
+
+  .fileName {
+    min-height: 0;
+  }
+}

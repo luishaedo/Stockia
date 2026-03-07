@@ -145,3 +145,30 @@
   color: #dc2626;
   font-size: 0.88rem;
 }
+
+
+.supplierName {
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+@media (max-width: 560px) {
+  .suppliersGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .supplierCard,
+  .supplierCardActive {
+    min-height: 92px;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0 var(--space-2);
+  }
+
+  .checkIcon {
+    top: 50%;
+    transform: translateY(-50%);
+    right: var(--space-1-5);
+  }
+}
