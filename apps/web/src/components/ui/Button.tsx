@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import styles from './Button.module.css';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'icon';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
     icon?: React.ReactNode;
@@ -20,20 +20,23 @@ export function Button({
     disabled,
     ...props
 }: ButtonProps) {
+    const iconOnly = variant === 'icon';
+
     return (
         <button
             className={clsx(
                 styles.button,
                 styles[variant],
                 styles[size],
+                iconOnly && styles.iconOnly,
                 className
             )}
             disabled={disabled || isLoading}
             {...props}
         >
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading && <Loader2 className={styles.spinner} />}
             {!isLoading && icon && <span className={styles.icon}>{icon}</span>}
-            {children}
+            {!iconOnly && children}
         </button>
     );
 }

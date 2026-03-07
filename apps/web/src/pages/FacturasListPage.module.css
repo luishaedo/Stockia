@@ -7,8 +7,9 @@
 .brand {
   margin: 0;
   color: #fff;
-  font-size: 2rem;
+  font-size: var(--font-size-h1);
   font-weight: 700;
+  line-height: 1.1;
 }
 
 .subtitle {
@@ -24,19 +25,19 @@
 }
 
 .pagination {
-  margin: 18px 0;
+  margin: var(--space-2-5) 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .pageButton {
   border: 1px solid #cbd5e1;
   background: #fff;
-  border-radius: 12px;
-  min-height: 40px;
-  padding: 0 14px;
+  border-radius: var(--radius-control);
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
   color: #0f172a;
   font-weight: 600;
 }

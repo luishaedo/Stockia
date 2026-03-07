@@ -5,14 +5,14 @@
   color: #fff;
 }
 
-.hero h1 { margin: 4px 0; font-size: 2rem; }
+.hero h1 { margin: 4px 0; font-size: var(--font-size-h1); line-height: 1.1; }
 .hero p { margin: 0; color: #cffafe; }
 
 .backButton {
   border: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: var(--radius-control);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -26,8 +26,8 @@
 .card {
   background: #fff;
   border: 1px solid #d6deea;
-  border-radius: 14px;
-  padding: 12px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2);
 }
 
 .row {
@@ -68,13 +68,13 @@
   font-weight: 600;
 }
 
-.articleList { display: grid; gap: var(--space-1-5); }
+.articleList { display: grid; gap: var(--space-2); }
 
 .articleCard {
   background: #fff;
   border: 1px solid #d6deea;
-  border-radius: 14px;
-  padding: 12px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2);
   display: grid;
   gap: var(--space-1-5);
 }
@@ -96,7 +96,7 @@
   display: grid;
   gap: var(--space-1-5);
   border-top: 1px dashed #cbd5e1;
-  padding-top: 10px;
+  padding-top: var(--space-1-5);
 }
 
 @media (max-width: 720px) {

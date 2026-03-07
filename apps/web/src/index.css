@@ -20,6 +20,11 @@
   --control-height: 44px;
   --radius-control: 12px;
   --radius-card: 16px;
+
+  --font-size-h1: 1.875rem;
+  --font-size-h2: 1.5rem;
+  --icon-size-md: 18px;
+  --icon-size-lg: 24px;
 }
 
 * { box-sizing: border-box; }
