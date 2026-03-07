@@ -83,3 +83,19 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+@media (max-width: 560px) {
+  .catalogGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .itemCard {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

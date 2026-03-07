@@ -38,6 +38,7 @@
 
 .input, .select {
   width: 100%;
+  min-width: 0;
   min-height: var(--control-height);
   border-radius: var(--radius-control);
   border: 1px solid #cbd5e1;
@@ -55,6 +56,7 @@
   border-radius: var(--radius-control);
   color: #fff;
   font-weight: 700;
+  width: 100%;
 }
 
 .searchButton, .primaryButton { background: #0d9488; }
@@ -101,4 +103,10 @@
 
 @media (max-width: 720px) {
   .row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .articleHeader {
+    flex-direction: column;
+  }
 }
