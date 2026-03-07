@@ -13,8 +13,12 @@
 }
 
 .button:disabled {
-    opacity: 0.5;
+    opacity: 0.55;
     pointer-events: none;
+}
+
+.button:active {
+    transform: translateY(1px);
 }
 
 .button:focus-visible {

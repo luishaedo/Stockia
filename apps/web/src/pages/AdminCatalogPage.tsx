@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ArrowLeft, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { api, ApiError } from '../services/api';
 import styles from './AdminCatalogPage.module.css';
+import { FileUploadField } from '../components/ui/FileUploadField';
 
 type CatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
 
@@ -187,20 +188,15 @@ export function AdminCatalogPage() {
                     <input className={styles.input} placeholder={isSupplier ? 'Nombre' : 'Descripción'} value={description} onChange={(e) => setDescription(e.target.value)} required />
                     {requiresLogo && (
                         <>
-                            <div className={styles.uploadRow}>
-                                <label htmlFor="catalog-logo-upload" className={styles.uploadButton}>
-                                    <Upload size={14} />
-                                    <span>Choose file</span>
-                                </label>
-                                <p className={styles.fileName}>{selectedLogoFileName}</p>
-                                <input
-                                    id="catalog-logo-upload"
-                                    className={styles.hiddenFileInput}
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                    onChange={(event) => void handleLogoUpload(event.target.files?.[0])}
-                                />
-                            </div>
+                            <FileUploadField
+                                label="Logo del catálogo"
+                                buttonText="Choose file"
+                                selectedFileName={selectedLogoFileName}
+                                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                onFileSelect={(file) => void handleLogoUpload(file)}
+                                disabled={uploadingLogo}
+                                helperText="Formatos: PNG, JPG, WEBP o SVG"
+                            />
                             {uploadingLogo && <p className={styles.mutedText}>Subiendo logo...</p>}
                         </>
                     )}
