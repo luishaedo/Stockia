@@ -18,7 +18,7 @@ export function QuickActionsGrid({ items }: QuickActionsGridProps) {
             {items.map(({ key, icon: Icon, label, onClick }) => (
                 <button key={key} type="button" onClick={onClick} className={styles.actionButton}>
                     <span className={styles.iconWrap}>
-                        <Icon size={28} />
+                        <Icon />
                     </span>
                     <span className={styles.label}>{label}</span>
                 </button>

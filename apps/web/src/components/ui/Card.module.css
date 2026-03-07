@@ -1,22 +1,24 @@
 .card {
     background-color: var(--color-bg-card);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-card);
     border: 1px solid var(--color-border);
-    padding: 1rem;
+    padding: var(--space-2);
     box-shadow: var(--shadow-md);
     color: var(--color-text-main);
+    display: grid;
+    gap: var(--space-1-5);
 }
 
 .title {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.125rem;
+    margin: 0;
+    font-size: var(--font-size-h2);
+    line-height: 1.2;
     color: #0f172a;
     font-weight: 700;
 }
 
 @media (min-width: 640px) {
     .card {
-        padding: 1.25rem;
+        padding: var(--space-2-5);
     }
 }

@@ -1,20 +1,23 @@
 .heading {
-  margin: 18px 0 12px;
-  font-size: 2rem;
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--font-size-h2);
   color: #0f172a;
+  line-height: 1.2;
 }
 
 .list {
   display: grid;
-  gap: 14px;
+  gap: var(--space-2);
 }
 
 .taskCard {
   background: #fff;
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2);
   border: 1px solid #d5dce6;
   box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: var(--space-1);
 }
 
 .headerRow,
@@ -22,7 +25,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-1);
 }
 
 .meta,
@@ -33,10 +36,10 @@
 }
 
 .title {
-  margin: 8px 0 4px;
+  margin: 0;
   color: #0f172a;
-  font-size: 2rem;
-  line-height: 1;
+  font-size: 1.5rem;
+  line-height: 1.1;
 }
 
 .description {
@@ -64,10 +67,10 @@
 }
 
 .cta {
-  margin-top: 14px;
+  margin-top: var(--space-1);
   width: 100%;
-  min-height: 42px;
-  border-radius: 12px;
+  min-height: var(--control-height);
+  border-radius: var(--radius-control);
   border: 0;
   color: #fff;
   font-weight: 600;
@@ -77,4 +80,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+}
+
+.cta svg {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
 }

@@ -2,12 +2,14 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: var(--space-1);
     border-radius: var(--radius-control);
     font-weight: 600;
-    transition: 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     border: 1px solid transparent;
     cursor: pointer;
-    min-height: var(--control-height);
+    height: var(--control-height);
+    padding: 0 var(--space-2);
 }
 
 .button:disabled {
@@ -17,6 +19,7 @@
 
 .button:focus-visible {
     outline: none;
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
@@ -25,10 +28,19 @@
     color: white;
 }
 
+.primary:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+}
+
 .secondary {
     background-color: #e2e8f0;
     color: #0f172a;
     border-color: var(--color-border);
+}
+
+.secondary:hover {
+    background: #dbe4ef;
 }
 
 .ghost {
@@ -37,13 +49,51 @@
     border-color: var(--color-border);
 }
 
+.ghost:hover {
+    background: #f8fafc;
+}
+
 .danger {
     background-color: #dc2626;
     color: white;
 }
 
-.sm { min-height: 36px; padding: 0 var(--space-1-5); font-size: 0.875rem; }
-.md { min-height: var(--control-height); padding: 0 var(--space-2); font-size: 1rem; }
-.lg { min-height: 46px; padding: 0 var(--space-3); font-size: 1.125rem; }
+.danger:hover {
+    background: #b91c1c;
+}
 
-.icon { margin-right: var(--space-1); display: flex; }
+.icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon svg {
+    width: var(--icon-size-md);
+    height: var(--icon-size-md);
+}
+
+.iconOnly {
+    width: var(--control-height);
+    padding: 0;
+}
+
+.iconOnly svg {
+    width: var(--icon-size-lg);
+    height: var(--icon-size-lg);
+}
+
+.spinner {
+    width: var(--icon-size-md);
+    height: var(--icon-size-md);
+    animation: spin 1s linear infinite;
+}
+
+.sm { height: var(--control-height); font-size: 0.875rem; }
+.md { height: var(--control-height); font-size: 1rem; }
+.lg { height: var(--control-height); font-size: 1.125rem; }
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
