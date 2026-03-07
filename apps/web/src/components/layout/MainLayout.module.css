@@ -16,6 +16,26 @@
   overflow: hidden;
 }
 
+.topBar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 12px 0;
+}
+
+.authAction {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .content {
   flex: 1;
   padding-bottom: 90px;
@@ -28,7 +48,7 @@
   transform: translateX(-50%);
   width: min(430px, 100%);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   align-items: center;
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
   background: #fff;
@@ -65,10 +85,6 @@
   margin: -34px auto 0;
   text-decoration: none;
   box-shadow: 0 10px 20px rgba(99, 102, 241, 0.45);
-}
-
-.navSpacer {
-  min-height: 48px;
 }
 
 @media (min-width: 900px) {

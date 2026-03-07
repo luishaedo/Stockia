@@ -3,7 +3,7 @@ import { VarianteColor } from '@stockia/shared';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Plus, Check, Trash2 } from 'lucide-react';
+import { Plus, Check, Trash2, ArrowLeft } from 'lucide-react';
 
 interface ColorStepProps {
     itemContext: {
@@ -165,7 +165,7 @@ export function ColorStep({
                     </div>
 
                     <div className="mt-6 pt-4 border-t border-slate-700 flex flex-col sm:flex-row gap-2 sm:justify-between">
-                        <Button variant="ghost" onClick={onBack} className="w-full sm:w-auto">Volver al artículo</Button>
+                        <Button variant="ghost" onClick={onBack} className="w-full sm:w-auto" icon={<ArrowLeft className="h-4 w-4" />}>Volver al artículo</Button>
                         <Button
                             onClick={onFinishItem}
                             disabled={addedColors.length === 0 || readOnly}
