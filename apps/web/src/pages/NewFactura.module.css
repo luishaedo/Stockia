@@ -25,18 +25,18 @@
 }
 
 .formCard {
-  margin: 16px;
+  margin: var(--space-2);
   background: #fff;
   border: 1px solid #d1d5db;
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: var(--radius-card);
+  padding: var(--space-2);
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
 }
 
 .label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-1);
   font-size: 0.9rem;
   font-weight: 600;
   color: #334155;
@@ -44,10 +44,10 @@
 
 .input {
   width: 100%;
-  min-height: 44px;
+  min-height: var(--control-height);
   border: 1px solid #cbd5e1;
   background: #f1f5f9;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   padding: 0 14px;
   font-size: 1rem;
   box-sizing: border-box;
@@ -82,7 +82,7 @@
 .supplierAvatar {
   width: 42px;
   height: 42px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: rgba(148, 163, 184, 0.2);
   display: inline-flex;
   align-items: center;
@@ -113,7 +113,7 @@
   color: #92400e;
   background: #fef3c7;
   border: 1px solid #fcd34d;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   padding: 10px;
   font-size: 0.85rem;
 }
@@ -127,9 +127,9 @@
 }
 
 .submitButton {
-  min-height: 46px;
+  min-height: var(--control-height);
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: linear-gradient(155deg, #4f46e5, #9333ea);
   color: #fff;
   font-weight: 700;

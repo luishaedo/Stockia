@@ -19,17 +19,18 @@
 .topBar {
   display: flex;
   justify-content: flex-end;
-  padding: 10px 12px 0;
+  padding: var(--space-1-5) var(--space-1-5) var(--space-1);
 }
 
 .authAction {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   background: #ffffff;
   color: #334155;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: var(--space-1);
+  padding: 0 var(--space-1-5);
+  min-height: var(--control-height);
   border-radius: 999px;
   text-decoration: none;
   font-size: 0.78rem;
@@ -38,6 +39,7 @@
 
 .content {
   flex: 1;
+  padding-top: var(--space-2);
   padding-bottom: 90px;
 }
 
@@ -64,7 +66,7 @@
   align-items: center;
   justify-content: center;
   font-size: 0.72rem;
-  gap: 6px;
+  gap: var(--space-1);
   min-height: 48px;
 }
 
