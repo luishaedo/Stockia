@@ -36,3 +36,9 @@
     font-size: 0.75rem;
     color: #ef4444;
 }
+
+
+.input:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
