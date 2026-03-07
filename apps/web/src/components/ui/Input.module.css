@@ -1,7 +1,7 @@
 .container {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-1);
     width: 100%;
 }
 
@@ -12,9 +12,9 @@
 }
 
 .input {
-    min-height: 44px;
-    padding: 0 0.75rem;
-    border-radius: var(--radius-md);
+    min-height: var(--control-height);
+    padding: 0 var(--space-1-5);
+    border-radius: var(--radius-control);
     border: 1px solid var(--color-border);
     background-color: var(--color-bg-input);
     color: #0f172a;
@@ -25,7 +25,7 @@
 .input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .error {
