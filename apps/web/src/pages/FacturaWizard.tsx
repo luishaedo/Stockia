@@ -13,7 +13,6 @@ const getEstadoLabel = (estado: string) => (estado === 'FINAL' ? 'Final' : 'Borr
 
 type WizardStep = 'ARTICLE' | 'COLOR';
 
-type SupplierOption = { value: string; label: string; id: string };
 type GarmentTypeOption = { value: string; label: string; id: string };
 type SizeCurveOption = { value: string; label: string; id: string; values: string[] };
 
@@ -25,9 +24,8 @@ export function FacturaWizard() {
     const [step, setStep] = useState<WizardStep>('ARTICLE');
     const { conflictState, actions: autosaveActions } = useAutosave();
 
-    const [draftItem, setDraftItem] = useState({ supplierLabel: '', tipoPrenda: '', codigoArticulo: '', curvaTalles: '' });
+    const [draftItem, setDraftItem] = useState({ tipoPrenda: '', codigoArticulo: '', curvaTalles: '' });
     const [draftColors, setDraftColors] = useState<VarianteColor[]>([]);
-    const [supplierOptions, setSupplierOptions] = useState<SupplierOption[]>([]);
     const [garmentTypeOptions, setGarmentTypeOptions] = useState<GarmentTypeOption[]>([]);
     const [sizeCurveOptions, setSizeCurveOptions] = useState<SizeCurveOption[]>([]);
     const [catalogsLoading, setCatalogsLoading] = useState(false);
@@ -47,7 +45,6 @@ export function FacturaWizard() {
             setCatalogsError(null);
             try {
                 const operationsCatalogs = await api.getOperationsCatalogs();
-                setSupplierOptions(operationsCatalogs.suppliers.map((entry) => ({ id: entry.id, value: entry.label, label: entry.label })));
                 setGarmentTypeOptions(operationsCatalogs.families.map((entry) => ({ id: entry.id, value: entry.label, label: entry.label })));
                 setSizeCurveOptions(operationsCatalogs.curves.map((entry) => {
                     const match = entry.label.match(/\((.*?)\)\s*$/);
@@ -80,8 +77,8 @@ export function FacturaWizard() {
         const curva = selectedCurve?.values?.length ? selectedCurve.values : draftItem.curvaTalles.split(',').map((s) => s.trim()).filter(Boolean);
 
         const newItem: FacturaItem = {
-            supplierLabel: draftItem.supplierLabel,
-            marca: draftItem.supplierLabel,
+            supplierLabel: state.currentFactura.proveedor || '',
+            marca: state.currentFactura.proveedor || '',
             tipoPrenda: draftItem.tipoPrenda,
             codigoArticulo: draftItem.codigoArticulo,
             sizeCurveId: selectedCurve?.id,
@@ -95,7 +92,7 @@ export function FacturaWizard() {
         updateDraft({ items: updatedItems });
         setDraftColors([]);
         setStep('ARTICLE');
-        setDraftItem({ supplierLabel: '', tipoPrenda: '', codigoArticulo: '', curvaTalles: '' });
+        setDraftItem({ tipoPrenda: '', codigoArticulo: '', curvaTalles: '' });
     };
 
     if (state.isLoading || !state.currentFactura) {
@@ -134,7 +131,6 @@ export function FacturaWizard() {
             {step === 'ARTICLE' && (
                 <ArticleStep
                     draftItem={draftItem}
-                    supplierOptions={supplierOptions}
                     garmentTypeOptions={garmentTypeOptions}
                     sizeCurveOptions={sizeCurveOptions}
                     catalogsLoading={catalogsLoading}
@@ -147,7 +143,7 @@ export function FacturaWizard() {
 
             {step === 'COLOR' && (
                 <ColorStep
-                    itemContext={{ ...draftItem, curvaTalles: draftItem.curvaTalles.split(',').map((s) => s.trim()) }}
+                    itemContext={{ ...draftItem, supplierLabel: state.currentFactura.proveedor || '', curvaTalles: draftItem.curvaTalles.split(',').map((s) => s.trim()) }}
                     addedColors={draftColors}
                     onAddColor={(color) => !isFinal && setDraftColors((prev) => [...prev, color])}
                     onRemoveColor={(index) => !isFinal && setDraftColors((prev) => prev.filter((_, i) => i !== index))}

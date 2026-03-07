@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { ApiError, api } from '../services/api';
 import { ArticleResponse, CloneArticlePayload, CreateArticlePayload } from '../services/articlesApi';
 import styles from './ArticlesPage.module.css';
@@ -57,6 +59,7 @@ const buildPayload = (form: CreateArticlePayload): CreateArticlePayload => ({
 });
 
 export function ArticlesPage() {
+    const navigate = useNavigate();
     const [catalogs, setCatalogs] = useState<CatalogMap>(emptyCatalogs);
     const [loadingCatalogs, setLoadingCatalogs] = useState(false);
     const [loadingArticles, setLoadingArticles] = useState(false);
@@ -197,6 +200,9 @@ export function ArticlesPage() {
     return (
         <section>
             <header className={styles.hero}>
+                <button type="button" className={styles.backButton} onClick={() => navigate('/')}>
+                    <ArrowLeft size={18} />
+                </button>
                 <h1>Artículos</h1>
                 <p>Alta, búsqueda y clonado de artículos por proveedor.</p>
             </header>
@@ -243,31 +249,31 @@ export function ArticlesPage() {
                     </div>
                     <div className={styles.row}>
                         <select className={styles.select} value={form.familyId} onChange={(event) => setForm((prev) => ({ ...prev, familyId: event.target.value }))} required>
-                            <option value="">Family</option>
+                            <option value="">📁 Familia</option>
                             {catalogs.families.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                         <select className={styles.select} value={form.materialId} onChange={(event) => setForm((prev) => ({ ...prev, materialId: event.target.value }))} required>
-                            <option value="">Material</option>
+                            <option value="">🧵 Material</option>
                             {catalogs.materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>
                     <div className={styles.row}>
                         <select className={styles.select} value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))} required>
-                            <option value="">Category</option>
+                            <option value="">🏷️ Categoría</option>
                             {catalogs.categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                         <select className={styles.select} value={form.classificationId} onChange={(event) => setForm((prev) => ({ ...prev, classificationId: event.target.value }))} required>
-                            <option value="">Classification</option>
+                            <option value="">📚 Clasificación</option>
                             {catalogs.classifications.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>
                     <div className={styles.row}>
                         <select className={styles.select} value={form.garmentTypeId} onChange={(event) => setForm((prev) => ({ ...prev, garmentTypeId: event.target.value }))} required>
-                            <option value="">Garment type</option>
+                            <option value="">👕 Tipo de prenda</option>
                             {catalogs.garmentTypes.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                         <select className={styles.select} value={form.sizeCurveId} onChange={(event) => setForm((prev) => ({ ...prev, sizeCurveId: event.target.value }))} required>
-                            <option value="">Size curve</option>
+                            <option value="">📏 Curva de talles</option>
                             {catalogs.sizeCurves.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { api, ApiError } from '../services/api';
 import styles from './AdminCatalogPage.module.css';
@@ -41,6 +42,7 @@ const formatCatalogError = (error: unknown, fallback: string) => {
 };
 
 export function AdminCatalogPage() {
+    const navigate = useNavigate();
     const [selectedCatalog, setSelectedCatalog] = useState<CatalogKey>('suppliers');
     const [items, setItems] = useState<CatalogItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -156,7 +158,7 @@ export function AdminCatalogPage() {
     return (
         <section>
             <header className={styles.hero}>
-                <button type="button" className={styles.backButton}><ArrowLeft size={18} /></button>
+                <button type="button" className={styles.backButton} onClick={() => navigate('/')}><ArrowLeft size={18} /></button>
                 <h1>Catálogos</h1>
                 <p>Administración de datos maestros</p>
             </header>
