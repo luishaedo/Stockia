@@ -25,12 +25,10 @@ export function MainLayout({ children }: MainLayoutProps) {
                         {!isAuthenticated ? (
                             <Link to="/login" className={styles.authAction} aria-label="Ingresar">
                                 <KeyRound size={16} />
-                                <span>Ingresar</span>
                             </Link>
                         ) : (
                             <button type="button" className={styles.authAction} onClick={logout} aria-label="Cerrar sesión">
                                 <LogOut size={16} />
-                                <span>Salir</span>
                             </button>
                         )}
                     </div>

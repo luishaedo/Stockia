@@ -19,24 +19,35 @@
 
 .authDock {
   position: absolute;
-  top: var(--space-1-5);
-  right: var(--space-1-5);
+  top: var(--space-2);
+  right: var(--space-2);
   z-index: 15;
+  animation: fadeSlideDown 280ms ease-out;
 }
 
 .authAction {
-  border: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.9);
-  color: #334155;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(167, 139, 250, 0.25);
+  backdrop-filter: blur(8px);
+  color: #f8fafc;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: 0 var(--space-1-5);
-  min-height: var(--control-height);
+  justify-content: center;
+  width: 38px;
+  height: 38px;
   border-radius: 999px;
   text-decoration: none;
-  font-size: 0.78rem;
-  font-weight: 600;
+  transition: transform 220ms ease, background-color 220ms ease, box-shadow 220ms ease;
+  box-shadow: 0 8px 22px rgba(76, 29, 149, 0.35);
+}
+
+.authAction:hover {
+  transform: translateY(-2px);
+  background: rgba(167, 139, 250, 0.35);
+}
+
+.authAction:active {
+  transform: translateY(0);
 }
 
 .content {
@@ -47,19 +58,20 @@
 
 .bottomNav {
   position: fixed;
-  bottom: 0;
-  transform: none;
+  bottom: var(--space-2);
+  left: 50%;
+  transform: translateX(-50%);
   width: min(430px, calc(100% - 16px));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-items: center;
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-  background: #fff;
-  border-top: 1px solid #d1d5db;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #d1d5db;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
   z-index: 20;
+  animation: fadeSlideUp 300ms ease-out;
 }
 
 .navLink {
@@ -72,6 +84,11 @@
   font-size: 0.72rem;
   gap: var(--space-1);
   min-height: 48px;
+  transition: color 220ms ease, transform 220ms ease;
+}
+
+.navLink:hover {
+  transform: translateY(-1px);
 }
 
 .navLinkActive {
@@ -91,6 +108,34 @@
   margin: -34px auto 0;
   text-decoration: none;
   box-shadow: 0 10px 20px rgba(99, 102, 241, 0.45);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.navCenter:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.5);
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (min-width: 900px) {
@@ -106,7 +151,7 @@
 
   .bottomNav {
     position: sticky;
-    transform: none;
+    transform: translateX(0);
     left: auto;
     width: 100%;
     max-width: 420px;
