@@ -56,7 +56,7 @@ export function LoginPage() {
                         <div className="text-red-500 text-sm p-2 bg-red-500/10 rounded">{error}</div>
                     )}
 
-                    <div className="mt-3">
+                    <div className="mt-6">
                         <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">Iniciar sesión</Button>
                     </div>
                 </form>
