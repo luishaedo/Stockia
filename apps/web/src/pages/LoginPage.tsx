@@ -67,7 +67,6 @@ export function LoginPage() {
                         </div>
                     </form>
 
-                    <p className={styles.footer}>Diseño renovado para una experiencia más clara y elegante.</p>
                 </div>
             </Card>
         </div>

@@ -128,7 +128,7 @@ export class FacturaRepository {
             const existingItem = existingByKey.get(key);
 
             if (!existingItem) {
-                await tx.facturaItem.create({
+                const createdItem = await tx.facturaItem.create({
                     data: {
                         facturaId,
                         marca: this.getSupplierLabel(nextItem),
@@ -148,6 +148,7 @@ export class FacturaRepository {
                         }
                     }
                 });
+                preservedItemIds.add(createdItem.id);
                 continue;
             }
 
@@ -170,7 +171,7 @@ export class FacturaRepository {
             for (const nextColor of nextItem.colores) {
                 const existingColor = existingColorByCode.get(nextColor.codigoColor);
                 if (!existingColor) {
-                    await tx.facturaItemColor.create({
+                    const createdColor = await tx.facturaItemColor.create({
                         data: {
                             facturaItemId: existingItem.id,
                             codigoColor: nextColor.codigoColor,
@@ -178,6 +179,7 @@ export class FacturaRepository {
                             cantidadesPorTalle: nextColor.cantidadesPorTalle as any
                         }
                     });
+                    preservedColorIds.add(createdColor.id);
                     continue;
                 }
 
