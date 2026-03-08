@@ -19,8 +19,8 @@
 
 .authDock {
   position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
+  top: 26px;
+  right: 14px;
   z-index: 15;
   animation: fadeSlideDown 280ms ease-out;
 }
@@ -52,16 +52,17 @@
 
 .content {
   flex: 1;
-  padding-top: var(--space-3);
+  padding-top: 0;
   padding-bottom: 90px;
 }
 
 .bottomNav {
-  position: fixed;
+  position: absolute;
   bottom: var(--space-2);
   left: 50%;
   transform: translateX(-50%);
-  width: min(430px, calc(100% - 16px));
+  width: calc(100% - 16px);
+  max-width: 414px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-items: center;
@@ -141,7 +142,6 @@
 @media (min-width: 900px) {
   .shell {
     max-width: 1200px;
-    padding: 16px;
     background: #f8fafc;
   }
 
