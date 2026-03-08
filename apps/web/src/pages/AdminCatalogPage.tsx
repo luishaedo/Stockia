@@ -50,7 +50,7 @@ export function AdminCatalogPage() {
     const [error, setError] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [uploadingLogo, setUploadingLogo] = useState(false);
-    const [selectedLogoFileName, setSelectedLogoFileName] = useState('No file selected');
+    const [selectedLogoFileName, setSelectedLogoFileName] = useState('Ningún archivo seleccionado');
 
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
@@ -61,7 +61,7 @@ export function AdminCatalogPage() {
     const isSupplier = selectedCatalog === 'suppliers';
     const isCategory = selectedCatalog === 'categories';
     const isSizeCurve = selectedCatalog === 'size-curves';
-    const requiresLogo = isCategory || isSupplier;
+    const requiresLogo = isSupplier;
 
     const title = useMemo(() => catalogOptions.find((option) => option.key === selectedCatalog)?.label ?? selectedCatalog, [selectedCatalog]);
 
@@ -70,7 +70,7 @@ export function AdminCatalogPage() {
         setCode('');
         setDescription('');
         setLogoUrl('');
-        setSelectedLogoFileName('No file selected');
+        setSelectedLogoFileName('Ningún archivo seleccionado');
         setLongDescription('');
         setSizeValues('');
     };
@@ -128,10 +128,29 @@ export function AdminCatalogPage() {
         event.preventDefault();
         setError(null);
 
-        const payload: Record<string, unknown> = { code, ...(isSupplier ? { name: description } : { description }) };
-        if ((isCategory || isSupplier) && logoUrl.trim()) payload.logoUrl = logoUrl.trim();
-        if (isCategory) payload.longDescription = longDescription;
-        if (isSizeCurve) payload.values = sizeValues.split(',').map((value) => value.trim()).filter(Boolean);
+        const trimmedCode = code.trim();
+        const trimmedDescription = description.trim();
+
+        if (!trimmedCode || !trimmedDescription) {
+            setError('Código y descripción/nombre no pueden estar vacíos.');
+            return;
+        }
+
+        const payload: Record<string, unknown> = {
+            code: trimmedCode,
+            ...(isSupplier ? { name: trimmedDescription } : { description: trimmedDescription })
+        };
+        if (isSupplier && logoUrl.trim()) payload.logoUrl = logoUrl.trim();
+        if (isCategory) payload.longDescription = longDescription.trim();
+
+        if (isSizeCurve) {
+            const parsedValues = sizeValues.split(',').map((value) => value.trim()).filter(Boolean);
+            if (parsedValues.length === 0) {
+                setError('Ingresá al menos un talle válido.');
+                return;
+            }
+            payload.values = parsedValues;
+        }
 
         try {
             if (editingId) {
@@ -190,7 +209,7 @@ export function AdminCatalogPage() {
                         <>
                             <FileUploadField
                                 label="Logo del catálogo"
-                                buttonText="Choose file"
+                                buttonText="Elegir archivo"
                                 selectedFileName={selectedLogoFileName}
                                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
                                 onFileSelect={(file) => void handleLogoUpload(file)}

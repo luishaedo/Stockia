@@ -17,9 +17,9 @@ type FileUploadFieldProps = {
 export function FileUploadField({
     onFileSelect,
     accept,
-    label = 'Upload file',
-    selectedFileName = 'No file selected',
-    buttonText = 'Choose file',
+    label = 'Subir archivo',
+    selectedFileName = 'Ningún archivo seleccionado',
+    buttonText = 'Elegir archivo',
     helperText,
     disabled,
     className

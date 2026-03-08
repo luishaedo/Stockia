@@ -11,7 +11,7 @@ const OPERATIONS_CATALOG_TTL_MS = 300_000;
 
 type OperationsCatalogResponse = {
     families: Array<{ id: string; label: string }>;
-    suppliers: Array<{ id: string; label: string }>;
+    suppliers: Array<{ id: string; label: string; logoUrl?: string | null }>;
     colors: Array<{ id: string; label: string }>;
     curves: Array<{ id: string; label: string }>;
 };
@@ -100,7 +100,7 @@ export const createCatalogSelectionRoutes = (
 
             const [families, suppliers, sizeCurves] = await Promise.all([
                 prisma.family.findMany({ orderBy: [{ description: 'asc' }], select: { id: true, description: true } }),
-                prisma.supplier.findMany({ orderBy: [{ name: 'asc' }], select: { id: true, name: true } }),
+                prisma.supplier.findMany({ orderBy: [{ name: 'asc' }], select: { id: true, name: true, logoUrl: true } }),
                 prisma.sizeCurve.findMany({
                     orderBy: [{ code: 'asc' }],
                     select: {
@@ -114,7 +114,7 @@ export const createCatalogSelectionRoutes = (
 
             const response: OperationsCatalogResponse = {
                 families: families.map(entry => ({ id: entry.id, label: entry.description })),
-                suppliers: suppliers.map(entry => ({ id: entry.id, label: entry.name })),
+                suppliers: suppliers.map(entry => ({ id: entry.id, label: entry.name, logoUrl: entry.logoUrl })),
                 colors: [],
                 curves: sizeCurves.map(entry => {
                     const values = entry.values.map(value => value.value).join(',');

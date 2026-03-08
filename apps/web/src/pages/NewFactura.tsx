@@ -12,7 +12,7 @@ export function NewFactura() {
     const [nroFactura, setNroFactura] = useState('');
     const [supplierId, setSupplierId] = useState('');
     const [error, setError] = useState('');
-    const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string }>>([]);
+    const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string; logoUrl?: string | null }>>([]);
     const [suppliersError, setSuppliersError] = useState<string | null>(null);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
@@ -23,7 +23,10 @@ export function NewFactura() {
 
             try {
                 const response = await api.getOperationsCatalogs(true);
-                setSuppliers(response.suppliers);
+                setSuppliers(response.suppliers.map((supplier) => ({
+                    ...supplier,
+                    logoUrl: supplier.logoUrl ? api.resolveAssetUrl(supplier.logoUrl) : null
+                })));
             } catch (err) {
                 const message = err instanceof ApiError
                     ? err.message
@@ -92,7 +95,11 @@ export function NewFactura() {
                                     disabled={loadingSuppliers}
                                 >
                                     {active && <CheckCircle2 size={18} className={styles.checkIcon} />}
-                                    <span className={styles.supplierAvatar}>{supplier.label.charAt(0)}</span>
+                                    {supplier.logoUrl ? (
+                                        <img src={supplier.logoUrl} alt={supplier.label} className={styles.supplierLogo} />
+                                    ) : (
+                                        <span className={styles.supplierAvatar}>{supplier.label.charAt(0)}</span>
+                                    )}
                                     <span className={styles.supplierName}>{supplier.label}</span>
                                 </button>
                             );

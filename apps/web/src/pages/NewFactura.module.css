@@ -96,6 +96,16 @@
   color: #fff;
 }
 
+
+.supplierLogo {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: #fff;
+}
+
 .supplierName {
   font-size: 1.25rem;
   font-weight: 600;
