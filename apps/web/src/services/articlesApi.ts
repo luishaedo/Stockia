@@ -44,18 +44,22 @@ export type CloneArticlePayload = Partial<Omit<CreateArticlePayload, 'sku' | 'de
 export class ArticlesApiService {
     constructor(private readonly client: HttpClient) {}
 
-    private async fetchWithApiPrefixFallback(path: string, init?: RequestInit) {
-        const urls = [`${this.client.getBaseURL()}/api${path}`, `${this.client.getBaseURL()}${path}`];
+    private buildApiUrl(path: string, forceApiPrefix = false) {
+        const baseUrl = this.client.getBaseURL().replace(/\/$/, '');
+        if (forceApiPrefix && !baseUrl.endsWith('/api')) {
+            return `${baseUrl}/api${path}`;
+        }
+        return `${baseUrl}${path}`;
+    }
 
-        let lastResponse: Response | null = null;
-        for (const url of urls) {
-            const response = await fetch(url, init);
-            lastResponse = response;
-            if (response.status !== 404) return response;
+    private async fetchWithApiPrefixFallback(path: string, init?: RequestInit) {
+        const primaryResponse = await fetch(this.buildApiUrl(path), init);
+
+        if (primaryResponse.status !== 404 || this.client.getBaseURL().replace(/\/$/, '').endsWith('/api')) {
+            return primaryResponse;
         }
 
-        if (lastResponse) return lastResponse;
-        throw new Error('No pudimos comunicarnos con el servidor');
+        return fetch(this.buildApiUrl(path, true), init);
     }
 
     async searchArticles(params: { supplierId: string; q?: string; limit?: number }) {
