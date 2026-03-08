@@ -22,8 +22,9 @@ const ensureUploadDir = (targetDir: string) => {
 
 const getBoundary = (contentTypeHeader?: string) => {
     if (!contentTypeHeader) return null;
-    const match = contentTypeHeader.match(/boundary=([^;]+)/i);
-    return match ? match[1] : null;
+    const match = contentTypeHeader.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+    const boundary = match?.[1] ?? match?.[2];
+    return boundary ? boundary.trim() : null;
 };
 
 const parseMultipartSingleFile = (body: Buffer, boundary: string): ParsedMultipartFile | null => {
