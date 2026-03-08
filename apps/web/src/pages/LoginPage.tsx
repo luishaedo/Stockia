@@ -35,7 +35,7 @@ export function LoginPage() {
     return (
         <div className="max-w-md mx-auto mt-6 sm:mt-16 px-1 sm:px-0">
             <Card title="Iniciar sesión" className="shadow-lg">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                     <Input
                         label="Usuario"
                         value={username}
@@ -56,7 +56,7 @@ export function LoginPage() {
                         <div className="text-red-500 text-sm p-2 bg-red-500/10 rounded">{error}</div>
                     )}
 
-                    <div className="mt-2">
+                    <div className="mt-3">
                         <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">Iniciar sesión</Button>
                     </div>
                 </form>

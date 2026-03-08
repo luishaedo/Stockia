@@ -125,7 +125,8 @@ export const FinalizeFacturaSchema = z.object({
 
 export const OperationCatalogEntrySchema = z.object({
     id: z.string().min(1),
-    label: z.string().min(1)
+    label: z.string().min(1),
+    logoUrl: z.string().min(1).nullable().optional()
 });
 
 export const OperationCatalogsResponseSchema = z.object({

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FacturaFilters, FacturaListResponse } from '@stockia/shared';
-import { ClipboardList, FilePlus2, Search, ShieldCheck } from 'lucide-react';
+import { ClipboardList, FilePlus2, Search, Shirt } from 'lucide-react';
 import { api } from '../services/api';
 import { PendingTasksList } from '../components/home/PendingTasksList';
 import { QuickActionsGrid } from '../components/home/QuickActionsGrid';
@@ -37,7 +37,7 @@ export function FacturasListPage() {
     const quickActions = [
         { key: 'new', label: 'Nueva', icon: FilePlus2, onClick: () => navigate('/facturas/new') },
         { key: 'catalogs', label: 'Catálogos', icon: ClipboardList, onClick: () => navigate('/admin') },
-        { key: 'articles', label: 'Artículos', icon: ShieldCheck, onClick: () => navigate('/articulos') },
+        { key: 'articles', label: 'Artículos', icon: Shirt, onClick: () => navigate('/articulos') },
         { key: 'search', label: 'Buscar', icon: Search, onClick: () => navigate('/buscar') }
     ];
 

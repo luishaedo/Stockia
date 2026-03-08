@@ -21,7 +21,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className={styles.appFrame}>
             <div className={styles.shell}>
                 {!isLoginPage && (
-                    <header className={styles.topBar}>
+                    <div className={styles.authDock}>
                         {!isAuthenticated ? (
                             <Link to="/login" className={styles.authAction} aria-label="Ingresar">
                                 <KeyRound size={16} />
@@ -33,7 +33,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 <span>Salir</span>
                             </button>
                         )}
-                    </header>
+                    </div>
                 )}
                 <main className={styles.content}>{children}</main>
 
