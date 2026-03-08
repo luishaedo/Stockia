@@ -217,6 +217,16 @@ export function AdminCatalogPage() {
                                 helperText="Formatos: PNG, JPG, WEBP o SVG"
                             />
                             {uploadingLogo && <p className={styles.mutedText}>Subiendo logo...</p>}
+                            {logoUrl && (
+                                <div className={styles.logoPreviewBlock}>
+                                    <p className={styles.logoPreviewLabel}>Logo actual</p>
+                                    <img
+                                        src={api.resolveAssetUrl(logoUrl)}
+                                        alt={description ? `Logo de ${description}` : 'Logo del proveedor'}
+                                        className={styles.logoPreviewImage}
+                                    />
+                                </div>
+                            )}
                         </>
                     )}
                     {isCategory && <input className={styles.input} placeholder="Descripción larga" value={longDescription} onChange={(e) => setLongDescription(e.target.value)} />}
@@ -232,7 +242,15 @@ export function AdminCatalogPage() {
                         {items.map((item) => (
                             <article key={item.id} className={styles.itemCard}>
                                 <div className={styles.itemMain}>
-                                    <span className={styles.itemCode}>{item.code}</span>
+                                    {isSupplier && item.logoUrl ? (
+                                        <img
+                                            src={api.resolveAssetUrl(item.logoUrl)}
+                                            alt={getDisplayDescription(item) ? `Logo de ${getDisplayDescription(item)}` : 'Logo de proveedor'}
+                                            className={styles.itemLogo}
+                                        />
+                                    ) : (
+                                        <span className={styles.itemCode}>{item.code}</span>
+                                    )}
                                     <div>
                                         <p className={styles.itemTitle}>{getDisplayDescription(item)}</p>
                                         {item.values && item.values.length > 0 && <p className={styles.itemMeta}>{item.values.map((size) => size.value).join('-')}</p>}
