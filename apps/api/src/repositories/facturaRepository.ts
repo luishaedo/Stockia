@@ -282,12 +282,11 @@ export class FacturaRepository {
         ]);
     }
 
-    async updateToFinal(id: string, expectedUpdatedAt: string) {
+    async updateToFinal(id: string) {
         const result = await this.prisma.factura.updateMany({
             where: {
                 id,
-                estado: FacturaEstado.DRAFT,
-                updatedAt: new Date(expectedUpdatedAt)
+                estado: FacturaEstado.DRAFT
             },
             data: { estado: FacturaEstado.FINAL }
         });

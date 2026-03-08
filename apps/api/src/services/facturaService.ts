@@ -406,6 +406,16 @@ export class FacturaService {
             throw new DomainError(ErrorCodes.NOT_FOUND, 'Factura not found', 404);
         }
 
+        const currentUpdated = new Date(factura.updatedAt).toISOString();
+        const expected = new Date(expectedUpdatedAt).toISOString();
+        if (currentUpdated !== expected) {
+            throw new DomainError(
+                ErrorCodes.OPTIMISTIC_LOCK_CONFLICT,
+                'Conflict: Data has changed since last retrieval',
+                409
+            );
+        }
+
         if (factura.estado === FacturaEstado.FINAL) {
             throw new DomainError(ErrorCodes.INVOICE_ALREADY_FINALIZED, 'Invoice already finalized', 400);
         }
@@ -425,7 +435,7 @@ export class FacturaService {
             );
         }
 
-        const finalized = await this.repository.updateToFinal(id, expectedUpdatedAt);
+        const finalized = await this.repository.updateToFinal(id);
         if (!finalized) {
             throw new DomainError(ErrorCodes.OPTIMISTIC_LOCK_CONFLICT, 'Conflict: Data has changed since last retrieval', 409);
         }
