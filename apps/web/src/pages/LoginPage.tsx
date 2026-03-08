@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../context/AuthContext';
+import styles from './LoginPage.module.css';
 
 export function LoginPage() {
     const navigate = useNavigate();
@@ -33,33 +34,41 @@ export function LoginPage() {
     };
 
     return (
-        <div className="max-w-md mx-auto mt-6 sm:mt-16 px-1 sm:px-0">
-            <Card title="Iniciar sesión" className="shadow-lg">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <Input
-                        label="Usuario"
-                        value={username}
-                        onChange={(event) => setUsername(event.target.value)}
-                        autoComplete="username"
-                        required
-                    />
-                    <Input
-                        type="password"
-                        label="Contraseña"
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        autoComplete="current-password"
-                        required
-                    />
+        <div className={styles.page}>
+            <Card className={styles.loginCard}>
+                <div className={styles.content}>
+                    <header className={styles.header}>
+                        <span className={styles.badge}>Stockia</span>
+                        <h1 className={styles.title}>Iniciar sesión</h1>
+                        <p className={styles.subtitle}>Accedé a tu panel para gestionar facturas y catálogo.</p>
+                    </header>
 
-                    {error && (
-                        <div className="text-red-500 text-sm p-2 bg-red-500/10 rounded">{error}</div>
-                    )}
+                    <form onSubmit={handleSubmit} className={styles.form}>
+                        <Input
+                            label="Usuario"
+                            value={username}
+                            onChange={(event) => setUsername(event.target.value)}
+                            autoComplete="username"
+                            required
+                        />
+                        <Input
+                            type="password"
+                            label="Contraseña"
+                            value={password}
+                            onChange={(event) => setPassword(event.target.value)}
+                            autoComplete="current-password"
+                            required
+                        />
 
-                    <div className="mt-6">
-                        <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">Iniciar sesión</Button>
-                    </div>
-                </form>
+                        {error && <div className={styles.error}>{error}</div>}
+
+                        <div className={styles.actions}>
+                            <Button type="submit" isLoading={isLoading} className={styles.submit}>Iniciar sesión</Button>
+                        </div>
+                    </form>
+
+                    <p className={styles.footer}>Diseño renovado para una experiencia más clara y elegante.</p>
+                </div>
             </Card>
         </div>
     );
