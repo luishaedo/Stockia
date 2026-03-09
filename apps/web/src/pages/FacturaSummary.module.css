@@ -1,0 +1,304 @@
+.page {
+    display: grid;
+    gap: var(--space-2);
+    max-width: 960px;
+    margin: 0 auto;
+    padding-bottom: var(--space-4);
+}
+
+.finalBanner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    border-radius: var(--radius-control);
+    border: 1px solid #86efac;
+    background: #dcfce7;
+    color: #166534;
+    padding: var(--space-1-5) var(--space-2);
+    font-weight: 600;
+}
+
+.feedback {
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-border);
+    background: #eef2ff;
+    color: #312e81;
+    padding: var(--space-1-5) var(--space-2);
+    font-size: 0.95rem;
+}
+
+.feedbackError {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+.headerBlock {
+    display: grid;
+    gap: var(--space-1-5);
+}
+
+.title {
+    margin: 0;
+    font-size: var(--font-size-h1);
+    line-height: 1.15;
+}
+
+.subtitle {
+    margin: 0;
+    color: var(--color-text-muted);
+}
+
+.actions {
+    display: grid;
+    gap: var(--space-1);
+}
+
+.actionGroup {
+    display: grid;
+    gap: var(--space-1);
+    grid-template-columns: 1fr;
+}
+
+.actionButton {
+    width: 100%;
+}
+
+.summaryGrid {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.summaryRows {
+    display: grid;
+    gap: var(--space-1-5);
+}
+
+.summaryRow {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-1);
+}
+
+.label {
+    color: var(--color-text-muted);
+}
+
+.value {
+    font-weight: 700;
+    font-size: 1.4rem;
+}
+
+.stateFinal {
+    color: #15803d;
+    font-size: 1rem;
+}
+
+.stateDraft {
+    color: #a16207;
+    font-size: 1rem;
+}
+
+.itemList {
+    display: grid;
+    gap: var(--space-1-5);
+}
+
+.empty {
+    margin: 0;
+    text-align: center;
+    color: var(--color-text-muted);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-control);
+    padding: var(--space-2);
+}
+
+.itemCard {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    background: #f8fafc;
+    padding: var(--space-1-5);
+    display: grid;
+    gap: var(--space-1);
+}
+
+.itemHeader {
+    display: grid;
+    gap: 4px;
+}
+
+.itemTitle {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.itemMeta {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+.colorList {
+    display: grid;
+    gap: var(--space-1);
+}
+
+.colorRow {
+    display: grid;
+    gap: 4px;
+    border-left: 2px solid #c7d2fe;
+    padding-left: var(--space-1);
+}
+
+.colorName {
+    font-weight: 600;
+}
+
+.sizes {
+    color: var(--color-text-muted);
+    font-size: 0.93rem;
+}
+
+.itemFooter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-1);
+    margin-top: 4px;
+}
+
+.units {
+    font-weight: 600;
+    color: #334155;
+}
+
+.itemActions {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(15, 23, 42, 0.55);
+    display: grid;
+    place-items: center;
+    padding: var(--space-2);
+}
+
+.modalCard {
+    width: min(640px, 100%);
+    max-height: calc(100vh - 64px);
+    overflow: auto;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-2);
+    display: grid;
+    gap: var(--space-1-5);
+}
+
+.modalHeader h3 {
+    margin: 0;
+}
+
+.modalHeader p {
+    margin: 4px 0 0;
+    color: var(--color-text-muted);
+}
+
+.modalBody {
+    display: grid;
+    gap: var(--space-1-5);
+}
+
+.editBlock {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    padding: var(--space-1-5);
+    display: grid;
+    gap: var(--space-1);
+    background: #f8fafc;
+}
+
+.editGrid {
+    display: grid;
+    gap: var(--space-1);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inputGroup {
+    display: grid;
+    gap: 4px;
+}
+
+.inputGroup label {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.inputGroup input {
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    height: 40px;
+    padding: 0 10px;
+    background: white;
+}
+
+.modalActions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-1);
+}
+
+@media (min-width: 768px) {
+    .page {
+        gap: var(--space-2-5);
+    }
+
+    .actions {
+        gap: var(--space-1-5);
+    }
+
+    .actionGroup {
+        grid-template-columns: repeat(3, minmax(0, max-content));
+    }
+
+    .actionGroupExport {
+        justify-content: end;
+    }
+
+    .summaryGrid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    }
+
+    .itemHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .editGrid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.loaderWrap {
+    display: grid;
+    place-items: center;
+    min-height: 240px;
+}
+
+.loaderSpin {
+    animation: spin 1s linear infinite;
+    color: var(--color-primary);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
