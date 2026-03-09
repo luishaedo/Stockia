@@ -1,4 +1,5 @@
-import { HttpClient } from './httpClient';
+import { ErrorCodes } from '@stockia/shared';
+import { ApiError, HttpClient } from './httpClient';
 
 type ArticleCatalogRef = {
     id: string;
@@ -67,6 +68,25 @@ export class ArticlesApiService {
         return fetch(this.buildApiUrl(path, true), init);
     }
 
+    private async ensureArticlesRouteExists(response: Response, path: string): Promise<Response> {
+        if (response.status !== 404) {
+            return response;
+        }
+
+        const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+        const isJsonResponse = contentType.includes('application/json');
+
+        if (isJsonResponse) {
+            return response;
+        }
+
+        throw new ApiError(
+            `Articles endpoints are not available in the deployed API (${path}). Verify backend deployment includes /articles routes.`,
+            ErrorCodes.NOT_FOUND,
+            404
+        );
+    }
+
     async searchArticles(params: { supplierId: string; q?: string; limit?: number }) {
         const query = new URLSearchParams();
         query.set('supplierId', params.supplierId);
@@ -78,8 +98,9 @@ export class ArticlesApiService {
             headers: this.client.getOptionalAccessTokenHeader()
         });
 
-        await this.client.assertOk(response, 'No pudimos buscar artículos');
-        return response.json() as Promise<{ items: ArticleResponse[] }>;
+        const checkedResponse = await this.ensureArticlesRouteExists(response, '/articles/search');
+        await this.client.assertOk(checkedResponse, 'No pudimos buscar artículos');
+        return checkedResponse.json() as Promise<{ items: ArticleResponse[] }>;
     }
 
     async createArticle(payload: CreateArticlePayload) {
@@ -92,8 +113,9 @@ export class ArticlesApiService {
             body: JSON.stringify(payload)
         });
 
-        await this.client.assertOk(response, 'No pudimos crear el artículo');
-        return response.json() as Promise<ArticleResponse>;
+        const checkedResponse = await this.ensureArticlesRouteExists(response, '/articles');
+        await this.client.assertOk(checkedResponse, 'No pudimos crear el artículo');
+        return checkedResponse.json() as Promise<ArticleResponse>;
     }
 
     async cloneArticle(articleId: string, payload: CloneArticlePayload) {
@@ -106,7 +128,8 @@ export class ArticlesApiService {
             body: JSON.stringify(payload)
         });
 
-        await this.client.assertOk(response, 'No pudimos clonar el artículo');
-        return response.json() as Promise<ArticleResponse>;
+        const checkedResponse = await this.ensureArticlesRouteExists(response, `/articles/${articleId}/clone`);
+        await this.client.assertOk(checkedResponse, 'No pudimos clonar el artículo');
+        return checkedResponse.json() as Promise<ArticleResponse>;
     }
 }
