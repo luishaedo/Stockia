@@ -55,7 +55,12 @@ export class ArticlesApiService {
     private async fetchWithApiPrefixFallback(path: string, init?: RequestInit) {
         const primaryResponse = await fetch(this.buildApiUrl(path), init);
 
-        if (primaryResponse.status !== 404 || this.client.getBaseURL().replace(/\/$/, '').endsWith('/api')) {
+        const contentType = primaryResponse.headers.get('content-type')?.toLowerCase() ?? '';
+        const isJsonResponse = contentType.includes('application/json');
+        const shouldRetryWithApiPrefix =
+            primaryResponse.status === 404 || (primaryResponse.status === 400 && !isJsonResponse);
+
+        if (!shouldRetryWithApiPrefix || this.client.getBaseURL().replace(/\/$/, '').endsWith('/api')) {
             return primaryResponse;
         }
 
