@@ -1,0 +1,170 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 60;
+}
+
+.modal {
+  width: min(1100px, 96vw);
+  max-height: 92vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #dbe2ea;
+  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.22);
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.header h2 {
+  margin: 0;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #526074;
+}
+
+.iconButton {
+  border: none;
+  background: #eef2f7;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.selectorWrap {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: #526074;
+}
+
+.selectorWrap select {
+  min-width: 220px;
+  border: 1px solid #d0d8e3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 9px 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  background: #f6f8fb;
+  border-color: #d0d8e3;
+}
+
+.primaryButton {
+  background: linear-gradient(180deg, #0ea5e9, #0369a1);
+  color: white;
+}
+
+.dangerButton {
+  background: #fff5f5;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.pasteArea {
+  border: 1px dashed #94a3b8;
+  border-radius: 10px;
+  padding: 10px;
+  min-height: 56px;
+  resize: vertical;
+  color: #526074;
+}
+
+.error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.loading,
+.empty {
+  color: #64748b;
+  text-align: center;
+  padding: 16px;
+}
+
+.tableWrapper {
+  border: 1px solid #d9e1eb;
+  border-radius: 12px;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid #eef2f7;
+  padding: 10px;
+  text-align: left;
+}
+
+.table th {
+  background: #f8fafc;
+  font-size: 13px;
+  color: #526074;
+}
+
+.cellInput {
+  width: 100%;
+  border: 1px solid #d0d8e3;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.rowDeleteButton {
+  border: 1px solid #fecaca;
+  background: #fff5f5;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
