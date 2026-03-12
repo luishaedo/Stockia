@@ -66,6 +66,11 @@ export class AdminApiService {
     resolveAssetUrl(url?: string | null): string {
         if (!url) return '';
         if (url.startsWith('http://') || url.startsWith('https://')) return url;
-        return `${this.client.getBaseURL()}${url.startsWith('/') ? '' : '/'}${url}`;
+
+        const baseUrl = this.client.getBaseURL().replace(/\/$/, '');
+        const isUploadsPath = url.startsWith('/uploads/') || url.startsWith('uploads/');
+        const normalizedBaseUrl = isUploadsPath ? baseUrl.replace(/\/api$/, '') : baseUrl;
+
+        return `${normalizedBaseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
     }
 }
