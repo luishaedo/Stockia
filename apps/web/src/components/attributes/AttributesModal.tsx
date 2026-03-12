@@ -14,16 +14,19 @@ type CatalogItem = {
     code: string;
     name?: string;
     description?: string;
+    values?: { value: string; sortOrder: number }[];
 };
 
 type EditableRow = {
     id?: string;
     code: string;
     description: string;
+    curve: string;
     selected: boolean;
 };
 
 const SIMPLE_ATTRIBUTE_CATALOGS: CatalogOption[] = [
+    { key: 'size-curves', label: 'Curva de talle' },
     { key: 'materials', label: 'Material' },
     { key: 'families', label: 'Familia' },
     { key: 'classifications', label: 'Clasificación' },
@@ -47,19 +50,28 @@ const formatError = (error: unknown, fallback: string) => {
 
 const getPayloadFromRow = (catalog: AdminCatalogKey, row: EditableRow) => ({
     code: row.code.trim(),
-    ...(catalog === 'suppliers' ? { name: row.description.trim() } : { description: row.description.trim() })
+    ...(catalog === 'suppliers' ? { name: row.description.trim() } : { description: row.description.trim() }),
+    ...(catalog === 'size-curves'
+        ? {
+            values: row.curve
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean)
+        }
+        : {})
 });
 
-const parsePastedRows = (rawText: string): EditableRow[] => {
+const parsePastedRows = (rawText: string, selectedCatalog: AdminCatalogKey): EditableRow[] => {
     return rawText
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean)
         .map((line) => {
-            const [code = '', description = ''] = line.split('\t');
+            const [code = '', description = '', curve = ''] = line.split('\t');
             return {
                 code: code.trim(),
                 description: description.trim(),
+                curve: selectedCatalog === 'size-curves' ? curve.trim() : '',
                 selected: false
             };
         })
@@ -76,7 +88,7 @@ interface AttributesModalProps {
 export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'materials' }: AttributesModalProps) {
     const [selectedCatalog, setSelectedCatalog] = useState<AdminCatalogKey>(initialCatalog);
     const [rows, setRows] = useState<EditableRow[]>([]);
-    const [initialRowsById, setInitialRowsById] = useState<Record<string, { code: string; description: string }>>({});
+    const [initialRowsById, setInitialRowsById] = useState<Record<string, { code: string; description: string; curve: string }>>({});
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -101,13 +113,15 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
                     id: item.id,
                     code: item.code,
                     description: getDescriptionValue(item),
+                    curve: selectedCatalog === 'size-curves' ? (item.values ?? []).map((entry) => entry.value).join(', ') : '',
                     selected: false
                 }));
 
                 setRows(mappedRows);
                 setInitialRowsById(Object.fromEntries(mappedRows.filter((row) => row.id).map((row) => [row.id as string, {
                     code: row.code,
-                    description: row.description
+                    description: row.description,
+                    curve: row.curve
                 }])));
             } catch (err) {
                 setError(formatError(err, 'No pudimos cargar los atributos'));
@@ -121,12 +135,14 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
 
     if (!isOpen) return null;
 
-    const updateRow = (index: number, field: 'code' | 'description', value: string) => {
+    const isSizeCurveCatalog = selectedCatalog === 'size-curves';
+
+    const updateRow = (index: number, field: 'code' | 'description' | 'curve', value: string) => {
         setRows((prev) => prev.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row));
     };
 
     const addRow = () => {
-        setRows((prev) => [...prev, { code: '', description: '', selected: false }]);
+        setRows((prev) => [...prev, { code: '', description: '', curve: '', selected: false }]);
     };
 
     const toggleSelectAll = (checked: boolean) => {
@@ -154,7 +170,7 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
 
     const handlePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
         const rawText = event.clipboardData.getData('text/plain');
-        const parsedRows = parsePastedRows(rawText);
+        const parsedRows = parsePastedRows(rawText, selectedCatalog);
         if (parsedRows.length === 0) return;
 
         event.preventDefault();
@@ -165,7 +181,8 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
         const normalizedRows = rows.map((row) => ({
             ...row,
             code: row.code.trim(),
-            description: row.description.trim()
+            description: row.description.trim(),
+            curve: row.curve.trim()
         }));
 
         if (normalizedRows.some((row) => !row.code || !row.description)) {
@@ -179,6 +196,10 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
                 return { error: `Código duplicado detectado: ${row.code}`, normalizedRows };
             }
             codeSet.add(key);
+        }
+
+        if (isSizeCurveCatalog && normalizedRows.some((row) => row.curve.split(',').map((value) => value.trim()).filter(Boolean).length === 0)) {
+            return { error: 'La columna curva es obligatoria y debe tener valores separados por coma.', normalizedRows };
         }
 
         return { error: null, normalizedRows };
@@ -208,7 +229,7 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
                 const source = initialRowsById[row.id as string];
                 if (!source) continue;
 
-                const changed = source.code !== row.code || source.description !== row.description;
+                const changed = source.code !== row.code || source.description !== row.description || source.curve !== row.curve;
                 if (changed) {
                     await api.updateAdminCatalog(selectedCatalog, row.id as string, getPayloadFromRow(selectedCatalog, row));
                 }
@@ -260,7 +281,9 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
 
                 <textarea
                     className={styles.pasteArea}
-                    placeholder="Pegá aquí desde Excel (Ctrl + V): código[TAB]descripción"
+                    placeholder={isSizeCurveCatalog
+                        ? 'Pegá aquí desde Excel (Ctrl + V): código[TAB]descripción[TAB]curva (valores separados por coma)'
+                        : 'Pegá aquí desde Excel (Ctrl + V): código[TAB]descripción'}
                     onPaste={handlePaste}
                     readOnly
                 />
@@ -275,6 +298,7 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
                                     <th><input type="checkbox" checked={rows.length > 0 && selectedCount === rows.length} onChange={(event) => toggleSelectAll(event.target.checked)} /></th>
                                     <th>Código</th>
                                     <th>Descripción</th>
+                                    {isSizeCurveCatalog && <th>Curva</th>}
                                     <th>Acción</th>
                                 </tr>
                             </thead>
@@ -298,6 +322,16 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
                                                 className={styles.cellInput}
                                             />
                                         </td>
+                                        {isSizeCurveCatalog && (
+                                            <td>
+                                                <input
+                                                    value={row.curve}
+                                                    onChange={(event) => updateRow(index, 'curve', event.target.value)}
+                                                    className={styles.cellInput}
+                                                    placeholder="XS,S,M,L"
+                                                />
+                                            </td>
+                                        )}
                                         <td>
                                             <button type="button" className={styles.rowDeleteButton} onClick={() => deleteRow(index)}>
                                                 Eliminar
@@ -307,7 +341,7 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
                                 ))}
                                 {rows.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className={styles.empty}>No hay filas. Agregá una o pegá datos desde Excel.</td>
+                                        <td colSpan={isSizeCurveCatalog ? 5 : 4} className={styles.empty}>No hay filas. Agregá una o pegá datos desde Excel.</td>
                                     </tr>
                                 )}
                             </tbody>
