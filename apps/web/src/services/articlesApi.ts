@@ -42,6 +42,48 @@ export type CloneArticlePayload = Partial<Omit<CreateArticlePayload, 'sku' | 'de
     description: string;
 };
 
+
+export type ArticleImportPreviewRow = {
+    rowNumber: number;
+    normalized: Record<string, string | number | undefined>;
+    resolutions: Record<string, { code: string; resolved: boolean; catalogId: string | null; warning?: string; error?: string }>;
+    warnings: string[];
+    errors: string[];
+    importable: boolean;
+    duplicateInFile: boolean;
+    duplicateInDatabase: boolean;
+};
+
+export type ArticleImportPreviewResponse = {
+    previewId: string | null;
+    result: {
+        fileName: string;
+        rows: ArticleImportPreviewRow[];
+        summary: {
+            totalRows: number;
+            importableRows: number;
+            errorRows: number;
+            warningRows: number;
+            duplicateInFileRows: number;
+            duplicateInDatabaseRows: number;
+        };
+        missingRequiredColumns: string[];
+        fileWarnings: string[];
+    };
+};
+
+export type ArticleImportCommitResponse = {
+    previewId: string;
+    summary: {
+        requestedRows: number;
+        attemptedRows: number;
+        importedRows: number;
+        skippedRows: number;
+    };
+    createdRows: number[];
+    skippedRows: Array<{ rowNumber: number; reason: string }>;
+};
+
 export class ArticlesApiService {
     constructor(private readonly client: HttpClient) {}
 
@@ -116,6 +158,38 @@ export class ArticlesApiService {
         const checkedResponse = await this.ensureArticlesRouteExists(response, '/articles');
         await this.client.assertOk(checkedResponse, 'No pudimos crear el artículo');
         return checkedResponse.json() as Promise<ArticleResponse>;
+    }
+
+
+    async previewArticleImport(file: File) {
+        const path = '/admin/articles/import/preview';
+        const formData = new FormData();
+        formData.set('file', file);
+
+        const response = await this.fetchWithApiPrefixFallback(path, {
+            method: 'POST',
+            headers: {
+                ...this.client.getAccessTokenHeader()
+            },
+            body: formData
+        });
+
+        await this.client.assertOk(response, 'No pudimos previsualizar el archivo de importación');
+        return response.json() as Promise<ArticleImportPreviewResponse>;
+    }
+
+    async commitArticleImport(previewId: string, rowNumbers?: number[]) {
+        const path = '/admin/articles/import/commit';
+        const response = await this.fetchWithApiPrefixFallback(path, {
+            method: 'POST',
+            headers: {
+                ...(await this.client.getAuthHeaders())
+            },
+            body: JSON.stringify({ previewId, rowNumbers })
+        });
+
+        await this.client.assertOk(response, 'No pudimos confirmar la importación');
+        return response.json() as Promise<ArticleImportCommitResponse>;
     }
 
     async cloneArticle(articleId: string, payload: CloneArticlePayload) {

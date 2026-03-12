@@ -145,3 +145,49 @@
   margin: 0;
   color: #64748b;
 }
+
+.actionRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.secondaryButton {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 600;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+}
+
+.filterRow {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.filterButton {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+.summaryRow {
+  display: flex;
+  gap: 0.8rem;
+  color: #334155;
+  font-size: 0.85rem;
+}
+
+.errorText {
+  color: #b91c1c;
+  margin: 0;
+}
+
+.successText {
+  color: #166534;
+  margin: 0;
+}

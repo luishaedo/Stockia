@@ -19,7 +19,9 @@ export type RouteDefinition = {
         | '/operations/catalogs/version'
         | '/articles'
         | '/articles/search'
-        | '/articles/:id/clone';
+        | '/articles/:id/clone'
+        | '/admin/articles/import/preview'
+        | '/admin/articles/import/commit';
     requiresAdminToken: boolean;
 };
 
@@ -45,7 +47,9 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: false },
     { method: 'POST', path: '/articles', requiresAdminToken: false },
     { method: 'GET', path: '/articles/search', requiresAdminToken: false },
-    { method: 'POST', path: '/articles/:id/clone', requiresAdminToken: false }
+    { method: 'POST', path: '/articles/:id/clone', requiresAdminToken: false },
+    { method: 'POST', path: '/admin/articles/import/preview', requiresAdminToken: true },
+    { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true }
 ];
 
 export const toRouteKey = (method: RouteDefinition['method'], path: RouteDefinition['path']) => `${method} ${path}`;

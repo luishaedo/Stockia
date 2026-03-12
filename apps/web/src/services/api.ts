@@ -44,6 +44,8 @@ class ApiFacade {
     searchArticles = this.articlesApi.searchArticles.bind(this.articlesApi);
     createArticle = this.articlesApi.createArticle.bind(this.articlesApi);
     cloneArticle = this.articlesApi.cloneArticle.bind(this.articlesApi);
+    previewArticleImport = this.articlesApi.previewArticleImport.bind(this.articlesApi);
+    commitArticleImport = this.articlesApi.commitArticleImport.bind(this.articlesApi);
 }
 
 export const api = new ApiFacade();
