@@ -1,0 +1,159 @@
+import { useMemo, useState } from 'react';
+import { X, Eye } from 'lucide-react';
+import { FileUploadField } from '../ui/FileUploadField';
+import styles from './BulkArticlesModal.module.css';
+
+type CatalogItem = {
+    id: string;
+    code: string;
+    name?: string;
+    description?: string;
+};
+
+type BulkPreviewRow = {
+    sku: string;
+    descriptionSku: string;
+    family: string;
+    familyDescription: string;
+    type: string;
+    typeDescription: string;
+};
+
+interface BulkArticlesModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    supplierOptions: CatalogItem[];
+    selectedSupplierId: string;
+    onSupplierChange: (supplierId: string) => void;
+}
+
+const getCatalogLabel = (item: CatalogItem) => item.name || item.description || item.code;
+
+const previewHeaders = [
+    'SKU',
+    'Description SKU',
+    'Family Code',
+    'Family Description',
+    'Type Code',
+    'Type Description'
+];
+
+export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSupplierId, onSupplierChange }: BulkArticlesModalProps) {
+    const [selectedFileName, setSelectedFileName] = useState('No file selected');
+    const [previewRows, setPreviewRows] = useState<BulkPreviewRow[]>([]);
+    const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+    const hasPreview = previewRows.length > 0;
+
+    const selectedSupplierLabel = useMemo(() => {
+        if (!selectedSupplierId) return 'No supplier selected';
+        const supplier = supplierOptions.find((item) => item.id === selectedSupplierId);
+        return supplier ? `${supplier.code} - ${getCatalogLabel(supplier)}` : 'Unknown supplier';
+    }, [selectedSupplierId, supplierOptions]);
+
+    if (!isOpen) return null;
+
+    const handleFileSelect = (file?: File) => {
+        setPreviewRows([]);
+        if (!file) {
+            setSelectedFileName('No file selected');
+            setInfoMessage(null);
+            return;
+        }
+
+        setSelectedFileName(file.name);
+        setInfoMessage('CSV selected. In the next step we will parse and validate the column order.');
+
+        setPreviewRows([
+            {
+                sku: 'SKU-0001',
+                descriptionSku: 'Sample imported article',
+                family: '99',
+                familyDescription: 'Varios',
+                type: '12',
+                typeDescription: 'Remera'
+            }
+        ]);
+    };
+
+    return (
+        <div className={styles.overlay} role="presentation" onClick={onClose}>
+            <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="bulk-articles-modal-title" onClick={(event) => event.stopPropagation()}>
+                <header className={styles.header}>
+                    <div>
+                        <h2 id="bulk-articles-modal-title">Bulk Article Management</h2>
+                        <p>Upload a CSV, preview the content and then create/update supplier articles.</p>
+                    </div>
+                    <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close modal">
+                        <X size={16} />
+                    </button>
+                </header>
+
+                <section className={styles.section}>
+                    <label className={styles.label}>
+                        <span>Supplier</span>
+                        <select className={styles.select} value={selectedSupplierId} onChange={(event) => onSupplierChange(event.target.value)}>
+                            <option value="">Select supplier</option>
+                            {supplierOptions.map((supplier) => (
+                                <option key={supplier.id} value={supplier.id}>
+                                    {supplier.code} - {getCatalogLabel(supplier)}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+
+                    <FileUploadField
+                        label="CSV file"
+                        buttonText="Choose CSV"
+                        selectedFileName={selectedFileName}
+                        accept=".csv,text/csv"
+                        onFileSelect={handleFileSelect}
+                        helperText="Expected columns (draft): sku, descriptionsku, family, description_family, type, description_type"
+                    />
+
+                    <p className={styles.activeSupplier}>Active supplier: {selectedSupplierLabel}</p>
+                    {infoMessage && <p className={styles.infoText}>{infoMessage}</p>}
+                </section>
+
+                <section className={styles.previewSection}>
+                    <div className={styles.previewHeader}>
+                        <p>
+                            <Eye size={16} /> Data preview
+                        </p>
+                        <button type="button" className={styles.primaryButton} disabled={!hasPreview || !selectedSupplierId}>
+                            Create / Update Articles
+                        </button>
+                    </div>
+
+                    {hasPreview ? (
+                        <div className={styles.previewTableWrapper}>
+                            <table className={styles.previewTable}>
+                                <thead>
+                                    <tr>
+                                        {previewHeaders.map((header) => (
+                                            <th key={header}>{header}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {previewRows.map((row, index) => (
+                                        <tr key={`${row.sku}-${index}`}>
+                                            <td>{row.sku}</td>
+                                            <td>{row.descriptionSku}</td>
+                                            <td>{row.family}</td>
+                                            <td>{row.familyDescription}</td>
+                                            <td>{row.type}</td>
+                                            <td>{row.typeDescription}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <p className={styles.emptyPreview}>Select a CSV file to render the import preview.</p>
+                    )}
+                </section>
+            </div>
+        </div>
+    );
+}

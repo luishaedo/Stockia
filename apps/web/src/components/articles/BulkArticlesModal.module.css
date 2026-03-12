@@ -1,0 +1,147 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.56);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 80px rgba(15, 23, 42, 0.24);
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.header p {
+  margin: 0.35rem 0 0;
+  color: #475569;
+}
+
+.closeButton {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.section {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.select {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.95rem;
+}
+
+.activeSupplier {
+  margin: 0;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.infoText {
+  margin: 0;
+  color: #0369a1;
+  font-size: 0.9rem;
+}
+
+.previewSection {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.previewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.previewHeader p {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.primaryButton {
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(140deg, #2563eb, #1d4ed8);
+  color: white;
+  font-weight: 600;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.previewTableWrapper {
+  overflow-x: auto;
+}
+
+.previewTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.previewTable th,
+.previewTable td {
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  padding: 0.55rem;
+  font-size: 0.9rem;
+}
+
+.previewTable th {
+  color: #475569;
+  font-weight: 700;
+}
+
+.emptyPreview {
+  margin: 0;
+  color: #64748b;
+}
