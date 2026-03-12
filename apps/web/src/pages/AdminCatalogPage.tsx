@@ -45,7 +45,7 @@ const formatCatalogError = (error: unknown, fallback: string) => {
 
 export function AdminCatalogPage() {
     const navigate = useNavigate();
-    const [selectedCatalog, setSelectedCatalog] = useState<CatalogKey>('suppliers');
+    const [selectedCatalog, setSelectedCatalog] = useState<CatalogKey | null>(null);
     const [items, setItems] = useState<CatalogItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -56,16 +56,15 @@ export function AdminCatalogPage() {
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
-    const [longDescription, setLongDescription] = useState('');
-    const [sizeValues, setSizeValues] = useState('');
     const [attributesModalOpen, setAttributesModalOpen] = useState(false);
 
     const isSupplier = selectedCatalog === 'suppliers';
-    const isCategory = selectedCatalog === 'categories';
-    const isSizeCurve = selectedCatalog === 'size-curves';
     const requiresLogo = isSupplier;
 
-    const title = useMemo(() => catalogOptions.find((option) => option.key === selectedCatalog)?.label ?? selectedCatalog, [selectedCatalog]);
+    const title = useMemo(() => {
+        if (!selectedCatalog) return 'Catálogo';
+        return catalogOptions.find((option) => option.key === selectedCatalog)?.label ?? selectedCatalog;
+    }, [selectedCatalog]);
 
     const resetForm = () => {
         setEditingId(null);
@@ -73,8 +72,6 @@ export function AdminCatalogPage() {
         setDescription('');
         setLogoUrl('');
         setSelectedLogoFileName('Ningún archivo seleccionado');
-        setLongDescription('');
-        setSizeValues('');
     };
 
     const loadItems = async (catalog: CatalogKey) => {
@@ -94,6 +91,10 @@ export function AdminCatalogPage() {
 
     useEffect(() => {
         resetForm();
+        if (!selectedCatalog) {
+            setItems([]);
+            return;
+        }
         void loadItems(selectedCatalog);
 
         const nextCatalogs = catalogOptions.map((option) => option.key).filter((catalog) => catalog !== selectedCatalog);
@@ -105,8 +106,6 @@ export function AdminCatalogPage() {
         setCode(item.code);
         setDescription(item.name || item.description || '');
         setLogoUrl(item.logoUrl || '');
-        setLongDescription(item.longDescription || '');
-        setSizeValues(item.values?.map((entry) => entry.value).join(',') || '');
     };
 
     const handleLogoUpload = async (file?: File) => {
@@ -138,21 +137,16 @@ export function AdminCatalogPage() {
             return;
         }
 
+        if (!selectedCatalog) {
+            setError('Seleccioná un catálogo para continuar.');
+            return;
+        }
+
         const payload: Record<string, unknown> = {
             code: trimmedCode,
             ...(isSupplier ? { name: trimmedDescription } : { description: trimmedDescription })
         };
         if (isSupplier && logoUrl.trim()) payload.logoUrl = logoUrl.trim();
-        if (isCategory) payload.longDescription = longDescription.trim();
-
-        if (isSizeCurve) {
-            const parsedValues = sizeValues.split(',').map((value) => value.trim()).filter(Boolean);
-            if (parsedValues.length === 0) {
-                setError('Ingresá al menos un talle válido.');
-                return;
-            }
-            payload.values = parsedValues;
-        }
 
         try {
             if (editingId) {
@@ -170,6 +164,10 @@ export function AdminCatalogPage() {
 
     const handleDelete = async (id: string) => {
         setError(null);
+        if (!selectedCatalog) {
+            setError('Seleccioná un catálogo para continuar.');
+            return;
+        }
         try {
             await api.deleteAdminCatalog(selectedCatalog, id);
             if (editingId === id) resetForm();
@@ -181,6 +179,7 @@ export function AdminCatalogPage() {
     };
 
     const handleAttributesSaved = async () => {
+        if (!selectedCatalog) return;
         await loadItems(selectedCatalog);
     };
 
@@ -190,9 +189,6 @@ export function AdminCatalogPage() {
                 <button type="button" className={styles.backButton} onClick={() => navigate('/')}><ArrowLeft size={18} /></button>
                 <h1>Catálogos</h1>
                 <p>Administración de datos maestros</p>
-                <button type="button" className={styles.secondaryButton} onClick={() => setAttributesModalOpen(true)}>
-                    Atributos
-                </button>
             </header>
 
             <div className={styles.content}>
@@ -211,42 +207,50 @@ export function AdminCatalogPage() {
                     ))}
                 </div>
 
-                <form onSubmit={handleSubmit} className={styles.formCard}>
-                    <input className={styles.input} placeholder="Código" value={code} onChange={(e) => setCode(e.target.value)} required />
-                    <input className={styles.input} placeholder={isSupplier ? 'Nombre' : 'Descripción'} value={description} onChange={(e) => setDescription(e.target.value)} required />
-                    {requiresLogo && (
-                        <>
-                            <FileUploadField
-                                label="Logo del catálogo"
-                                buttonText="Elegir archivo"
-                                selectedFileName={selectedLogoFileName}
-                                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                onFileSelect={(file) => void handleLogoUpload(file)}
-                                disabled={uploadingLogo}
-                                helperText="Formatos: PNG, JPG, WEBP o SVG"
-                            />
-                            {uploadingLogo && <p className={styles.mutedText}>Subiendo logo...</p>}
-                            {logoUrl && (
-                                <div className={styles.logoPreviewBlock}>
-                                    <p className={styles.logoPreviewLabel}>Logo actual</p>
-                                    <img
-                                        src={api.resolveAssetUrl(logoUrl)}
-                                        alt={description ? `Logo de ${description}` : 'Logo del proveedor'}
-                                        className={styles.logoPreviewImage}
-                                    />
-                                </div>
-                            )}
-                        </>
-                    )}
-                    {isCategory && <input className={styles.input} placeholder="Descripción larga" value={longDescription} onChange={(e) => setLongDescription(e.target.value)} />}
-                    {isSizeCurve && <input className={styles.input} placeholder="Valores de talle separados por coma" value={sizeValues} onChange={(e) => setSizeValues(e.target.value)} required />}
+                {selectedCatalog && !isSupplier && (
+                    <div className={styles.attributesActions}>
+                        <button type="button" className={styles.secondaryButtonInline} onClick={() => setAttributesModalOpen(true)}>
+                            Gestionar atributos
+                        </button>
+                    </div>
+                )}
 
-                    <button type="submit" className={styles.primaryButton}><Plus size={16} /> {editingId ? `Actualizar ${title}` : `Agregar ${title}`}</button>
-                </form>
+                {isSupplier && (
+                    <form onSubmit={handleSubmit} className={styles.formCard}>
+                        <input className={styles.input} placeholder="Código" value={code} onChange={(e) => setCode(e.target.value)} required />
+                        <input className={styles.input} placeholder="Nombre" value={description} onChange={(e) => setDescription(e.target.value)} required />
+                        {requiresLogo && (
+                            <>
+                                <FileUploadField
+                                    label="Logo del catálogo"
+                                    buttonText="Elegir archivo"
+                                    selectedFileName={selectedLogoFileName}
+                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                    onFileSelect={(file) => void handleLogoUpload(file)}
+                                    disabled={uploadingLogo}
+                                    helperText="Formatos: PNG, JPG, WEBP o SVG"
+                                />
+                                {uploadingLogo && <p className={styles.mutedText}>Subiendo logo...</p>}
+                                {logoUrl && (
+                                    <div className={styles.logoPreviewBlock}>
+                                        <p className={styles.logoPreviewLabel}>Logo actual</p>
+                                        <img
+                                            src={api.resolveAssetUrl(logoUrl)}
+                                            alt={description ? `Logo de ${description}` : 'Logo del proveedor'}
+                                            className={styles.logoPreviewImage}
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        <button type="submit" className={styles.primaryButton}><Plus size={16} /> {editingId ? `Actualizar ${title}` : `Agregar ${title}`}</button>
+                    </form>
+                )}
                 {error && <p className={styles.errorText}>{error}</p>}
 
-                <h2 className={styles.sectionTitle}>{title} registrados</h2>
-                {loading ? <p className={styles.mutedText}>Cargando...</p> : (
+                {selectedCatalog && <h2 className={styles.sectionTitle}>{title} registrados</h2>}
+                {!selectedCatalog ? <p className={styles.mutedText}>Seleccioná un catálogo para ver registros.</p> : loading ? <p className={styles.mutedText}>Cargando...</p> : (
                     <div className={styles.itemsList}>
                         {items.map((item) => (
                             <article key={item.id} className={styles.itemCard}>
@@ -279,7 +283,7 @@ export function AdminCatalogPage() {
                 isOpen={attributesModalOpen}
                 onClose={() => setAttributesModalOpen(false)}
                 onSaved={handleAttributesSaved}
-                initialCatalog={selectedCatalog === 'materials' || selectedCatalog === 'families' || selectedCatalog === 'classifications' || selectedCatalog === 'categories' || selectedCatalog === 'garment-types'
+                initialCatalog={selectedCatalog === 'materials' || selectedCatalog === 'families' || selectedCatalog === 'classifications' || selectedCatalog === 'categories' || selectedCatalog === 'garment-types' || selectedCatalog === 'size-curves'
                     ? selectedCatalog
                     : 'materials'}
             />
