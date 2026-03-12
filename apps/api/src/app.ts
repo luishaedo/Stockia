@@ -17,9 +17,11 @@ import { createAdminCatalogRoutes } from './routes/adminCatalogRoutes.js';
 import { createAdminUploadRoutes } from './routes/adminUploadRoutes.js';
 import { createCatalogSelectionRoutes } from './routes/catalogSelectionRoutes.js';
 import { createArticleRoutes } from './routes/articleRoutes.js';
+import { createArticleImportRoutes } from './routes/articleImportRoutes.js';
 import { FacturaRepository } from './repositories/facturaRepository.js';
 import { FacturaService } from './services/facturaService.js';
 import { FacturaController } from './controllers/facturaController.js';
+import { ArticleImportService } from './services/articleImportService.js';
 import { sendError } from './middlewares/error.js';
 import { getPrometheusMetrics } from './lib/metrics.js';
 
@@ -68,6 +70,7 @@ export const createApp = (prisma: PrismaClient) => {
     const repository = new FacturaRepository(prisma);
     const service = new FacturaService(repository);
     const controller = new FacturaController(service);
+    const articleImportService = new ArticleImportService(prisma);
 
     app.use(createFacturaRoutes(controller, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
     app.use('/api', createFacturaRoutes(controller, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
@@ -83,6 +86,9 @@ export const createApp = (prisma: PrismaClient) => {
 
     app.use(createAdminUploadRoutes(authMiddleware, writeRateLimitMiddleware));
     app.use('/api', createAdminUploadRoutes(authMiddleware, writeRateLimitMiddleware));
+
+    app.use(createArticleImportRoutes(articleImportService, authMiddleware, writeRateLimitMiddleware));
+    app.use('/api', createArticleImportRoutes(articleImportService, authMiddleware, writeRateLimitMiddleware));
 
     return app;
 };

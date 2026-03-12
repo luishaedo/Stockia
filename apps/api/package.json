@@ -19,14 +19,16 @@
         "verify:security-contract": "bash test-scripts/verify-security-contract.sh",
         "verify:invoice-lifecycle": "node --loader ts-node/esm test-scripts/verify-invoice-lifecycle.ts",
         "verify:contract-shared": "node --loader ts-node/esm test-scripts/verify-contract-shared.ts",
-        "verify:route-contracts": "node --loader ts-node/esm test-scripts/verify-route-contracts.ts"
+        "verify:route-contracts": "node --loader ts-node/esm test-scripts/verify-route-contracts.ts",
+        "verify:article-import": "node --loader ts-node/esm test-scripts/verify-article-import.ts"
     },
     "dependencies": {
+        "@prisma/client": "^5.0.0",
+        "@stockia/shared": "*",
         "cors": "^2.8.5",
         "dotenv": "^16.0.0",
         "express": "^4.18.0",
-        "@prisma/client": "^5.0.0",
-        "@stockia/shared": "*"
+        "xlsx": "^0.18.5"
     },
     "devDependencies": {
         "@types/cors": "^2.8.0",
