@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { api, ApiError } from '../services/api';
 import styles from './AdminCatalogPage.module.css';
 import { FileUploadField } from '../components/ui/FileUploadField';
+import { AttributesModal } from '../components/attributes/AttributesModal';
 
 type CatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
 
@@ -57,6 +58,7 @@ export function AdminCatalogPage() {
     const [logoUrl, setLogoUrl] = useState('');
     const [longDescription, setLongDescription] = useState('');
     const [sizeValues, setSizeValues] = useState('');
+    const [attributesModalOpen, setAttributesModalOpen] = useState(false);
 
     const isSupplier = selectedCatalog === 'suppliers';
     const isCategory = selectedCatalog === 'categories';
@@ -178,12 +180,19 @@ export function AdminCatalogPage() {
         }
     };
 
+    const handleAttributesSaved = async () => {
+        await loadItems(selectedCatalog);
+    };
+
     return (
         <section>
             <header className={styles.hero}>
                 <button type="button" className={styles.backButton} onClick={() => navigate('/')}><ArrowLeft size={18} /></button>
                 <h1>Catálogos</h1>
                 <p>Administración de datos maestros</p>
+                <button type="button" className={styles.secondaryButton} onClick={() => setAttributesModalOpen(true)}>
+                    Atributos
+                </button>
             </header>
 
             <div className={styles.content}>
@@ -265,6 +274,15 @@ export function AdminCatalogPage() {
                     </div>
                 )}
             </div>
+
+            <AttributesModal
+                isOpen={attributesModalOpen}
+                onClose={() => setAttributesModalOpen(false)}
+                onSaved={handleAttributesSaved}
+                initialCatalog={selectedCatalog === 'materials' || selectedCatalog === 'families' || selectedCatalog === 'classifications' || selectedCatalog === 'categories' || selectedCatalog === 'garment-types'
+                    ? selectedCatalog
+                    : 'materials'}
+            />
         </section>
     );
 }

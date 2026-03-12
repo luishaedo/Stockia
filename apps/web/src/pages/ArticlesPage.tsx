@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { ApiError, api } from '../services/api';
 import { ArticleResponse, CloneArticlePayload, CreateArticlePayload } from '../services/articlesApi';
 import styles from './ArticlesPage.module.css';
+import { AttributesModal } from '../components/attributes/AttributesModal';
 
 type CatalogItem = {
     id: string;
@@ -85,6 +86,7 @@ export function ArticlesPage() {
     });
 
     const [cloneDrafts, setCloneDrafts] = useState<Record<string, CloneArticlePayload>>({});
+    const [attributesModalOpen, setAttributesModalOpen] = useState(false);
 
     const suppliers = catalogs.suppliers;
 
@@ -168,6 +170,11 @@ export function ArticlesPage() {
         }
     };
 
+
+    const handleAttributesSaved = async () => {
+        await loadCatalogs();
+    };
+
     const onCloneArticle = async (articleId: string) => {
         const draft = cloneDrafts[articleId];
         if (!draft?.sku || !draft?.description) {
@@ -205,6 +212,9 @@ export function ArticlesPage() {
                 </button>
                 <h1>Artículos</h1>
                 <p>Alta, búsqueda y clonado de artículos por proveedor.</p>
+                <button type="button" className={styles.secondaryButton} onClick={() => setAttributesModalOpen(true)}>
+                    Atributos
+                </button>
             </header>
 
             <div className={styles.content}>
@@ -333,6 +343,13 @@ export function ArticlesPage() {
                     {!loadingArticles && articles.length === 0 && <p className={styles.muted}>No hay artículos para mostrar.</p>}
                 </div>
             </div>
+
+            <AttributesModal
+                isOpen={attributesModalOpen}
+                onClose={() => setAttributesModalOpen(false)}
+                onSaved={handleAttributesSaved}
+                initialCatalog="materials"
+            />
         </section>
     );
 }
