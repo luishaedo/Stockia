@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ApiError, api } from '../services/api';
 import { ArticleResponse, CloneArticlePayload, CreateArticlePayload } from '../services/articlesApi';
+import { BulkArticlesModal } from '../components/articles/BulkArticlesModal';
 import styles from './ArticlesPage.module.css';
 
 type CatalogItem = {
@@ -85,6 +86,7 @@ export function ArticlesPage() {
     });
 
     const [cloneDrafts, setCloneDrafts] = useState<Record<string, CloneArticlePayload>>({});
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
 
     const suppliers = catalogs.suppliers;
 
@@ -209,7 +211,16 @@ export function ArticlesPage() {
 
             <div className={styles.content}>
                 <form onSubmit={onSearch} className={styles.card}>
-                    <p className={styles.label}>Buscar artículos</p>
+                    <div className={styles.cardHeader}>
+                        <p className={styles.label}>Buscar artículos</p>
+                        <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={() => setBulkModalOpen(true)}
+                        >
+                            Gestión masiva (CSV)
+                        </button>
+                    </div>
                     <div className={styles.row}>
                         <select
                             className={styles.select}
@@ -333,6 +344,17 @@ export function ArticlesPage() {
                     {!loadingArticles && articles.length === 0 && <p className={styles.muted}>No hay artículos para mostrar.</p>}
                 </div>
             </div>
+
+            <BulkArticlesModal
+                isOpen={bulkModalOpen}
+                onClose={() => setBulkModalOpen(false)}
+                supplierOptions={suppliers}
+                selectedSupplierId={searchSupplierId}
+                onSupplierChange={(supplierId) => {
+                    setSearchSupplierId(supplierId);
+                    setForm((prev) => ({ ...prev, supplierId }));
+                }}
+            />
 
         </section>
     );

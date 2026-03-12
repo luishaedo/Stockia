@@ -32,6 +32,13 @@
   gap: var(--space-1-5);
 }
 
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1-5);
+}
+
 .row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -62,6 +69,12 @@
 
 .searchButton, .primaryButton { background: #0d9488; }
 .secondaryButton { background: #334155; }
+
+.cardHeader .secondaryButton {
+  margin-top: 0;
+  width: auto;
+  padding: 0 var(--space-2);
+}
 
 .label {
   display: block;
