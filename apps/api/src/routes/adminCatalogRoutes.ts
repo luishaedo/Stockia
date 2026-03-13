@@ -40,6 +40,14 @@ const mapCatalogWriteError = (error: unknown): { status: number; code: string; m
         };
     }
 
+    if (prismaError?.code === 'P2003') {
+        return {
+            status: 409,
+            code: ErrorCodes.BAD_REQUEST,
+            message: 'Cannot delete catalog item because it is referenced by other records'
+        };
+    }
+
     return {
         status: 500,
         code: ErrorCodes.INTERNAL_SERVER_ERROR,
@@ -173,6 +181,7 @@ export const createAdminCatalogRoutes = (
             }
             return res.status(204).send();
         } catch (error) {
+            const mapped = mapCatalogWriteError(error);
             logger.error(
                 {
                     err: error,
@@ -183,7 +192,7 @@ export const createAdminCatalogRoutes = (
                 },
                 'Failed to delete admin catalog item'
             );
-            return sendError(res, 400, ErrorCodes.BAD_REQUEST, 'Could not delete catalog item', error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
 

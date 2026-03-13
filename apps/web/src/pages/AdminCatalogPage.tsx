@@ -215,10 +215,10 @@ export function AdminCatalogPage() {
                     </div>
                 )}
 
-                {isSupplier && (
+                {selectedCatalog && (
                     <form onSubmit={handleSubmit} className={styles.formCard}>
                         <input className={styles.input} placeholder="Código" value={code} onChange={(e) => setCode(e.target.value)} required />
-                        <input className={styles.input} placeholder="Nombre" value={description} onChange={(e) => setDescription(e.target.value)} required />
+                        <input className={styles.input} placeholder={isSupplier ? 'Nombre' : 'Descripción'} value={description} onChange={(e) => setDescription(e.target.value)} required />
                         {requiresLogo && (
                             <>
                                 <FileUploadField

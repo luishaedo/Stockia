@@ -106,6 +106,8 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
         const loadCatalog = async () => {
             setLoading(true);
             setError(null);
+            setRows([]);
+            setInitialRowsById({});
 
             try {
                 const items = await api.getAdminCatalogCached<CatalogItem[]>(selectedCatalog, true);
@@ -132,6 +134,13 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
 
         void loadCatalog();
     }, [isOpen, selectedCatalog]);
+
+    useEffect(() => {
+        if (isOpen) return;
+        setRows([]);
+        setInitialRowsById({});
+        setError(null);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
