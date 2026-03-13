@@ -11,7 +11,7 @@ interface PendingTasksListProps {
 
 export function PendingTasksList({ items, supplierLogos, onOpenDraft, onOpenSummary }: PendingTasksListProps) {
     return (
-        <section>
+        <section className={styles.section}>
             <h2 className={styles.heading}>Tareas</h2>
             <div className={styles.list}>
                 {items.map((factura) => {
