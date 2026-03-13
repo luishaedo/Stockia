@@ -139,15 +139,10 @@ export function FacturaWizard() {
         updateDraft({ items: updatedItems });
         setDraftColors([]);
         setStep('ARTICLE');
-        setDraftItem({
-            familyId: '',
-            categoryId: '',
-            garmentTypeId: '',
-            classificationId: '',
-            materialId: '',
-            codigoArticulo: '',
-            curvaTalles: ''
-        });
+        setDraftItem((prev) => ({
+            ...prev,
+            codigoArticulo: ''
+        }));
     };
 
     if (state.isLoading || !state.currentFactura) {
