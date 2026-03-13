@@ -6,11 +6,19 @@ type Option = { value: string; label: string };
 
 interface ArticleStepProps {
     draftItem: {
-        tipoPrenda: string;
+        familyId: string;
+        categoryId: string;
+        garmentTypeId: string;
+        classificationId: string;
+        materialId: string;
         codigoArticulo: string;
         curvaTalles: string;
     };
+    familyOptions: Option[];
+    categoryOptions: Option[];
     garmentTypeOptions: Option[];
+    classificationOptions: Option[];
+    materialOptions: Option[];
     sizeCurveOptions: Option[];
     catalogsLoading: boolean;
     catalogsError: string | null;
@@ -19,11 +27,13 @@ interface ArticleStepProps {
     readOnly?: boolean;
 }
 
-const GARMENT_EMOJIS = ['👕', '👖', '🧥', '🩳', '🧢', '🧦', '🥾', '🎽', '🧤'];
-
 export function ArticleStep({
     draftItem,
+    familyOptions,
+    categoryOptions,
     garmentTypeOptions,
+    classificationOptions,
+    materialOptions,
     sizeCurveOptions,
     catalogsLoading,
     catalogsError,
@@ -31,18 +41,71 @@ export function ArticleStep({
     onNext,
     readOnly = false
 }: ArticleStepProps) {
-    const hasMissingCatalogs = garmentTypeOptions.length === 0 || sizeCurveOptions.length === 0;
-    const catalogBlockReason = catalogsError
-        || (hasMissingCatalogs ? 'Faltan catálogos obligatorios. Primero debés crear Tipos de prenda y Curvas de talle desde Admin.' : null);
+    const hasMissingCatalogs = [
+        familyOptions,
+        categoryOptions,
+        garmentTypeOptions,
+        classificationOptions,
+        materialOptions,
+        sizeCurveOptions
+    ].some((options) => options.length === 0);
 
-    const isValid = draftItem.tipoPrenda && draftItem.codigoArticulo && draftItem.curvaTalles && !catalogBlockReason;
+    const catalogBlockReason = catalogsError
+        || (hasMissingCatalogs ? 'Faltan catálogos obligatorios para cargar el artículo. Revisá Administración.' : null);
+
+    const isValid = Boolean(
+        draftItem.familyId
+        && draftItem.categoryId
+        && draftItem.garmentTypeId
+        && draftItem.classificationId
+        && draftItem.materialId
+        && draftItem.curvaTalles
+        && draftItem.codigoArticulo
+        && !catalogBlockReason
+    );
 
     return (
         <section className={styles.wrapper}>
             <h2 className={styles.title}>Paso 1 · Datos del artículo</h2>
-            <p className={styles.subtitle}>Completá código, tipo de prenda y curva.</p>
+            <p className={styles.subtitle}>Seleccioná Familia, Categoría, Tipo, Clasificación, Material, Curva y luego SKU.</p>
 
-            <label className={styles.label}>Código de artículo</label>
+            <label className={styles.label}>Familia</label>
+            <select className={styles.input} value={draftItem.familyId} onChange={(e) => onChange('familyId', e.target.value)} disabled={readOnly || catalogsLoading}>
+                <option value="">Seleccionar familia</option>
+                {familyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+
+            <label className={styles.label}>Categoría</label>
+            <select className={styles.input} value={draftItem.categoryId} onChange={(e) => onChange('categoryId', e.target.value)} disabled={readOnly || catalogsLoading}>
+                <option value="">Seleccionar categoría</option>
+                {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+
+            <label className={styles.label}>Tipo</label>
+            <select className={styles.input} value={draftItem.garmentTypeId} onChange={(e) => onChange('garmentTypeId', e.target.value)} disabled={readOnly || catalogsLoading}>
+                <option value="">Seleccionar tipo</option>
+                {garmentTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+
+            <label className={styles.label}>Clasificación</label>
+            <select className={styles.input} value={draftItem.classificationId} onChange={(e) => onChange('classificationId', e.target.value)} disabled={readOnly || catalogsLoading}>
+                <option value="">Seleccionar clasificación</option>
+                {classificationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+
+            <label className={styles.label}>Material</label>
+            <select className={styles.input} value={draftItem.materialId} onChange={(e) => onChange('materialId', e.target.value)} disabled={readOnly || catalogsLoading}>
+                <option value="">Seleccionar material</option>
+                {materialOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+
+            <label className={styles.label}>Curva de talles</label>
+            <select className={styles.input} value={draftItem.curvaTalles} onChange={(e) => onChange('curvaTalles', e.target.value)} disabled={readOnly || catalogsLoading}>
+                <option value="">Seleccionar curva</option>
+                {sizeCurveOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+
+            <label className={styles.label}>SKU</label>
             <input
                 className={styles.input}
                 value={draftItem.codigoArticulo}
@@ -50,43 +113,6 @@ export function ArticleStep({
                 placeholder="Ej: NK-1002"
                 disabled={readOnly}
             />
-
-            <h3 className={styles.blockTitle}>Tipo de prenda</h3>
-            <div className={styles.garmentGrid}>
-                {garmentTypeOptions.map((option, index) => {
-                    const active = draftItem.tipoPrenda === option.value;
-                    return (
-                        <button
-                            key={option.value}
-                            type="button"
-                            className={active ? styles.garmentActive : styles.garmentCard}
-                            onClick={() => onChange('tipoPrenda', option.value)}
-                            disabled={readOnly || catalogsLoading}
-                        >
-                            <span>{GARMENT_EMOJIS[index % GARMENT_EMOJIS.length]}</span>
-                            <span>{option.label}</span>
-                        </button>
-                    );
-                })}
-            </div>
-
-            <h3 className={styles.blockTitle}>Curva de talles</h3>
-            <div className={styles.curveList}>
-                {sizeCurveOptions.map((option) => {
-                    const active = draftItem.curvaTalles === option.value;
-                    return (
-                        <button
-                            key={option.value}
-                            type="button"
-                            className={active ? styles.curveActive : styles.curveCard}
-                            onClick={() => onChange('curvaTalles', option.value)}
-                            disabled={readOnly || catalogsLoading}
-                        >
-                            <span>{option.label}</span>
-                        </button>
-                    );
-                })}
-            </div>
 
             {catalogBlockReason && (
                 <div className={styles.warning}>

@@ -6,6 +6,7 @@
   border-radius: 0 0 28px 28px;
   padding: 24px 18px;
 }
+.backButton { border: 0; width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,.18); color:#fff; margin-bottom: 8px; }
 .hero h1 { margin: 0; font-size: 1.6rem; }
 .hero p { margin: 4px 0 10px; color: #ddd6fe; }
 .heroRow { display:flex; justify-content:space-between; align-items:center; gap:8px; }
