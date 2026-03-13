@@ -134,3 +134,10 @@
     transform: translateY(0);
   }
 }
+
+.supplierLogo {
+  max-width: 120px;
+  max-height: 28px;
+  object-fit: contain;
+  object-position: left center;
+}

@@ -3,12 +3,12 @@ export type RouteDefinition = {
     path:
         | '/facturas'
         | '/admin/invoices/:id'
+        | '/facturas/:id'
         | '/admin/invoices/:id/export'
         | '/admin/invoices'
         | '/admin/invoice-users'
         | '/providers'
         | '/size-tables'
-        | '/facturas/:id'
         | '/facturas/:id/draft'
         | '/facturas/:id/finalize'
         | '/admin/catalogs/:catalog'
@@ -27,6 +27,7 @@ export type RouteDefinition = {
 
 export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     { method: 'GET', path: '/facturas', requiresAdminToken: false },
+    { method: 'DELETE', path: '/facturas/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/invoices/:id', requiresAdminToken: true },
     { method: 'PATCH', path: '/admin/invoices/:id/export', requiresAdminToken: true },
     { method: 'GET', path: '/admin/invoices', requiresAdminToken: true },

@@ -58,6 +58,17 @@ export class FacturasApiService {
         return response.json();
     }
 
+
+    async deleteFactura(id: string, password: string): Promise<{ ok: boolean }> {
+        const response = await fetch(`${this.client.getBaseURL()}/facturas/${id}`, {
+            method: 'DELETE',
+            headers: this.getJsonHeadersWithOptionalAuth(),
+            body: JSON.stringify({ password })
+        });
+        await this.client.assertOk(response, 'No pudimos eliminar la factura');
+        return response.json();
+    }
+
     async finalizeFactura(id: string, expectedUpdatedAt: string): Promise<Factura> {
         const response = await fetch(`${this.client.getBaseURL()}/facturas/${id}/finalize`, {
             method: 'PATCH',

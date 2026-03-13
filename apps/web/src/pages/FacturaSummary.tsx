@@ -101,6 +101,9 @@ export function FacturaSummary() {
     const [finalizing, setFinalizing] = useState(false);
     const [savingItem, setSavingItem] = useState(false);
     const [deletingItem, setDeletingItem] = useState(false);
+    const [deletingInvoice, setDeletingInvoice] = useState(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [deletePassword, setDeletePassword] = useState('');
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
@@ -241,6 +244,33 @@ export function FacturaSummary() {
         setDeletingItem(false);
     };
 
+
+    const handleDeleteInvoice = async () => {
+        if (!id || !deletePassword.trim()) {
+            setFeedback({ type: 'error', message: 'Ingresá tu contraseña para confirmar la eliminación.' });
+            return;
+        }
+
+        setDeletingInvoice(true);
+        resetFeedback();
+
+        try {
+            await api.deleteFactura(id, deletePassword);
+            navigate('/facturas');
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                const trace = error.traceId ? ` | traceId: ${error.traceId}` : '';
+                setFeedback({ type: 'error', message: `No se pudo eliminar la factura: ${error.message} [${error.code} - ${error.status}]${trace}` });
+            } else if (error instanceof Error) {
+                setFeedback({ type: 'error', message: `No se pudo eliminar la factura: ${error.message}` });
+            } else {
+                setFeedback({ type: 'error', message: 'No se pudo eliminar la factura: Error desconocido' });
+            }
+        }
+
+        setDeletingInvoice(false);
+    };
+
     if (state.isLoading || !state.currentFactura) {
         return (
             <div className={styles.loaderWrap}>
@@ -288,6 +318,9 @@ export function FacturaSummary() {
                                 </Button>
                             </>
                         )}
+                        <Button variant="danger" onClick={() => setConfirmDeleteOpen(true)} className={styles.actionButton} icon={<Trash2 size={16} />}>
+                            Eliminar factura
+                        </Button>
                     </div>
 
                     <div className={`${styles.actionGroup} ${styles.actionGroupExport}`}>
@@ -414,6 +447,32 @@ export function FacturaSummary() {
                         <div className={styles.modalActions}>
                             <Button type="button" variant="ghost" onClick={closeEditModal}>Cancelar</Button>
                             <Button type="button" variant="primary" onClick={handleSaveItem} isLoading={savingItem}>Guardar cambios</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+            {confirmDeleteOpen && (
+                <div className={styles.modalOverlay} role="presentation" onClick={() => setConfirmDeleteOpen(false)}>
+                    <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="delete-invoice-title" onClick={(event) => event.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 id="delete-invoice-title">Eliminar factura</h3>
+                            <p>Confirmá la eliminación ingresando nuevamente tu contraseña.</p>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <label htmlFor="delete-password">Contraseña</label>
+                            <input
+                                id="delete-password"
+                                type="password"
+                                value={deletePassword}
+                                onChange={(event) => setDeletePassword(event.target.value)}
+                                placeholder="Ingresá tu contraseña"
+                            />
+                        </div>
+                        <div className={styles.modalActions}>
+                            <Button type="button" variant="ghost" onClick={() => { setConfirmDeleteOpen(false); setDeletePassword(''); }}>Cancelar</Button>
+                            <Button type="button" variant="danger" onClick={handleDeleteInvoice} isLoading={deletingInvoice}>Eliminar factura</Button>
                         </div>
                     </div>
                 </div>
