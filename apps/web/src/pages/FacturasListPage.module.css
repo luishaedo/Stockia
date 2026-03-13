@@ -18,6 +18,29 @@
   font-size: 1rem;
 }
 
+
+.tabSwitch {
+  margin-top: var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.tabButton {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  min-height: var(--control-height);
+  font-weight: 600;
+  color: #334155;
+}
+
+.tabButtonActive {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, #4f46e5, #6d28d9);
+}
+
 .loading {
   margin: 26px 0;
   text-align: center;

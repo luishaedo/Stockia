@@ -7,6 +7,7 @@ export type RouteAuthRule = {
 
 export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /facturas': { requiresAdminToken: false },
+    'DELETE /facturas/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'DELETE /admin/invoices/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'PATCH /admin/invoices/:id/export': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /admin/invoices': { requiresAdminToken: true, requiredHeader: 'authorization' },

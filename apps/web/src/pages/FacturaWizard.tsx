@@ -106,7 +106,10 @@ export function FacturaWizard() {
                 <p>{state.currentFactura.proveedor || 'Sin proveedor'} · Ítems: {state.currentFactura.items?.length || 0}</p>
                 <div className={styles.heroRow}>
                     <span className={isFinal ? styles.statusFinal : styles.statusDraft}>{getEstadoLabel(state.currentFactura.estado)}</span>
-                    <button onClick={() => navigate(`/facturas/${id}/summary`)} className={styles.summaryButton}>Ver resumen</button>
+                    <div className={styles.heroActions}>
+                        <button onClick={() => navigate('/facturas')} className={styles.summaryButton}>Volver al home</button>
+                        <button onClick={() => navigate(`/facturas/${id}/summary`)} className={styles.summaryButton}>Ver resumen</button>
+                    </div>
                 </div>
             </header>
 

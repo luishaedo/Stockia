@@ -7,6 +7,7 @@ import {
     FacturaFilters,
     FacturaListQuerySchema,
     FinalizeFacturaSchema,
+    DeleteFacturaSchema,
     UpdateFacturaDraftSchema
 } from '@stockia/shared';
 import { logger } from '../lib/logger.js';
@@ -111,6 +112,21 @@ export class FacturaController {
 
             const factura = await this.service.finalizeFactura(req.params.id, validation.data.expectedUpdatedAt);
             res.json(factura);
+        } catch (error) {
+            this.handleError(error, req, res);
+        }
+    };
+
+
+    deleteInvoice = async (req: Request, res: Response) => {
+        try {
+            const validation = DeleteFacturaSchema.safeParse(req.body);
+            if (!validation.success) {
+                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
+            }
+
+            const response = await this.service.deleteInvoice(req.params.id, req.authUser?.sub, validation.data.password);
+            res.json(response);
         } catch (error) {
             this.handleError(error, req, res);
         }

@@ -443,6 +443,27 @@ export class FacturaService {
         return normalizeFacturaItems(finalized);
     }
 
+    async deleteInvoice(id: string, username: string | undefined, password: string) {
+        const configuredUsername = process.env.AUTH_USERNAME;
+        const configuredPassword = process.env.AUTH_PASSWORD;
+
+        if (!configuredUsername || !configuredPassword) {
+            throw new DomainError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Server misconfigured', 500);
+        }
+
+        if (!username || username !== configuredUsername || password !== configuredPassword) {
+            throw new DomainError(ErrorCodes.INVALID_CREDENTIALS, 'Invalid credentials', 401);
+        }
+
+        const factura = await this.repository.findById(id);
+        if (!factura) {
+            throw new DomainError(ErrorCodes.NOT_FOUND, 'Factura not found', 404);
+        }
+
+        await this.repository.deleteById(id);
+        return { ok: true };
+    }
+
     async deleteAdminInvoice(id: string) {
         const factura = await this.repository.findById(id);
         if (!factura) {

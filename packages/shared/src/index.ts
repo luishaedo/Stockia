@@ -121,6 +121,10 @@ export const FinalizeFacturaSchema = z.object({
     expectedUpdatedAt: z.string().datetime()
 });
 
+export const DeleteFacturaSchema = z.object({
+    password: z.string().min(1)
+});
+
 
 
 export const OperationCatalogEntrySchema = z.object({
@@ -255,6 +259,7 @@ export type FacturaItem = z.infer<typeof FacturaItemSchema>;
 export type CreateFacturaDTO = z.infer<typeof CreateFacturaSchema>;
 export type UpdateFacturaDraftDTO = z.infer<typeof UpdateFacturaDraftSchema>;
 export type FinalizeFacturaDTO = z.infer<typeof FinalizeFacturaSchema>;
+export type DeleteFacturaDTO = z.infer<typeof DeleteFacturaSchema>;
 export type FacturaListQuery = z.infer<typeof FacturaListQuerySchema>;
 export type AdminInvoicesQuery = z.infer<typeof AdminInvoicesQuerySchema>;
 export type AdminInvoiceUserQuery = z.infer<typeof AdminInvoiceUserQuerySchema>;
@@ -316,6 +321,7 @@ export type SharedRouteContract = {
 
 export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'GET', path: '/facturas', requiresAdminToken: false },
+    { method: 'DELETE', path: '/facturas/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/invoices/:id', requiresAdminToken: true },
     { method: 'PATCH', path: '/admin/invoices/:id/export', requiresAdminToken: true },
     { method: 'GET', path: '/admin/invoices', requiresAdminToken: true },
