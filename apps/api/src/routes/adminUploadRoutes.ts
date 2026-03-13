@@ -28,20 +28,40 @@ const getBoundary = (contentTypeHeader?: string) => {
 };
 
 const parseMultipartSingleFile = (body: Buffer, boundary: string): ParsedMultipartFile | null => {
-    const bodyText = body.toString('latin1');
-    const delimiter = `--${boundary}`;
-    const segments = bodyText.split(delimiter).map(segment => segment.trim());
+    const delimiter = Buffer.from(`--${boundary}`, 'latin1');
+    const headerDelimiter = Buffer.from('\r\n\r\n', 'latin1');
+    const lineBreak = Buffer.from('\r\n', 'latin1');
+    const finalBoundarySuffix = Buffer.from('--', 'latin1');
 
-    for (const segment of segments) {
-        if (!segment || segment === '--') continue;
+    let scanIndex = 0;
 
-        const headerEndIndex = segment.indexOf('\r\n\r\n');
-        if (headerEndIndex === -1) continue;
+    while (scanIndex < body.length) {
+        const partBoundaryStart = body.indexOf(delimiter, scanIndex);
+        if (partBoundaryStart === -1) break;
 
-        const rawHeaders = segment.slice(0, headerEndIndex);
-        const contentText = segment.slice(headerEndIndex + 4).replace(/\r\n--$/, '').replace(/\r\n$/, '');
+        const boundaryEnd = partBoundaryStart + delimiter.length;
+        const isFinalBoundary = body.subarray(boundaryEnd, boundaryEnd + 2).equals(finalBoundarySuffix);
+        if (isFinalBoundary) break;
 
-        if (!rawHeaders.includes('name="file"')) continue;
+        const partStart = body.subarray(boundaryEnd, boundaryEnd + 2).equals(lineBreak)
+            ? boundaryEnd + 2
+            : boundaryEnd;
+
+        const nextBoundaryStart = body.indexOf(delimiter, partStart);
+        if (nextBoundaryStart === -1) break;
+
+        const rawPart = body.subarray(partStart, nextBoundaryStart);
+        const headerEndIndex = rawPart.indexOf(headerDelimiter);
+        if (headerEndIndex === -1) {
+            scanIndex = nextBoundaryStart;
+            continue;
+        }
+
+        const rawHeaders = rawPart.subarray(0, headerEndIndex).toString('latin1');
+        if (!rawHeaders.includes('name="file"')) {
+            scanIndex = nextBoundaryStart;
+            continue;
+        }
 
         const filenameMatch = rawHeaders.match(/filename="([^"]+)"/i);
         const contentTypeMatch = rawHeaders.match(/Content-Type:\s*([^\r\n]+)/i);
@@ -50,8 +70,13 @@ const parseMultipartSingleFile = (body: Buffer, boundary: string): ParsedMultipa
         const mimeType = contentTypeMatch[1].trim().toLowerCase();
         if (!allowedMimeTypes.has(mimeType)) return null;
 
+        const rawContent = rawPart.subarray(headerEndIndex + headerDelimiter.length);
+        const hasTrailingLineBreak = rawContent.length >= 2 && rawContent.subarray(rawContent.length - 2).equals(lineBreak);
+        const content = hasTrailingLineBreak
+            ? rawContent.subarray(0, rawContent.length - 2)
+            : rawContent;
+
         const sanitizedFilename = filenameMatch[1].replace(/[^a-zA-Z0-9._-]/g, '-').toLowerCase();
-        const content = Buffer.from(contentText, 'latin1');
 
         return {
             filename: `${randomUUID()}-${sanitizedFilename}`,
