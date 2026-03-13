@@ -16,8 +16,105 @@
   font-size: 0.9rem;
 }
 
-.label,
+.progressRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.progressItem,
+.progressActive {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.progressActive {
+  border-color: #6366f1;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.stepHeader {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.backButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stepCounter {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
 .blockTitle {
+  margin: 2px 0 0;
+  color: #334155;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.optionCard,
+.optionCardActive {
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #fff;
+  min-height: 92px;
+  padding: 10px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.optionCardActive {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.optionSymbol {
+  font-size: 1.2rem;
+}
+
+.optionName {
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.optionCode {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.label {
   display: block;
   margin: 8px 0;
   color: #334155;
@@ -35,94 +132,6 @@
   box-sizing: border-box;
 }
 
-.supplierGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.optionCard,
-.optionActive {
-  min-height: 92px;
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  position: relative;
-}
-
-.optionActive {
-  color: #fff;
-  border-color: transparent;
-  background: linear-gradient(145deg, #4f46e5, #7c3aed);
-}
-
-.optionAvatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: rgba(148, 163, 184, 0.2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-}
-
-.checkIcon {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-}
-
-.garmentGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.garmentCard,
-.garmentActive {
-  min-height: 78px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  justify-content: center;
-  align-items: center;
-  font-size: 0.8rem;
-}
-
-.garmentActive {
-  border-color: #6366f1;
-  background: #eef2ff;
-}
-
-.curveList {
-  display: grid;
-  gap: 8px;
-}
-
-.curveCard,
-.curveActive {
-  min-height: 48px;
-  border-radius: 12px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  text-align: left;
-  padding: 0 12px;
-}
-
-.curveActive {
-  background: #ede9fe;
-  border-color: #8b5cf6;
-}
-
 .warning {
   margin-top: 12px;
   display: flex;
@@ -135,7 +144,9 @@
   font-size: 0.85rem;
 }
 
-.warning p { margin: 0 0 4px; }
+.warning p {
+  margin: 0 0 4px;
+}
 
 .submitButton {
   margin-top: 14px;

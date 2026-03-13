@@ -4,6 +4,7 @@
 
 .heading {
   margin: var(--space-3) 0 var(--space-2);
+  padding-left: 4px;
   font-size: var(--font-size-h2);
   color: #0f172a;
   line-height: 1.2;

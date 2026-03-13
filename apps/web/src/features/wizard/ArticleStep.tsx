@@ -1,5 +1,6 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import styles from './ArticleStep.module.css';
 
 type Option = { value: string; label: string };
@@ -27,6 +28,25 @@ interface ArticleStepProps {
     readOnly?: boolean;
 }
 
+type AttributeStep = {
+    key: keyof ArticleStepProps['draftItem'];
+    title: string;
+    placeholder: string;
+    options: Option[];
+    icon: string;
+};
+
+const SYMBOLS = ['🧩', '👕', '🏷️', '✅', '🧶', '📏', '🔢'];
+
+const formatOptionLabel = (label: string) => {
+    const [code, ...rest] = label.split(' - ');
+    const name = rest.join(' - ').trim();
+    return {
+        code: code.trim(),
+        name: name || code.trim()
+    };
+};
+
 export function ArticleStep({
     draftItem,
     familyOptions,
@@ -41,14 +61,36 @@ export function ArticleStep({
     onNext,
     readOnly = false
 }: ArticleStepProps) {
-    const hasMissingCatalogs = [
-        familyOptions,
-        categoryOptions,
-        garmentTypeOptions,
-        classificationOptions,
-        materialOptions,
-        sizeCurveOptions
-    ].some((options) => options.length === 0);
+    const attributeSteps = useMemo<AttributeStep[]>(() => ([
+        { key: 'familyId', title: 'Familia', placeholder: 'Seleccionar familia', options: familyOptions, icon: '👪' },
+        { key: 'categoryId', title: 'Categoría', placeholder: 'Seleccionar categoría', options: categoryOptions, icon: '🗂️' },
+        { key: 'garmentTypeId', title: 'Tipo de prenda', placeholder: 'Seleccionar tipo', options: garmentTypeOptions, icon: '👕' },
+        { key: 'classificationId', title: 'Clasificación', placeholder: 'Seleccionar clasificación', options: classificationOptions, icon: '🏷️' },
+        { key: 'materialId', title: 'Material', placeholder: 'Seleccionar material', options: materialOptions, icon: '🧶' },
+        { key: 'curvaTalles', title: 'Curva de talles', placeholder: 'Seleccionar curva', options: sizeCurveOptions, icon: '📏' }
+    ]), [familyOptions, categoryOptions, garmentTypeOptions, classificationOptions, materialOptions, sizeCurveOptions]);
+
+    const [activeStepIndex, setActiveStepIndex] = useState(0);
+
+    useEffect(() => {
+        const firstEmptyIndex = attributeSteps.findIndex((step) => !draftItem[step.key]);
+        if (firstEmptyIndex >= 0) {
+            setActiveStepIndex(firstEmptyIndex);
+            return;
+        }
+
+        setActiveStepIndex(attributeSteps.length - 1);
+    }, [
+        attributeSteps,
+        draftItem.familyId,
+        draftItem.categoryId,
+        draftItem.garmentTypeId,
+        draftItem.classificationId,
+        draftItem.materialId,
+        draftItem.curvaTalles
+    ]);
+
+    const hasMissingCatalogs = attributeSteps.some((step) => step.options.length === 0);
 
     const catalogBlockReason = catalogsError
         || (hasMissingCatalogs ? 'Faltan catálogos obligatorios para cargar el artículo. Revisá Administración.' : null);
@@ -64,46 +106,67 @@ export function ArticleStep({
         && !catalogBlockReason
     );
 
+    const activeStep = attributeSteps[activeStepIndex];
+
+    const handleSelectOption = (field: string, value: string) => {
+        onChange(field, value);
+        if (activeStepIndex < attributeSteps.length - 1) {
+            setActiveStepIndex((prev) => prev + 1);
+        }
+    };
+
+    const goBack = () => {
+        setActiveStepIndex((prev) => Math.max(prev - 1, 0));
+    };
+
+    const selectedValue = draftItem[activeStep.key] as string;
+
     return (
         <section className={styles.wrapper}>
             <h2 className={styles.title}>Paso 1 · Datos del artículo</h2>
-            <p className={styles.subtitle}>Seleccioná Familia, Categoría, Tipo, Clasificación, Material, Curva y luego SKU.</p>
+            <p className={styles.subtitle}>Seleccioná cada atributo tocando una card. Al elegir, avanzás al siguiente paso.</p>
 
-            <label className={styles.label}>Familia</label>
-            <select className={styles.input} value={draftItem.familyId} onChange={(e) => onChange('familyId', e.target.value)} disabled={readOnly || catalogsLoading}>
-                <option value="">Seleccionar familia</option>
-                {familyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+            <div className={styles.progressRow}>
+                {attributeSteps.map((step, index) => {
+                    const isDone = Boolean(draftItem[step.key]);
+                    const isActive = index === activeStepIndex;
+                    return (
+                        <span key={step.key} className={isActive ? styles.progressActive : styles.progressItem}>
+                            {isDone ? <CheckCircle2 size={14} /> : <span>{index + 1}</span>}
+                        </span>
+                    );
+                })}
+            </div>
 
-            <label className={styles.label}>Categoría</label>
-            <select className={styles.input} value={draftItem.categoryId} onChange={(e) => onChange('categoryId', e.target.value)} disabled={readOnly || catalogsLoading}>
-                <option value="">Seleccionar categoría</option>
-                {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+            <div className={styles.stepHeader}>
+                <button type="button" className={styles.backButton} onClick={goBack} disabled={activeStepIndex === 0 || readOnly || catalogsLoading}>
+                    <ArrowLeft size={16} />
+                </button>
+                <div>
+                    <p className={styles.stepCounter}>Atributo {activeStepIndex + 1} de {attributeSteps.length}</p>
+                    <h3 className={styles.blockTitle}>{activeStep.icon} {activeStep.title}</h3>
+                </div>
+            </div>
 
-            <label className={styles.label}>Tipo</label>
-            <select className={styles.input} value={draftItem.garmentTypeId} onChange={(e) => onChange('garmentTypeId', e.target.value)} disabled={readOnly || catalogsLoading}>
-                <option value="">Seleccionar tipo</option>
-                {garmentTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-
-            <label className={styles.label}>Clasificación</label>
-            <select className={styles.input} value={draftItem.classificationId} onChange={(e) => onChange('classificationId', e.target.value)} disabled={readOnly || catalogsLoading}>
-                <option value="">Seleccionar clasificación</option>
-                {classificationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-
-            <label className={styles.label}>Material</label>
-            <select className={styles.input} value={draftItem.materialId} onChange={(e) => onChange('materialId', e.target.value)} disabled={readOnly || catalogsLoading}>
-                <option value="">Seleccionar material</option>
-                {materialOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-
-            <label className={styles.label}>Curva de talles</label>
-            <select className={styles.input} value={draftItem.curvaTalles} onChange={(e) => onChange('curvaTalles', e.target.value)} disabled={readOnly || catalogsLoading}>
-                <option value="">Seleccionar curva</option>
-                {sizeCurveOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+            <div className={styles.cardsGrid}>
+                {activeStep.options.map((option, index) => {
+                    const formatted = formatOptionLabel(option.label);
+                    const isSelected = selectedValue === option.value;
+                    return (
+                        <button
+                            key={option.value}
+                            type="button"
+                            className={isSelected ? styles.optionCardActive : styles.optionCard}
+                            onClick={() => handleSelectOption(activeStep.key, option.value)}
+                            disabled={readOnly || catalogsLoading}
+                        >
+                            <span className={styles.optionSymbol}>{SYMBOLS[index % SYMBOLS.length]}</span>
+                            <span className={styles.optionName}>{formatted.name}</span>
+                            <span className={styles.optionCode}>{formatted.code}</span>
+                        </button>
+                    );
+                })}
+            </div>
 
             <label className={styles.label}>SKU</label>
             <input
