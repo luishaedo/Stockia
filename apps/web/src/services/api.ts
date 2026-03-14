@@ -46,6 +46,7 @@ class ApiFacade {
     createArticle = this.articlesApi.createArticle.bind(this.articlesApi);
     cloneArticle = this.articlesApi.cloneArticle.bind(this.articlesApi);
     previewArticleImport = this.articlesApi.previewArticleImport.bind(this.articlesApi);
+    downloadArticleImportTemplate = this.articlesApi.downloadArticleImportTemplate.bind(this.articlesApi);
     commitArticleImport = this.articlesApi.commitArticleImport.bind(this.articlesApi);
 }
 

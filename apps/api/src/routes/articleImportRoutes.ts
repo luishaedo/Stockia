@@ -73,6 +73,19 @@ export const createArticleImportRoutes = (
 ) => {
     const router = Router();
 
+    router.get('/admin/articles/import/template', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        try {
+            const templateWorkbook = service.buildImportTemplateWorkbook();
+            const filename = `article-import-template-${new Date().toISOString().slice(0, 10)}.xlsx`;
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            return res.status(200).send(templateWorkbook);
+        } catch (error) {
+            logger.error({ err: error, traceId: req.traceId, operation: 'downloadArticleImportTemplate' }, 'Failed to generate article import template');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo generar el template de importación', error, req.traceId);
+        }
+    });
+
     router.post('/admin/articles/import/preview', writeRateLimitMiddleware, requireAuth, async (req, res) => {
         const boundary = getBoundary(req.headers['content-type']);
         if (!boundary) {
