@@ -61,6 +61,7 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
     const [previewResponse, setPreviewResponse] = useState<ArticleImportPreviewResponse | null>(null);
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [loadingPreview, setLoadingPreview] = useState(false);
+    const [downloadingTemplate, setDownloadingTemplate] = useState(false);
     const [committing, setCommitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -141,6 +142,25 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
         URL.revokeObjectURL(url);
     };
 
+    const onDownloadTemplate = async () => {
+        setDownloadingTemplate(true);
+        setErrorMessage(null);
+
+        try {
+            const blob = await api.downloadArticleImportTemplate();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `plantilla-importacion-articulos-${new Date().toISOString().slice(0, 10)}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            setErrorMessage(formatError(error, 'No pudimos descargar el template de importación'));
+        } finally {
+            setDownloadingTemplate(false);
+        }
+    };
+
     return (
         <div className={styles.overlay} role="presentation" onClick={onClose}>
             <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="bulk-articles-modal-title" onClick={(event) => event.stopPropagation()}>
@@ -176,6 +196,9 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
                         helperText="Soportado: CSV/XLS/XLSX. Resolverá catálogos por CODE y preservará ceros a la izquierda."
                     />
                     <div className={styles.actionRow}>
+                        <button type="button" className={styles.secondaryButton} onClick={() => void onDownloadTemplate()} disabled={downloadingTemplate}>
+                            {downloadingTemplate ? 'Descargando template...' : 'Descargar template XLSX'}
+                        </button>
                         <button type="button" className={styles.primaryButton} onClick={() => void onPreview()} disabled={loadingPreview || !selectedFile}>
                             {loadingPreview ? 'Procesando preview...' : 'Generar preview'}
                         </button>

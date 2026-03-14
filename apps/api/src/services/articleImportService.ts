@@ -94,23 +94,24 @@ const DESCRIPTION_COLUMNS: Record<ImportCatalogKey, string> = {
 const COL_ALIASES: Record<RequiredColumn | (typeof DESCRIPTION_COLUMNS)[ImportCatalogKey], string[]> = {
     sku: ['sku', 'codigo_articulo', 'codigoarticulo'],
     description: ['description', 'descripcion', 'descripcion_sku', 'descriptionsku'],
-    supplier_code: ['supplier_code', 'proveedor_code', 'proveedor', 'supplier'],
-    family_code: ['family_code', 'family', 'familia_code', 'familia'],
-    material_code: ['material_code', 'material'],
-    category_code: ['category_code', 'category', 'categoria_code', 'categoria'],
-    classification_code: ['classification_code', 'classification', 'clasificacion_code', 'clasificacion'],
-    garment_type_code: ['garment_type_code', 'type_code', 'tipo_code', 'tipo_prenda_code', 'type', 'tipo_prenda'],
-    size_curve_code: ['size_curve_code', 'size_table_code', 'curva_code', 'curve_code', 'size_curve'],
+    supplier_code: ['supplier_code', 'proveedor_code', 'codigo_proveedor', 'proveedor', 'supplier'],
+    family_code: ['family_code', 'family', 'familia_code', 'codigo_familia', 'familia'],
+    material_code: ['material_code', 'codigo_material', 'material'],
+    category_code: ['category_code', 'category', 'categoria_code', 'codigo_categoria', 'categoria'],
+    classification_code: ['classification_code', 'classification', 'clasificacion_code', 'codigo_clasificacion', 'clasificacion'],
+    garment_type_code: ['garment_type_code', 'type_code', 'tipo_code', 'tipo_prenda_code', 'codigo_tipo_prenda', 'type', 'tipo_prenda'],
+    size_curve_code: ['size_curve_code', 'size_table_code', 'curva_code', 'codigo_curva_talles', 'curve_code', 'size_curve'],
     supplier_description: ['supplier_description', 'supplier_name', 'proveedor_descripcion', 'proveedor_nombre'],
     family_description: ['family_description', 'descripcion_familia', 'family_desc'],
-    material_description: ['material_description', 'material_desc'],
+    material_description: ['material_description', 'descripcion_material', 'material_desc'],
     category_description: ['category_description', 'descripcion_categoria', 'category_desc'],
     classification_description: ['classification_description', 'descripcion_clasificacion', 'classification_desc'],
-    garment_type_description: ['garment_type_description', 'type_description', 'descripcion_tipo', 'tipo_prenda_descripcion'],
-    size_curve_description: ['size_curve_description', 'curve_description', 'descripcion_curva']
+    garment_type_description: ['garment_type_description', 'type_description', 'descripcion_tipo_prenda', 'descripcion_tipo', 'tipo_prenda_descripcion'],
+    size_curve_description: ['size_curve_description', 'curve_description', 'descripcion_curva_talles', 'descripcion_curva']
 };
 
 const normalizeHeader = (header: unknown) => String(header ?? '').trim().toLowerCase().replace(/\s+/g, '_');
+const normalizeHeaderAlias = (header: unknown) => normalizeHeader(header).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const normalizeText = (value: unknown) => String(value ?? '').trim();
 
 const sameLabel = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -142,7 +143,8 @@ const buildCatalogMaps = async (prisma: PrismaClient) => {
 const resolveColumnName = (headers: string[], canonical: keyof typeof COL_ALIASES): string | null => {
     const aliases = COL_ALIASES[canonical];
     for (const alias of aliases) {
-        const found = headers.find((header) => header === alias);
+        const aliasKey = normalizeHeaderAlias(alias);
+        const found = headers.find((header) => normalizeHeaderAlias(header) === aliasKey);
         if (found) return found;
     }
     return null;
@@ -218,6 +220,32 @@ export class ArticleImportService {
     private readonly previewTtlMs = 15 * 60 * 1000;
 
     constructor(private readonly prisma: PrismaClient) {}
+
+    buildImportTemplateWorkbook() {
+        const templateHeaders = [
+            'sku',
+            'descripción',
+            'código_proveedor',
+            'descripción_proveedor',
+            'código_familia',
+            'descripción_familia',
+            'código_material',
+            'descripción_material',
+            'código_categoría',
+            'descripción_categoría',
+            'código_clasificación',
+            'descripción_clasificación',
+            'código_tipo_prenda',
+            'descripción_tipo_prenda',
+            'código_curva_talles',
+            'descripción_curva_talles'
+        ];
+
+        const worksheet = XLSX.utils.aoa_to_sheet([templateHeaders]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+        return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    }
 
     cleanupPreviewStore(now = Date.now()) {
         for (const [previewId, entry] of this.previewStore.entries()) {
@@ -425,4 +453,3 @@ export class ArticleImportService {
 }
 
 export const articleImportRequiredColumns = REQUIRED_COLUMNS;
-

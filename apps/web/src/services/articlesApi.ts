@@ -178,6 +178,19 @@ export class ArticlesApiService {
         return response.json() as Promise<ArticleImportPreviewResponse>;
     }
 
+    async downloadArticleImportTemplate() {
+        const path = '/admin/articles/import/template';
+        const response = await this.fetchWithApiPrefixFallback(path, {
+            method: 'GET',
+            headers: {
+                ...(await this.client.getAuthHeaders())
+            }
+        });
+
+        await this.client.assertOk(response, 'No pudimos descargar el template de importación');
+        return response.blob();
+    }
+
     async commitArticleImport(previewId: string, rowNumbers?: number[]) {
         const path = '/admin/articles/import/commit';
         const response = await this.fetchWithApiPrefixFallback(path, {
