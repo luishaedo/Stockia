@@ -76,7 +76,7 @@ export const createArticleImportRoutes = (
     router.post('/admin/articles/import/preview', writeRateLimitMiddleware, requireAuth, async (req, res) => {
         const boundary = getBoundary(req.headers['content-type']);
         if (!boundary) {
-            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Content-Type must be multipart/form-data', undefined, req.traceId);
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Content-Type debe ser multipart/form-data', undefined, req.traceId);
         }
 
         try {
@@ -84,23 +84,23 @@ export const createArticleImportRoutes = (
             const parsedFile = parseMultipartSingleFile(rawBody, boundary);
 
             if (!parsedFile) {
-                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Field file is required', undefined, req.traceId);
+                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'El campo file es obligatorio', undefined, req.traceId);
             }
 
             const extension = parsedFile.filename.toLowerCase().slice(parsedFile.filename.lastIndexOf('.'));
             if (!ALLOWED_EXTENSIONS.has(extension)) {
-                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'File extension must be .csv, .xls or .xlsx', undefined, req.traceId);
+                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'La extensión del archivo debe ser .csv, .xls o .xlsx', undefined, req.traceId);
             }
 
             if (parsedFile.content.length > MAX_FILE_SIZE_BYTES) {
-                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Import file exceeds 10MB limit', undefined, req.traceId);
+                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'El archivo de importación supera el límite de 10MB', undefined, req.traceId);
             }
 
             const preview = await service.buildPreview(parsedFile.content, parsedFile.filename);
             return res.json(preview);
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'previewArticleImport' }, 'Failed to preview article import');
-            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to preview import file', error, req.traceId);
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo generar el preview del archivo de importación', error, req.traceId);
         }
     });
 
@@ -111,7 +111,7 @@ export const createArticleImportRoutes = (
             : undefined;
 
         if (!previewId) {
-            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'previewId is required', undefined, req.traceId);
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'previewId es obligatorio', undefined, req.traceId);
         }
 
         try {
@@ -119,10 +119,10 @@ export const createArticleImportRoutes = (
             return res.status(201).json(result);
         } catch (error: any) {
             if (error?.message === 'PREVIEW_NOT_FOUND') {
-                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Preview session not found or expired', undefined, req.traceId);
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'La sesión de preview no se encontró o expiró', undefined, req.traceId);
             }
             logger.error({ err: error, traceId: req.traceId, operation: 'commitArticleImport' }, 'Failed to commit article import');
-            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to commit import file', error, req.traceId);
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo confirmar la importación del archivo', error, req.traceId);
         }
     });
 
