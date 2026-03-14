@@ -98,6 +98,10 @@ npm run dev -w web
 ```
 
 
+## Guías de importación
+
+- Formato y reglas de validación para importación masiva de artículos: `docs/article-import-format.md`.
+
 ## Production readiness
 
 ### API boot validation

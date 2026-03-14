@@ -156,12 +156,12 @@ const resolveCatalog = (
 ): CatalogResolution => {
     const normalizedCode = code.trim();
     if (!normalizedCode) {
-        return { code: normalizedCode, resolved: false, catalogId: null, error: `Missing ${catalog} code` };
+        return { code: normalizedCode, resolved: false, catalogId: null, error: `Falta código de ${catalog}` };
     }
 
     const matched = map.get(normalizedCode);
     if (!matched) {
-        return { code: normalizedCode, resolved: false, catalogId: null, error: `${catalog} code '${normalizedCode}' was not found` };
+        return { code: normalizedCode, resolved: false, catalogId: null, error: `No se encontró el código de ${catalog} '${normalizedCode}'` };
     }
 
     if (inputLabel && inputLabel.trim() && !sameLabel(inputLabel, matched.label)) {
@@ -169,7 +169,7 @@ const resolveCatalog = (
             code: normalizedCode,
             resolved: true,
             catalogId: matched.id,
-            warning: `${catalog} label mismatch for code '${normalizedCode}': file='${inputLabel.trim()}', catalog='${matched.label}'`
+            warning: `La descripción de ${catalog} no coincide para el código '${normalizedCode}': archivo='${inputLabel.trim()}', catálogo='${matched.label}'`
         };
     }
 
@@ -245,7 +245,7 @@ export class ArticleImportService {
                         duplicateInDatabaseRows: 0
                     },
                     missingRequiredColumns: [...REQUIRED_COLUMNS],
-                    fileWarnings: ['The file has no data rows']
+                    fileWarnings: ['El archivo no tiene filas de datos']
                 } as PreviewResult
             };
         }
@@ -313,10 +313,10 @@ export class ArticleImportService {
             const duplicateInDatabase = existingDbKeys.has(`${row.supplierCode}::${row.sku}`);
 
             if (duplicateInFile) {
-                errors.push('Duplicate supplier_code + sku inside file');
+                errors.push('supplier_code + sku duplicado dentro del archivo');
             }
             if (duplicateInDatabase) {
-                errors.push('Article already exists in database for supplier_code + sku');
+                errors.push('El artículo ya existe en base de datos para supplier_code + sku');
             }
 
             const payloadValidation = CreateArticleSchema.safeParse({
@@ -332,7 +332,7 @@ export class ArticleImportService {
             });
 
             if (!payloadValidation.success) {
-                errors.push('Payload does not satisfy article creation validation rules');
+                errors.push('El payload no cumple las reglas de validación para crear artículos');
             }
 
             const importable = errors.length === 0;
@@ -361,7 +361,7 @@ export class ArticleImportService {
                 duplicateInDatabaseRows: rows.filter((row) => row.duplicateInDatabase).length
             },
             missingRequiredColumns,
-            fileWarnings: missingRequiredColumns.length > 0 ? ['Required columns are missing'] : []
+            fileWarnings: missingRequiredColumns.length > 0 ? ['Faltan columnas obligatorias'] : []
         };
 
         const previewId = `preview_${Math.random().toString(36).slice(2, 11)}`;
@@ -402,7 +402,7 @@ export class ArticleImportService {
                     createdRows.push(row.rowNumber);
                 } catch (error: any) {
                     if (error?.code === 'P2002') {
-                        skippedRows.push({ rowNumber: row.rowNumber, reason: 'Unique constraint violation at commit time' });
+                        skippedRows.push({ rowNumber: row.rowNumber, reason: 'Violación de restricción única al momento de confirmar' });
                         continue;
                     }
                     throw error;
