@@ -15,6 +15,7 @@ export function NewFactura() {
     const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string; logoUrl?: string | null }>>([]);
     const [suppliersError, setSuppliersError] = useState<string | null>(null);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+    const [failedSupplierLogos, setFailedSupplierLogos] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         const loadSuppliers = async () => {
@@ -23,6 +24,7 @@ export function NewFactura() {
 
             try {
                 const response = await api.getOperationsCatalogs(true);
+                setFailedSupplierLogos({});
                 setSuppliers(response.suppliers.map((supplier) => ({
                     ...supplier,
                     logoUrl: supplier.logoUrl ? api.resolveAssetUrl(supplier.logoUrl) : null
@@ -95,8 +97,15 @@ export function NewFactura() {
                                     disabled={loadingSuppliers}
                                 >
                                     {active && <CheckCircle2 size={18} className={styles.checkIcon} />}
-                                    {supplier.logoUrl ? (
-                                        <img src={supplier.logoUrl} alt={supplier.label} className={styles.supplierLogo} />
+                                    {supplier.logoUrl && !failedSupplierLogos[supplier.id] ? (
+                                        <img
+                                            src={supplier.logoUrl}
+                                            alt={supplier.label}
+                                            className={styles.supplierLogo}
+                                            onError={() => {
+                                                setFailedSupplierLogos((prev) => ({ ...prev, [supplier.id]: true }));
+                                            }}
+                                        />
                                     ) : (
                                         <span className={styles.supplierAvatar}>{supplier.label.charAt(0)}</span>
                                     )}
