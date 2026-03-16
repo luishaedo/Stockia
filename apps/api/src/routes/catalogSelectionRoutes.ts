@@ -17,6 +17,7 @@ type OperationsCatalogResponse = {
 };
 
 type OperationsCatalogCache = {
+    version: string;
     data: OperationsCatalogResponse;
     expiresAt: number;
 } | null;
@@ -92,9 +93,14 @@ export const createCatalogSelectionRoutes = (
 
     router.get('/operations/catalogs', readRateLimitMiddleware, async (req, res) => {
         try {
-            res.setHeader('ETag', catalogVersionStore.getOperationsCatalogVersion());
+            const currentVersion = catalogVersionStore.getOperationsCatalogVersion();
+            res.setHeader('ETag', currentVersion);
             const now = Date.now();
-            if (operationsCatalogCache && operationsCatalogCache.expiresAt > now) {
+            if (
+                operationsCatalogCache
+                && operationsCatalogCache.version === currentVersion
+                && operationsCatalogCache.expiresAt > now
+            ) {
                 return res.json(operationsCatalogCache.data);
             }
 
@@ -126,6 +132,7 @@ export const createCatalogSelectionRoutes = (
             };
 
             operationsCatalogCache = {
+                version: currentVersion,
                 data: response,
                 expiresAt: now + OPERATIONS_CATALOG_TTL_MS
             };
