@@ -33,7 +33,7 @@ export class AdminApiService {
         return response.json();
     }
 
-    async uploadAdminLogo(file: File): Promise<{ url: string }> {
+    async uploadAdminLogo(file: File): Promise<{ url: string; publicId: string }> {
         const formData = new FormData();
         formData.append('file', file);
 

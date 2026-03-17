@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { RequestHandler, Router } from 'express';
 import { ErrorCodes } from '@stockia/shared';
@@ -14,10 +12,12 @@ type ParsedMultipartFile = {
     content: Buffer;
 };
 
-const ensureUploadDir = (targetDir: string) => {
-    if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-    }
+type CloudinaryUploadResponse = {
+    secure_url?: string;
+    public_id?: string;
+    error?: {
+        message?: string;
+    };
 };
 
 const getBoundary = (contentTypeHeader?: string) => {
@@ -88,13 +88,51 @@ const parseMultipartSingleFile = (body: Buffer, boundary: string): ParsedMultipa
     return null;
 };
 
+const uploadToCloudinary = async (file: ParsedMultipartFile) => {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    const folder = process.env.CLOUDINARY_UPLOAD_FOLDER ?? 'stockia/suppliers';
+
+    if (!cloudName || !apiKey || !apiSecret) {
+        throw new Error('Cloudinary env vars are required: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET');
+    }
+
+    const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+    const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+    const formData = new FormData();
+    formData.append('folder', folder);
+    formData.append('resource_type', 'image');
+    formData.append('use_filename', 'true');
+    formData.append('unique_filename', 'true');
+    formData.append('overwrite', 'false');
+    formData.append('file', new Blob([new Uint8Array(file.content)], { type: file.mimeType }), file.filename);
+
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            Authorization: `Basic ${auth}`
+        },
+        body: formData
+    });
+
+    const data = await response.json() as CloudinaryUploadResponse;
+
+    if (!response.ok || !data.secure_url || !data.public_id) {
+        throw new Error(data.error?.message ?? 'Could not upload logo to Cloudinary');
+    }
+
+    return {
+        url: data.secure_url,
+        publicId: data.public_id
+    };
+};
+
 export const createAdminUploadRoutes = (
     requireAuth: RequestHandler,
-    writeRateLimitMiddleware: RequestHandler,
-    uploadDir = path.resolve(process.cwd(), 'uploads/logos')
+    writeRateLimitMiddleware: RequestHandler
 ) => {
-    ensureUploadDir(uploadDir);
-
     const router = Router();
 
     router.post('/admin/uploads/logo', writeRateLimitMiddleware, requireAuth, async (req, res) => {
@@ -132,11 +170,8 @@ export const createAdminUploadRoutes = (
                 return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Logo file exceeds 4MB limit', undefined, req.traceId);
             }
 
-            const targetPath = path.join(uploadDir, parsedFile.filename);
-            await fs.promises.writeFile(targetPath, parsedFile.content);
-
-            const relativeUrl = `/uploads/logos/${parsedFile.filename}`;
-            return res.status(201).json({ url: relativeUrl, mimeType: parsedFile.mimeType });
+            const uploaded = await uploadToCloudinary(parsedFile);
+            return res.status(201).json({ url: uploaded.url, publicId: uploaded.publicId, mimeType: parsedFile.mimeType });
         } catch (error) {
             const message = error instanceof Error && error.message.includes('too large')
                 ? 'Logo file exceeds 4MB limit'

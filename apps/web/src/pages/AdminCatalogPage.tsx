@@ -14,6 +14,7 @@ type CatalogItem = {
     name?: string;
     description?: string;
     logoUrl?: string | null;
+    logoPublicId?: string | null;
     longDescription?: string | null;
     values?: { value: string; sortOrder: number }[];
 };
@@ -56,6 +57,7 @@ export function AdminCatalogPage() {
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
+    const [logoPublicId, setLogoPublicId] = useState('');
     const [attributesModalOpen, setAttributesModalOpen] = useState(false);
 
     const isSupplier = selectedCatalog === 'suppliers';
@@ -72,6 +74,7 @@ export function AdminCatalogPage() {
         setDescription('');
         setLogoUrl('');
         setSelectedLogoFileName('Ningún archivo seleccionado');
+        setLogoPublicId('');
     };
 
     const loadItems = async (catalog: CatalogKey) => {
@@ -106,6 +109,7 @@ export function AdminCatalogPage() {
         setCode(item.code);
         setDescription(item.name || item.description || '');
         setLogoUrl(item.logoUrl || '');
+        setLogoPublicId(item.logoPublicId || '');
     };
 
     const handleLogoUpload = async (file?: File) => {
@@ -117,6 +121,7 @@ export function AdminCatalogPage() {
         try {
             const response = await api.uploadAdminLogo(file);
             setLogoUrl(response.url);
+            setLogoPublicId(response.publicId);
         } catch (err) {
             const message = formatCatalogError(err, 'No pudimos subir el logo');
             setError(message);
@@ -147,6 +152,7 @@ export function AdminCatalogPage() {
             ...(isSupplier ? { name: trimmedDescription } : { description: trimmedDescription })
         };
         if (isSupplier && logoUrl.trim()) payload.logoUrl = logoUrl.trim();
+        if (isSupplier && logoPublicId.trim()) payload.logoPublicId = logoPublicId.trim();
 
         try {
             if (editingId) {

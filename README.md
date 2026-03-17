@@ -40,6 +40,10 @@ CORS_ALLOW_NO_ORIGIN=false
 RATE_LIMIT_READ_MAX=120
 RATE_LIMIT_WRITE_MAX=30
 RATE_LIMIT_LOGIN_MAX=10
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+CLOUDINARY_UPLOAD_FOLDER=stockia/suppliers
 ```
 
 3. Configure frontend environment:
@@ -53,6 +57,19 @@ cp apps/web/.env.example apps/web/.env
 ```bash
 npm run prisma:generate -w api
 ```
+
+## Cloudinary setup for supplier logos
+
+1. Create a Cloudinary product environment (or use existing one).
+2. In **Settings > API Keys**, copy:
+   - `Cloud name`
+   - `API Key`
+   - `API Secret`
+3. Add those values to `apps/api/.env` using the variables shown above.
+4. (Optional) Customize `CLOUDINARY_UPLOAD_FOLDER` to organize assets by project/environment, for example: `stockia/dev/suppliers`.
+5. Start API and upload logos from **Administración > Proveedores**.
+
+The backend uploads each logo directly to Cloudinary and returns both `url` and `publicId`; the frontend then stores these fields in PostgreSQL (Neon) when creating/updating suppliers.
 
 ## Architecture policy
 
@@ -113,6 +130,7 @@ On startup, the API validates critical environment variables and fails fast if a
 - `AUTH_USERNAME`
 - `AUTH_PASSWORD`
 - numeric limits (`PORT`, `RATE_LIMIT_*`)
+- Cloudinary credentials (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`)
 
 The server also attempts a database connection before binding the HTTP port, so startup failures are visible immediately in logs.
 
