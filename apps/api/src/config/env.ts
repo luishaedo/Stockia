@@ -12,6 +12,10 @@ type RuntimeEnv = {
     RATE_LIMIT_READ_MAX: number;
     RATE_LIMIT_WRITE_MAX: number;
     RATE_LIMIT_LOGIN_MAX: number;
+    CLOUDINARY_CLOUD_NAME: string;
+    CLOUDINARY_API_KEY: string;
+    CLOUDINARY_API_SECRET: string;
+    CLOUDINARY_UPLOAD_FOLDER: string;
 };
 
 const toNumber = (raw: string | undefined, fallback: number, key: string) => {
@@ -52,6 +56,9 @@ export const loadRuntimeEnv = (): RuntimeEnv => {
     const RATE_LIMIT_READ_MAX = toNumber(process.env.RATE_LIMIT_READ_MAX, 120, 'RATE_LIMIT_READ_MAX');
     const RATE_LIMIT_WRITE_MAX = toNumber(process.env.RATE_LIMIT_WRITE_MAX, 30, 'RATE_LIMIT_WRITE_MAX');
     const RATE_LIMIT_LOGIN_MAX = toNumber(process.env.RATE_LIMIT_LOGIN_MAX, 10, 'RATE_LIMIT_LOGIN_MAX');
+    const CLOUDINARY_CLOUD_NAME = required(process.env.CLOUDINARY_CLOUD_NAME, 'CLOUDINARY_CLOUD_NAME');
+    const CLOUDINARY_API_KEY = required(process.env.CLOUDINARY_API_KEY, 'CLOUDINARY_API_KEY');
+    const CLOUDINARY_API_SECRET = required(process.env.CLOUDINARY_API_SECRET, 'CLOUDINARY_API_SECRET');
 
     return {
         NODE_ENV,
@@ -64,7 +71,11 @@ export const loadRuntimeEnv = (): RuntimeEnv => {
         CORS_ALLOW_NO_ORIGIN: process.env.CORS_ALLOW_NO_ORIGIN === 'true',
         RATE_LIMIT_READ_MAX,
         RATE_LIMIT_WRITE_MAX,
-        RATE_LIMIT_LOGIN_MAX
+        RATE_LIMIT_LOGIN_MAX,
+        CLOUDINARY_CLOUD_NAME,
+        CLOUDINARY_API_KEY,
+        CLOUDINARY_API_SECRET,
+        CLOUDINARY_UPLOAD_FOLDER: process.env.CLOUDINARY_UPLOAD_FOLDER ?? 'stockia/suppliers'
     };
 };
 
@@ -84,7 +95,9 @@ export const logRuntimeEnv = (runtimeEnv: RuntimeEnv) => {
             corsAllowNoOrigin: runtimeEnv.CORS_ALLOW_NO_ORIGIN,
             rateLimitReadMax: runtimeEnv.RATE_LIMIT_READ_MAX,
             rateLimitWriteMax: runtimeEnv.RATE_LIMIT_WRITE_MAX,
-            rateLimitLoginMax: runtimeEnv.RATE_LIMIT_LOGIN_MAX
+            rateLimitLoginMax: runtimeEnv.RATE_LIMIT_LOGIN_MAX,
+            cloudinaryCloudName: runtimeEnv.CLOUDINARY_CLOUD_NAME,
+            cloudinaryUploadFolder: runtimeEnv.CLOUDINARY_UPLOAD_FOLDER
         },
         'Runtime environment validated'
     );

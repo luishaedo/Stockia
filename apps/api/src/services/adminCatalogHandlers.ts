@@ -12,7 +12,7 @@ export const ADMIN_CATALOGS = [
 
 export type CatalogKey = (typeof ADMIN_CATALOGS)[number];
 
-type CatalogField = 'name' | 'description' | 'logoUrl' | 'longDescription';
+type CatalogField = 'name' | 'description' | 'logoUrl' | 'logoPublicId' | 'longDescription';
 
 type CatalogConfig = {
     requiredFields: CatalogField[];
@@ -20,7 +20,7 @@ type CatalogConfig = {
 };
 
 const CATALOG_CONFIG: Record<CatalogKey, CatalogConfig> = {
-    suppliers: { requiredFields: ['name'], optionalFields: ['logoUrl'] },
+    suppliers: { requiredFields: ['name'], optionalFields: ['logoUrl', 'logoPublicId'] },
     'size-curves': { requiredFields: ['description'], optionalFields: [] },
     families: { requiredFields: ['description'], optionalFields: [] },
     categories: { requiredFields: ['description'], optionalFields: ['logoUrl', 'longDescription'] },
@@ -34,6 +34,7 @@ export type CatalogPayload = {
     name?: string;
     description?: string;
     logoUrl?: string;
+    logoPublicId?: string;
     longDescription?: string;
     values?: string[];
 };
