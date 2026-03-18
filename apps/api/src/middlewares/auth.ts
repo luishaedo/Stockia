@@ -1,64 +1,82 @@
-import { createHmac, timingSafeEqual } from 'crypto';
+import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
+import { jwtVerify, SignJWT } from 'jose';
 import { ErrorCodes } from '@stockia/shared';
 import { sendError } from './error.js';
 
 export type AuthUser = {
+    userId: string;
     sub: string;
+    username: string;
     role: 'admin';
+    roles: string[];
+    scopes: string[];
 };
 
-const encode = (value: string) => Buffer.from(value).toString('base64url');
-const decode = (value: string) => Buffer.from(value, 'base64url').toString('utf-8');
+const JWT_ISSUER = 'stockia-api';
+const JWT_AUDIENCE = 'stockia-admin';
 
-const sign = (payload: string, secret: string) => createHmac('sha256', secret).update(payload).digest('base64url');
+const getJwtSecret = (secret?: string) => new TextEncoder().encode(secret);
 
-export const issueAuthToken = (payload: AuthUser, jwtSecret?: string, expiresInSeconds = 8 * 60 * 60) => {
+export const issueAuthToken = async (payload: AuthUser, jwtSecret?: string, expiresInSeconds = 8 * 60 * 60) => {
     if (!jwtSecret) {
         throw new Error('Server misconfigured: missing JWT_SECRET');
     }
 
-    const header = encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-    const body = encode(JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + expiresInSeconds }));
-    const signingInput = `${header}.${body}`;
-    const signature = sign(signingInput, jwtSecret);
+    const scopes = Array.from(new Set(payload.scopes)).sort().join(' ');
 
-    return `${signingInput}.${signature}`;
+    return new SignJWT({
+        sub: payload.sub,
+        role: payload.role,
+        uid: payload.userId,
+        username: payload.username,
+        roles: payload.roles,
+        scope: scopes
+    })
+        .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+        .setIssuer(JWT_ISSUER)
+        .setAudience(JWT_AUDIENCE)
+        .setJti(randomUUID())
+        .setIssuedAt()
+        .setExpirationTime(`${expiresInSeconds}s`)
+        .sign(getJwtSecret(jwtSecret));
 };
 
-const verifyAuthToken = (token: string, secret: string): AuthUser | null => {
-    const [header, body, signature] = token.split('.');
-    if (!header || !body || !signature) return null;
-
-    const expected = sign(`${header}.${body}`, secret);
-    const left = Buffer.from(signature);
-    const right = Buffer.from(expected);
-
-    if (left.length !== right.length || !timingSafeEqual(left, right)) {
-        return null;
-    }
-
-    let parsed: { sub?: unknown; role?: unknown; exp?: unknown };
+const verifyAuthToken = async (token: string, secret: string): Promise<AuthUser | null> => {
     try {
-        parsed = JSON.parse(decode(body)) as { sub?: unknown; role?: unknown; exp?: unknown };
+        const { payload } = await jwtVerify(token, getJwtSecret(secret), {
+            issuer: JWT_ISSUER,
+            audience: JWT_AUDIENCE
+        });
+
+        const roles = Array.isArray(payload.roles) ? payload.roles.filter((value): value is string => typeof value === 'string') : [];
+        const scopes = typeof payload.scope === 'string'
+            ? payload.scope.split(' ').map((value) => value.trim()).filter(Boolean)
+            : [];
+
+        if (
+            payload.role !== 'admin'
+            || typeof payload.sub !== 'string'
+            || typeof payload.uid !== 'string'
+            || typeof payload.username !== 'string'
+        ) {
+            return null;
+        }
+
+        return {
+            userId: payload.uid,
+            sub: payload.sub,
+            username: payload.username,
+            role: 'admin',
+            roles,
+            scopes
+        };
     } catch {
         return null;
     }
-    if (parsed.role !== 'admin' || typeof parsed.sub !== 'string' || typeof parsed.exp !== 'number') {
-        return null;
-    }
-
-    if (parsed.exp < Math.floor(Date.now() / 1000)) {
-        return null;
-    }
-
-    return {
-        sub: parsed.sub,
-        role: 'admin'
-    };
 };
 
-export const requireAuthToken = (jwtSecret?: string) => (req: Request, res: Response, next: NextFunction) => {
+export const requireAuthToken = (jwtSecret?: string) => async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.header('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
         return sendError(res, 401, ErrorCodes.AUTH_TOKEN_MISSING, 'Missing bearer token', undefined, req.traceId);
@@ -69,7 +87,7 @@ export const requireAuthToken = (jwtSecret?: string) => (req: Request, res: Resp
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
-    const user = verifyAuthToken(token, jwtSecret);
+    const user = await verifyAuthToken(token, jwtSecret);
 
     if (!user) {
         return sendError(res, 403, ErrorCodes.AUTH_TOKEN_INVALID, 'Invalid authentication token', undefined, req.traceId);

@@ -49,6 +49,7 @@ Current payload shape:
 - `sub` must remain a string identity.
 - `exp` remains seconds since epoch and token is invalid when `exp < now`.
 - Signature algorithm stays `HS256`.
+- Additional standard claims may be added as long as the fields above remain compatible.
 
 ## 3) Upload contract: `POST /admin/uploads/logo`
 

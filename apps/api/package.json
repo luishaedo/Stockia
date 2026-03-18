@@ -11,6 +11,7 @@
         "prisma:migrate:deploy": "prisma migrate deploy",
         "prisma:push": "prisma db push",
         "verify:auth-policy": "node --loader ts-node/esm test-scripts/verify-auth-policy.ts",
+        "verify:auth-evolution": "node --loader ts-node/esm test-scripts/verify-auth-evolution.ts",
         "smoke:ci": "bash test-scripts/smoke-ci.sh",
         "verify:log-policy": "node --loader ts-node/esm test-scripts/verify-log-policy.ts",
         "verify:phase1": "node --loader ts-node/esm test-scripts/verify-phase1.ts",
@@ -28,6 +29,7 @@
         "cors": "^2.8.5",
         "dotenv": "^16.0.0",
         "express": "^4.18.0",
+        "jose": "^6.1.0",
         "multer": "^2.1.1",
         "xlsx": "^0.18.5"
     },

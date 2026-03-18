@@ -22,6 +22,7 @@ import { FacturaRepository } from './repositories/facturaRepository.js';
 import { FacturaService } from './services/facturaService.js';
 import { FacturaController } from './controllers/facturaController.js';
 import { ArticleImportService } from './services/articleImportService.js';
+import { AuthService } from './services/authService.js';
 import { sendError } from './middlewares/error.js';
 import { getPrometheusMetrics } from './lib/metrics.js';
 
@@ -30,6 +31,7 @@ export const createApp = (prisma: PrismaClient) => {
     app.set('trust proxy', 1);
 
     const authMiddleware = requireAuthToken(process.env.JWT_SECRET);
+    const authService = new AuthService(prisma);
 
     app.use(buildCorsMiddleware());
     app.use(securityHeadersMiddleware);
@@ -47,7 +49,7 @@ export const createApp = (prisma: PrismaClient) => {
         res.status(200).send(getPrometheusMetrics());
     });
 
-    const authLoginHandler: express.RequestHandler = (req, res) => {
+    const authLoginHandler: express.RequestHandler = async (req, res) => {
         const { username, password } = req.body ?? {};
         const configuredUsername = process.env.AUTH_USERNAME;
         const configuredPassword = process.env.AUTH_PASSWORD;
@@ -56,12 +58,31 @@ export const createApp = (prisma: PrismaClient) => {
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Server misconfigured', undefined, req.traceId);
         }
 
-        if (username !== configuredUsername || password !== configuredPassword) {
-            return sendError(res, 401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid credentials', undefined, req.traceId);
-        }
+        try {
+            const identity = await authService.authenticate({
+                username: String(username ?? ''),
+                password: String(password ?? ''),
+                bootstrapUsername: configuredUsername,
+                bootstrapPassword: configuredPassword
+            });
 
-        const accessToken = issueAuthToken({ sub: username, role: 'admin' }, process.env.JWT_SECRET);
-        return res.json({ accessToken, tokenType: 'Bearer' });
+            if (!identity) {
+                return sendError(res, 401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid credentials', undefined, req.traceId);
+            }
+
+            const accessToken = await issueAuthToken({
+                userId: identity.userId,
+                sub: identity.username,
+                username: identity.username,
+                role: 'admin',
+                roles: identity.roles,
+                scopes: identity.scopes
+            }, process.env.JWT_SECRET);
+
+            return res.json({ accessToken, tokenType: 'Bearer' });
+        } catch (error) {
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Server misconfigured', error, req.traceId);
+        }
     };
 
     app.post('/auth/login', loginRateLimitMiddleware, authLoginHandler);

@@ -6,8 +6,8 @@
 
 ## Context
 
-The current authentication flow issues and validates JWTs through a lightweight custom implementation.
-This implementation is sufficient for current single-service administrative use, but it lacks advanced capabilities expected in larger deployments:
+The current authentication flow issues and validates JWTs locally for a single-service administrative use case.
+The initial custom implementation was sufficient, but lightweight local approaches still lack advanced capabilities expected in larger deployments:
 
 - Key rotation and `kid`-based verification
 - Centralized token revocation and introspection
