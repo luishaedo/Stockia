@@ -218,8 +218,8 @@ npm run preview -w web
 
 | Environment | API (`apps/api`) | Web (`apps/web`) | Notes |
 | --- | --- | --- | --- |
-| Local | `DATABASE_URL=postgresql://...`, `PORT=4000`, `JWT_SECRET`, `AUTH_USERNAME`, `AUTH_PASSWORD` | `VITE_API_URL` optional (fallback: `http://localhost:4000`) | If `VITE_API_URL` is not set, frontend uses localhost fallback. |
-| Dev | Managed DB URL, `PORT`, secured `JWT_SECRET` and auth credentials | Set `VITE_API_URL` to dev API URL | Keep secrets out of source control. |
+| Local | `DATABASE_URL=postgresql://...`, `PORT=4000`, `JWT_SECRET`, `AUTH_USERNAME`, `AUTH_PASSWORD` | `VITE_API_URL` optional (fallback: `http://localhost:4000/api`) | If `VITE_API_URL` is not set, frontend uses the canonical `/api` base path on localhost. |
+| Dev | Managed DB URL, `PORT`, secured `JWT_SECRET` and auth credentials | Set `VITE_API_URL` to the canonical dev API URL ending in `/api` | Keep secrets out of source control. |
 | Stage | Stage DB URL, stage port/auth secrets | Stage API URL | Mirror production as close as possible. |
 | Prod | Production DB URL, hardened auth policy and secret rotation | `VITE_API_URL` is mandatory | Frontend fails fast if `VITE_API_URL` is missing. |
 
@@ -228,13 +228,13 @@ npm run preview -w web
 ### Frontend fails with missing env variables
 
 - Ensure `apps/web/.env` exists.
-- Authenticate against `POST /auth/login` to get bearer token for all factura operations (read/write).
+- Authenticate against `POST /api/auth/login` to get bearer token for all factura operations (read/write).
 - In production builds, `VITE_API_URL` is mandatory.
 
 ### API rejects factura operations with 401/403
 
 - Verify `JWT_SECRET`, `AUTH_USERNAME`, and `AUTH_PASSWORD` in `apps/api/.env`.
-- Ensure clients authenticate via `POST /auth/login` and use `Authorization: Bearer <token>`.
+- Ensure clients authenticate via `POST /api/auth/login` and use `Authorization: Bearer <token>`.
 
 ### Prisma client errors
 
@@ -297,14 +297,14 @@ Use the **repository root** as project root for monorepo builds.
 - Install Command: `npm install --include=dev --workspaces`
 - Build Command: `npm run build -w @stockia/shared && npm run build -w web`
 - Output Directory: `apps/web/dist`
-- Required env: `VITE_API_URL=https://<your-render-api-domain>`
+- Required env: `VITE_API_URL=https://<your-render-api-domain>/api`
 
 This repo now includes root `vercel.json` with those defaults and SPA rewrites for React Router.
 
 ### Production checklist
 
 - API is reachable at `https://<render-service>/health`.
-- Web can authenticate through `POST /auth/login`.
+- Web should authenticate through `POST /api/auth/login`.
 - `CORS_ALLOWED_ORIGINS` exactly matches the Vercel origin.
-- `VITE_API_URL` points to the Render API HTTPS URL.
+- `VITE_API_URL` points to the Render API HTTPS URL ending in `/api`.
 - No secrets are committed; all credentials are set in platform environment variables.
