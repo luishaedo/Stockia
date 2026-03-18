@@ -30,7 +30,8 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /articles/search': { requiresAdminToken: false },
     'POST /articles/:id/clone': { requiresAdminToken: false },
     'POST /admin/articles/import/preview': { requiresAdminToken: true, requiredHeader: 'authorization' },
-    'POST /admin/articles/import/commit': { requiresAdminToken: true, requiredHeader: 'authorization' }
+    'POST /admin/articles/import/commit': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /admin/articles/import/template': { requiresAdminToken: true, requiredHeader: 'authorization' }
 };
 
 export const assertAuthPolicyCoverage = () => {
