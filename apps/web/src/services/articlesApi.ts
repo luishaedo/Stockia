@@ -74,6 +74,7 @@ export type ArticleImportPreviewResponse = {
 
 export type ArticleImportCommitResponse = {
     previewId: string;
+    status?: 'committed' | 'replayed';
     summary: {
         requestedRows: number;
         attemptedRows: number;

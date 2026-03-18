@@ -61,6 +61,11 @@ const run = async () => {
     // successful import commit
     const commit = await service.commitPreview(okPreview.previewId!, [okPreview.result.rows[0].rowNumber]);
     assert.equal(commit.summary.importedRows, 1);
+    assert.equal(commit.status, 'committed');
+
+    const replayedCommit = await service.commitPreview(okPreview.previewId!, [okPreview.result.rows[0].rowNumber]);
+    assert.equal(replayedCommit.status, 'replayed');
+    assert.equal(replayedCommit.summary.importedRows, 1);
 
     console.log('verify-article-import passed');
 };

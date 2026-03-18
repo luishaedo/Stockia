@@ -67,3 +67,4 @@ npm run verify:route-contracts -w api
 
 - RBAC is a pending evolution item: current policy is single-role (`admin`) by design.
 - Audit trail by catalog/invoice action is also pending and should be implemented together with RBAC scopes to avoid duplicated migration effort.
+- Login response remains stable while authentication storage may evolve from environment-only credentials to persisted users with bootstrap admin fallback.

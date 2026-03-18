@@ -122,7 +122,11 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
         try {
             const rowNumbers = rows.filter((row) => row.importable).map((row) => row.rowNumber);
             const response = await api.commitArticleImport(previewId, rowNumbers);
-            setSuccessMessage(`Importación completada: ${response.summary.importedRows} filas importadas.`);
+            const replayMessage = response.status === 'replayed'
+                ? 'La importación ya había sido confirmada previamente.'
+                : `Importación completada: ${response.summary.importedRows} filas importadas.`;
+            setSuccessMessage(replayMessage);
+            setPreviewResponse((current) => current ? { ...current, previewId: null } : current);
         } catch (error) {
             setErrorMessage(formatError(error, 'No pudimos confirmar la importación'));
         } finally {

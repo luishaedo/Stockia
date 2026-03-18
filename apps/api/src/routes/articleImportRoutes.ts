@@ -2,69 +2,11 @@ import { RequestHandler, Router } from 'express';
 import { ErrorCodes } from '@stockia/shared';
 import { logger } from '../lib/logger.js';
 import { sendError } from '../middlewares/error.js';
+import { MultipartValidationError, runSingleFileUpload } from '../middlewares/upload.js';
 import { ArticleImportService } from '../services/articleImportService.js';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(['.csv', '.xls', '.xlsx']);
-
-type ParsedMultipartFile = {
-    filename: string;
-    content: Buffer;
-};
-
-const getBoundary = (contentTypeHeader?: string) => {
-    if (!contentTypeHeader) return null;
-    const match = contentTypeHeader.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
-    return (match?.[1] ?? match?.[2] ?? '').trim() || null;
-};
-
-const parseMultipartSingleFile = (body: Buffer, boundary: string): ParsedMultipartFile | null => {
-    const bodyText = body.toString('latin1');
-    const delimiter = `--${boundary}`;
-    const segments = bodyText.split(delimiter).map(segment => segment.trim());
-
-    for (const segment of segments) {
-        if (!segment || segment === '--') continue;
-        const headerEndIndex = segment.indexOf('\r\n\r\n');
-        if (headerEndIndex === -1) continue;
-
-        const rawHeaders = segment.slice(0, headerEndIndex);
-        const contentText = segment.slice(headerEndIndex + 4).replace(/\r\n--$/, '').replace(/\r\n$/, '');
-        if (!rawHeaders.includes('name="file"')) continue;
-
-        const filenameMatch = rawHeaders.match(/filename="([^"]+)"/i);
-        if (!filenameMatch) return null;
-
-        const filename = filenameMatch[1].trim();
-        return {
-            filename,
-            content: Buffer.from(contentText, 'latin1')
-        };
-    }
-
-    return null;
-};
-
-const readMultipartBody = async (req: Parameters<RequestHandler>[0]) => {
-    const chunks: Buffer[] = [];
-    let totalSize = 0;
-
-    await new Promise<void>((resolve, reject) => {
-        req.on('data', (chunk: Buffer) => {
-            totalSize += chunk.length;
-            if (totalSize > MAX_FILE_SIZE_BYTES + 1024 * 512) {
-                reject(new Error('File too large'));
-                req.destroy();
-                return;
-            }
-            chunks.push(chunk);
-        });
-        req.on('end', () => resolve());
-        req.on('error', reject);
-    });
-
-    return Buffer.concat(chunks);
-};
 
 export const createArticleImportRoutes = (
     service: ArticleImportService,
@@ -87,31 +29,32 @@ export const createArticleImportRoutes = (
     });
 
     router.post('/admin/articles/import/preview', writeRateLimitMiddleware, requireAuth, async (req, res) => {
-        const boundary = getBoundary(req.headers['content-type']);
-        if (!boundary) {
-            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Content-Type debe ser multipart/form-data', undefined, req.traceId);
-        }
-
         try {
-            const rawBody = await readMultipartBody(req);
-            const parsedFile = parseMultipartSingleFile(rawBody, boundary);
+            const uploadedFile = await runSingleFileUpload(req, {
+                fieldName: 'file',
+                maxFileSizeBytes: MAX_FILE_SIZE_BYTES,
+                allowedExtensions: ALLOWED_EXTENSIONS
+            });
 
-            if (!parsedFile) {
-                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'El campo file es obligatorio', undefined, req.traceId);
-            }
+            const preview = await service.buildPreview(uploadedFile.buffer, uploadedFile.originalname);
+            return res.json(preview);
+        } catch (error) {
+            if (error instanceof MultipartValidationError) {
+                if (error.code === 'INVALID_CONTENT_TYPE') {
+                    return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Content-Type debe ser multipart/form-data', undefined, req.traceId);
+                }
 
-            const extension = parsedFile.filename.toLowerCase().slice(parsedFile.filename.lastIndexOf('.'));
-            if (!ALLOWED_EXTENSIONS.has(extension)) {
+                if (error.code === 'FILE_REQUIRED') {
+                    return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'El campo file es obligatorio', undefined, req.traceId);
+                }
+
+                if (error.code === 'FILE_TOO_LARGE') {
+                    return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'El archivo de importación supera el límite de 10MB', undefined, req.traceId);
+                }
+
                 return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'La extensión del archivo debe ser .csv, .xls o .xlsx', undefined, req.traceId);
             }
 
-            if (parsedFile.content.length > MAX_FILE_SIZE_BYTES) {
-                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'El archivo de importación supera el límite de 10MB', undefined, req.traceId);
-            }
-
-            const preview = await service.buildPreview(parsedFile.content, parsedFile.filename);
-            return res.json(preview);
-        } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'previewArticleImport' }, 'Failed to preview article import');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo generar el preview del archivo de importación', error, req.traceId);
         }
