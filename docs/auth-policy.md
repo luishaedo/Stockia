@@ -1,10 +1,10 @@
 # API Authentication Policy
 
-This document defines authentication requirements for the full active API surface. As of the current policy, all write operations require authentication unless explicitly exempted (for example `POST /auth/login`).
+This document defines authentication requirements for the full active API surface. As of the current policy, all write operations require authentication unless explicitly exempted (for example `POST /api/auth/login`). Legacy root aliases remain temporarily available with deprecation headers.
 
 ## Login
 
-- Endpoint: `POST /auth/login`
+- Endpoint: `POST /api/auth/login`
 - Body: `{ "username": "string", "password": "string" }`
 - Success response: `{ "accessToken": "<token>", "tokenType": "Bearer" }`
 
@@ -21,30 +21,30 @@ This document defines authentication requirements for the full active API surfac
 | --- | --- | --- | --- | --- |
 | GET | `/health` | No | N/A | Liveness endpoint |
 | GET | `/metrics` | No | N/A | Prometheus metrics |
-| POST | `/auth/login` | No | N/A | Issues access token |
-| GET | `/facturas` | No | N/A | List/search facturas |
-| GET | `/facturas/:id` | No | N/A | Retrieve factura detail |
-| POST | `/facturas` | Yes | `Authorization: Bearer <token>` | Creates draft factura |
-| PATCH | `/facturas/:id/draft` | Yes | `Authorization: Bearer <token>` | Updates draft factura |
-| PATCH | `/facturas/:id/finalize` | Yes | `Authorization: Bearer <token>` | Finalizes factura |
-| GET | `/admin/invoices` | Yes | `Authorization: Bearer <token>` | Admin invoice listing |
-| GET | `/admin/invoice-users` | Yes | `Authorization: Bearer <token>` | Admin invoice users listing |
-| GET | `/admin/catalogs/:catalog` | Yes | `Authorization: Bearer <token>` | Admin catalog listing |
-| GET | `/admin/catalogs/:catalog/version` | Yes | `Authorization: Bearer <token>` | Catalog cache version |
-| POST | `/admin/catalogs/:catalog` | Yes | `Authorization: Bearer <token>` | Create catalog item |
-| PUT | `/admin/catalogs/:catalog/:id` | Yes | `Authorization: Bearer <token>` | Update catalog item |
-| DELETE | `/admin/catalogs/:catalog/:id` | Yes | `Authorization: Bearer <token>` | Delete catalog item |
-| POST | `/admin/uploads/logo` | Yes | `Authorization: Bearer <token>` | Upload catalog logo |
-| POST | `/articles` | Yes | `Authorization: Bearer <token>` | Create article |
-| POST | `/articles/:id/clone` | Yes | `Authorization: Bearer <token>` | Clone article |
-| GET | `/admin/articles/import/template` | Yes | `Authorization: Bearer <token>` | Download article import template |
-| POST | `/admin/articles/import/preview` | Yes | `Authorization: Bearer <token>` | Validate article import file |
-| POST | `/admin/articles/import/commit` | Yes | `Authorization: Bearer <token>` | Persist article import rows |
-| GET | `/operations/catalogs` | No | N/A | Operational catalogs for UI |
-| GET | `/operations/catalogs/version` | No | N/A | Operations catalog cache version |
-| GET | `/providers` | No | N/A | Legacy providers alias |
-| GET | `/size-tables` | No | N/A | Legacy size tables alias |
-| GET | `/articles/search` | No | N/A | Search articles |
+| POST | `/api/auth/login` | No | N/A | Issues access token |
+| GET | `/api/facturas` | No | N/A | List/search facturas |
+| GET | `/api/facturas/:id` | No | N/A | Retrieve factura detail |
+| POST | `/api/facturas` | Yes | `Authorization: Bearer <token>` | Creates draft factura |
+| PATCH | `/api/facturas/:id/draft` | Yes | `Authorization: Bearer <token>` | Updates draft factura |
+| PATCH | `/api/facturas/:id/finalize` | Yes | `Authorization: Bearer <token>` | Finalizes factura |
+| GET | `/api/admin/invoices` | Yes | `Authorization: Bearer <token>` | Admin invoice listing |
+| GET | `/api/admin/invoice-users` | Yes | `Authorization: Bearer <token>` | Admin invoice users listing |
+| GET | `/api/admin/catalogs/:catalog` | Yes | `Authorization: Bearer <token>` | Admin catalog listing |
+| GET | `/api/admin/catalogs/:catalog/version` | Yes | `Authorization: Bearer <token>` | Catalog cache version |
+| POST | `/api/admin/catalogs/:catalog` | Yes | `Authorization: Bearer <token>` | Create catalog item |
+| PUT | `/api/admin/catalogs/:catalog/:id` | Yes | `Authorization: Bearer <token>` | Update catalog item |
+| DELETE | `/api/admin/catalogs/:catalog/:id` | Yes | `Authorization: Bearer <token>` | Delete catalog item |
+| POST | `/api/admin/uploads/logo` | Yes | `Authorization: Bearer <token>` | Upload catalog logo |
+| POST | `/api/articles` | Yes | `Authorization: Bearer <token>` | Create article |
+| POST | `/api/articles/:id/clone` | Yes | `Authorization: Bearer <token>` | Clone article |
+| GET | `/api/admin/articles/import/template` | Yes | `Authorization: Bearer <token>` | Download article import template |
+| POST | `/api/admin/articles/import/preview` | Yes | `Authorization: Bearer <token>` | Validate article import file |
+| POST | `/api/admin/articles/import/commit` | Yes | `Authorization: Bearer <token>` | Persist article import rows |
+| GET | `/api/operations/catalogs` | No | N/A | Operational catalogs for UI |
+| GET | `/api/operations/catalogs/version` | No | N/A | Operations catalog cache version |
+| GET | `/providers` | No | N/A | Legacy providers alias with deprecation headers |
+| GET | `/size-tables` | No | N/A | Legacy size tables alias with deprecation headers |
+| GET | `/api/articles/search` | No | N/A | Search articles |
 | GET | `/uploads/*` | No | N/A | Static files, publicly served |
 
 ## Error behavior

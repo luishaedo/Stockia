@@ -3,6 +3,7 @@ set -euo pipefail
 
 PORT="${PORT:-4000}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${PORT}}"
+API_BASE_URL="${API_BASE_URL:-${BASE_URL}/api}"
 JWT_SECRET="${JWT_SECRET:-contract-check-secret}"
 AUTH_USERNAME="${AUTH_USERNAME:-admin}"
 AUTH_PASSWORD="${AUTH_PASSWORD:-contract-password}"
@@ -27,8 +28,8 @@ for _ in {1..40}; do
   sleep 1
 done
 
-echo "Verify contract: POST /auth/login with valid credentials"
-status=$(curl -s -o /tmp/contract_login_ok.json -w "%{http_code}" -X POST "$BASE_URL/auth/login" -H 'Content-Type: application/json' -d "{\"username\":\"$AUTH_USERNAME\",\"password\":\"$AUTH_PASSWORD\"}")
+echo "Verify contract: POST /api/auth/login with valid credentials"
+status=$(curl -s -o /tmp/contract_login_ok.json -w "%{http_code}" -X POST "$API_BASE_URL/auth/login" -H 'Content-Type: application/json' -d "{\"username\":\"$AUTH_USERNAME\",\"password\":\"$AUTH_PASSWORD\"}")
 [[ "$status" == "200" ]] || (echo "Expected 200, got $status" && cat /tmp/contract_login_ok.json && exit 1)
 
 node <<'NODE'
@@ -46,13 +47,19 @@ if (payload.role !== 'admin') throw new Error('JWT payload role must be admin');
 if (typeof payload.exp !== 'number') throw new Error('JWT payload exp must be number');
 NODE
 
-echo "Verify contract: POST /auth/login invalid credentials"
-status=$(curl -s -o /tmp/contract_login_bad.json -w "%{http_code}" -X POST "$BASE_URL/auth/login" -H 'Content-Type: application/json' -d "{\"username\":\"bad\",\"password\":\"bad\"}")
+echo "Verify contract: POST /api/auth/login invalid credentials"
+status=$(curl -s -o /tmp/contract_login_bad.json -w "%{http_code}" -X POST "$API_BASE_URL/auth/login" -H 'Content-Type: application/json' -d "{\"username\":\"bad\",\"password\":\"bad\"}")
 [[ "$status" == "401" ]] || (echo "Expected 401, got $status" && cat /tmp/contract_login_bad.json && exit 1)
 
-echo "Verify contract: /facturas without bearer"
-status=$(curl -s -o /tmp/contract_no_token.json -w "%{http_code}" "$BASE_URL/facturas")
+echo "Verify contract: /api/facturas without bearer"
+status=$(curl -s -o /tmp/contract_no_token.json -w "%{http_code}" "$API_BASE_URL/facturas")
 [[ "$status" == "401" ]] || (echo "Expected 401, got $status" && cat /tmp/contract_no_token.json && exit 1)
+
+echo "Verify legacy alias: /auth/login includes deprecation headers"
+legacy_headers=$(curl -s -D - -o /tmp/contract_legacy_login.json -X POST "$BASE_URL/auth/login" -H 'Content-Type: application/json' -d "{\"username\":\"$AUTH_USERNAME\",\"password\":\"$AUTH_PASSWORD\"}")
+echo "$legacy_headers" | grep -qi '^deprecation: true$'
+echo "$legacy_headers" | grep -qi '^sunset: '
+echo "$legacy_headers" | grep -qi '^link: </api/auth/login>; rel="successor-version"$'
 
 echo "Verify contract: security headers"
 headers=$(curl -s -D - -o /dev/null "$BASE_URL/health")

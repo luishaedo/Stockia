@@ -8,24 +8,6 @@ const DEFAULT_VERSION = 'W/"0"';
 export class CatalogsApiService {
     constructor(private client: HttpClient) {}
 
-    private buildApiUrl(path: string, forceApiPrefix = false) {
-        const baseUrl = this.client.getBaseURL().replace(/\/$/, '');
-        if (forceApiPrefix && !baseUrl.endsWith('/api')) {
-            return `${baseUrl}/api${path}`;
-        }
-        return `${baseUrl}${path}`;
-    }
-
-    private async fetchWithApiPrefixFallback(path: string, init?: RequestInit) {
-        const primaryResponse = await fetch(this.buildApiUrl(path), init);
-
-        if (primaryResponse.status !== 404 || this.client.getBaseURL().replace(/\/$/, '').endsWith('/api')) {
-            return primaryResponse;
-        }
-
-        return fetch(this.buildApiUrl(path, true), init);
-    }
-
     async preloadAdminCatalogsIncremental(catalogs: AdminCatalogKey[]) {
         for (const catalog of catalogs) {
             try {
@@ -40,7 +22,7 @@ export class CatalogsApiService {
     private async getCatalogVersion(catalog: AdminCatalogKey): Promise<string> {
         const path = `/admin/catalogs/${catalog}/version`;
         try {
-            const response = await this.fetchWithApiPrefixFallback(path, {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 headers: this.client.getOptionalAccessTokenHeader()
             });
             await this.client.assertOk(response, 'No pudimos validar versión de catálogo');
@@ -54,7 +36,7 @@ export class CatalogsApiService {
     private async getOperationsVersion(): Promise<string> {
         const path = '/operations/catalogs/version';
         try {
-            const response = await this.fetchWithApiPrefixFallback(path, {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 headers: this.client.getOptionalAccessTokenHeader()
             });
             await this.client.assertOk(response, 'No pudimos validar versión de catálogos operativos');
@@ -78,7 +60,7 @@ export class CatalogsApiService {
 
         const path = '/operations/catalogs';
         try {
-            const response = await this.fetchWithApiPrefixFallback(path, {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 headers: this.client.getOptionalAccessTokenHeader()
             });
             await this.client.assertOk(response, 'No pudimos cargar los catálogos operativos');
@@ -96,7 +78,7 @@ export class CatalogsApiService {
     async getAdminCatalog<T>(catalog: AdminCatalogKey): Promise<T> {
         const path = `/admin/catalogs/${catalog}`;
         try {
-            const response = await this.fetchWithApiPrefixFallback(path, {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 headers: this.client.getAccessTokenHeader()
             });
             await this.client.assertOk(response, 'No pudimos cargar el catálogo');
@@ -119,7 +101,7 @@ export class CatalogsApiService {
 
         const path = `/admin/catalogs/${catalog}`;
         try {
-            const response = await this.fetchWithApiPrefixFallback(path, {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 headers: this.client.getAccessTokenHeader()
             });
             await this.client.assertOk(response, 'No pudimos cargar el catálogo');
@@ -143,7 +125,7 @@ export class CatalogsApiService {
     async createAdminCatalog(catalog: AdminCatalogKey, payload: Record<string, unknown>) {
         const path = `/admin/catalogs/${catalog}`;
         try {
-            const response = await this.fetchWithApiPrefixFallback(path, {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 method: 'POST',
                 headers: await this.client.getAuthHeaders(),
                 body: JSON.stringify(payload)
@@ -159,7 +141,7 @@ export class CatalogsApiService {
     async updateAdminCatalog(catalog: AdminCatalogKey, id: string, payload: Record<string, unknown>) {
         const path = `/admin/catalogs/${catalog}/${id}`;
         try {
-            const response = await this.fetchWithApiPrefixFallback(path, {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 method: 'PUT',
                 headers: await this.client.getAuthHeaders(),
                 body: JSON.stringify(payload)
@@ -175,7 +157,7 @@ export class CatalogsApiService {
     async deleteAdminCatalog(catalog: AdminCatalogKey, id: string): Promise<void> {
         const path = `/admin/catalogs/${catalog}/${id}`;
         try {
-            const response = await this.fetchWithApiPrefixFallback(path, {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 method: 'DELETE',
                 headers: this.client.getAccessTokenHeader()
             });

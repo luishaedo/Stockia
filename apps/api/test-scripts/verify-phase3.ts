@@ -1,6 +1,6 @@
 import { FacturaFilters, ErrorCodes } from '@stockia/shared';
 
-const API_URL = process.env.API_URL || 'http://localhost:4000';
+const API_URL = process.env.API_URL || 'http://localhost:4000/api';
 
 async function request(method: string, path: string, body?: any) {
     const headers = { 'Content-Type': 'application/json' };

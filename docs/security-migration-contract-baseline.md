@@ -2,11 +2,11 @@
 
 This document freezes the API contract that must be preserved while migrating auth/upload/rate-limit internals.
 
-## 1) Auth contract: `POST /auth/login`
+## 1) Auth contract: `POST /api/auth/login`
 
 ### Request
 - Method: `POST`
-- Path: `/auth/login`
+- Path: `/api/auth/login`
 - Header: `Content-Type: application/json`
 - Body:
 
@@ -51,11 +51,11 @@ Current payload shape:
 - Signature algorithm stays `HS256`.
 - Additional standard claims may be added as long as the fields above remain compatible.
 
-## 3) Upload contract: `POST /admin/uploads/logo`
+## 3) Upload contract: `POST /api/admin/uploads/logo`
 
 ### Request
 - Method: `POST`
-- Path: `/admin/uploads/logo`
+- Path: `/api/admin/uploads/logo`
 - Auth: `Authorization: Bearer <token>`
 - Content type: `multipart/form-data`
 - Required field: `file`
