@@ -82,6 +82,7 @@ const validateCatalogReferences = async (prisma: PrismaClient, payload: {
 
 export const createArticleRoutes = (
     prisma: PrismaClient,
+    requireAuth: RequestHandler,
     readRateLimitMiddleware: RequestHandler,
     writeRateLimitMiddleware: RequestHandler
 ) => {
@@ -122,7 +123,7 @@ export const createArticleRoutes = (
         }
     });
 
-    router.post('/articles', writeRateLimitMiddleware, async (req, res) => {
+    router.post('/articles', writeRateLimitMiddleware, requireAuth, async (req, res) => {
         const validation = CreateArticleSchema.safeParse(req.body);
         if (!validation.success) {
             return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
@@ -148,7 +149,7 @@ export const createArticleRoutes = (
         }
     });
 
-    router.post('/articles/:id/clone', writeRateLimitMiddleware, async (req, res) => {
+    router.post('/articles/:id/clone', writeRateLimitMiddleware, requireAuth, async (req, res) => {
         const validation = CloneArticleSchema.safeParse(req.body);
         if (!validation.success) {
             return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);

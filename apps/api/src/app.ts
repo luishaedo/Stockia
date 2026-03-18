@@ -78,8 +78,8 @@ export const createApp = (prisma: PrismaClient) => {
     app.use(createCatalogSelectionRoutes(prisma, readRateLimitMiddleware));
     app.use('/api', createCatalogSelectionRoutes(prisma, readRateLimitMiddleware));
 
-    app.use(createArticleRoutes(prisma, readRateLimitMiddleware, writeRateLimitMiddleware));
-    app.use('/api', createArticleRoutes(prisma, readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use(createArticleRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
+    app.use('/api', createArticleRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
 
     app.use(createAdminCatalogRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
     app.use('/api', createAdminCatalogRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
