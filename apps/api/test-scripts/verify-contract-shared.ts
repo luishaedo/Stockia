@@ -11,7 +11,8 @@ type ApiResponse<T = unknown> = {
     data: T;
 };
 
-const API_URL = process.env.API_URL || 'http://localhost:4000';
+const API_URL = process.env.API_URL || 'http://localhost:4000/api';
+const LEGACY_API_URL = API_URL.replace(/\/api\/?$/, '');
 const AUTH_USERNAME = process.env.AUTH_USERNAME || 'admin';
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'change-me';
 
@@ -78,6 +79,23 @@ async function run() {
     const token = await login();
     console.log('   ✅ Login passed');
 
+    console.log('2.1) Validate legacy login alias includes deprecation headers');
+    const legacyLoginResponse = await fetch(`${LEGACY_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            username: AUTH_USERNAME,
+            password: AUTH_PASSWORD
+        })
+    });
+    assert(legacyLoginResponse.status === 200, `Expected 200 on legacy /auth/login, got ${legacyLoginResponse.status}`);
+    assert(legacyLoginResponse.headers.get('deprecation') === 'true', 'Expected Deprecation header on legacy /auth/login');
+    assert(legacyLoginResponse.headers.get('sunset'), 'Expected Sunset header on legacy /auth/login');
+    assert(legacyLoginResponse.headers.get('link')?.includes('</api/auth/login>; rel=\"successor-version\"'), 'Expected Link header pointing to /api/auth/login');
+    console.log('   ✅ Legacy login alias deprecation headers passed');
+
     console.log('3) Create fixture invoice using shared request schema');
     const fixturePayload = {
         nroFactura: `CT-${Date.now()}`,
@@ -111,6 +129,14 @@ async function run() {
     const parsedCatalogs = OperationCatalogsResponseSchema.safeParse(operationCatalogs.data);
     assert(parsedCatalogs.success, 'Response does not satisfy OperationCatalogsResponseSchema');
     console.log('   ✅ /operations/catalogs contract passed');
+
+    console.log('7) Validate legacy root alias headers for /facturas');
+    const legacyFacturasResponse = await fetch(`${LEGACY_API_URL}/facturas`);
+    assert(legacyFacturasResponse.status === 200, `Expected 200 on legacy /facturas, got ${legacyFacturasResponse.status}`);
+    assert(legacyFacturasResponse.headers.get('deprecation') === 'true', 'Expected Deprecation header on legacy /facturas');
+    assert(legacyFacturasResponse.headers.get('sunset'), 'Expected Sunset header on legacy /facturas');
+    assert(legacyFacturasResponse.headers.get('link')?.includes('</api/facturas>; rel=\"successor-version\"'), 'Expected Link header pointing to /api/facturas');
+    console.log('   ✅ Legacy /facturas alias deprecation headers passed');
 
     console.log('\n--- SHARED CONTRACT VERIFICATION COMPLETED ---');
 }
