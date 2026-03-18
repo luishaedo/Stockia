@@ -25,6 +25,7 @@ import { ArticleImportService } from './services/articleImportService.js';
 import { AuthService } from './services/authService.js';
 import { sendError } from './middlewares/error.js';
 import { getPrometheusMetrics } from './lib/metrics.js';
+import { legacyApiDeprecationMiddleware } from './middlewares/legacyApi.js';
 
 export const createApp = (prisma: PrismaClient) => {
     const app = express();
@@ -85,31 +86,39 @@ export const createApp = (prisma: PrismaClient) => {
         }
     };
 
-    app.post('/auth/login', loginRateLimitMiddleware, authLoginHandler);
     app.post('/api/auth/login', loginRateLimitMiddleware, authLoginHandler);
+    app.post('/auth/login', loginRateLimitMiddleware, legacyApiDeprecationMiddleware, authLoginHandler);
 
     const repository = new FacturaRepository(prisma);
     const service = new FacturaService(repository);
     const controller = new FacturaController(service);
     const articleImportService = new ArticleImportService(prisma);
 
-    app.use(createFacturaRoutes(controller, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
-    app.use('/api', createFacturaRoutes(controller, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
+    const facturaRoutes = createFacturaRoutes(controller, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware);
+    const catalogSelectionRoutes = createCatalogSelectionRoutes(prisma, readRateLimitMiddleware);
+    const articleRoutes = createArticleRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware);
+    const adminCatalogRoutes = createAdminCatalogRoutes(
+        prisma,
+        authMiddleware,
+        readRateLimitMiddleware,
+        writeRateLimitMiddleware
+    );
+    const adminUploadRoutes = createAdminUploadRoutes(authMiddleware, writeRateLimitMiddleware);
+    const articleImportRoutes = createArticleImportRoutes(articleImportService, authMiddleware, writeRateLimitMiddleware);
 
-    app.use(createCatalogSelectionRoutes(prisma, readRateLimitMiddleware));
-    app.use('/api', createCatalogSelectionRoutes(prisma, readRateLimitMiddleware));
+    app.use('/api', facturaRoutes);
+    app.use('/api', catalogSelectionRoutes);
+    app.use('/api', articleRoutes);
+    app.use('/api', adminCatalogRoutes);
+    app.use('/api', adminUploadRoutes);
+    app.use('/api', articleImportRoutes);
 
-    app.use(createArticleRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
-    app.use('/api', createArticleRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
-
-    app.use(createAdminCatalogRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
-    app.use('/api', createAdminCatalogRoutes(prisma, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware));
-
-    app.use(createAdminUploadRoutes(authMiddleware, writeRateLimitMiddleware));
-    app.use('/api', createAdminUploadRoutes(authMiddleware, writeRateLimitMiddleware));
-
-    app.use(createArticleImportRoutes(articleImportService, authMiddleware, writeRateLimitMiddleware));
-    app.use('/api', createArticleImportRoutes(articleImportService, authMiddleware, writeRateLimitMiddleware));
+    app.use(legacyApiDeprecationMiddleware, facturaRoutes);
+    app.use(legacyApiDeprecationMiddleware, catalogSelectionRoutes);
+    app.use(legacyApiDeprecationMiddleware, articleRoutes);
+    app.use(legacyApiDeprecationMiddleware, adminCatalogRoutes);
+    app.use(legacyApiDeprecationMiddleware, adminUploadRoutes);
+    app.use(legacyApiDeprecationMiddleware, articleImportRoutes);
 
     return app;
 };

@@ -5,7 +5,7 @@ type ApiResponse<T = unknown> = {
     data: T;
 };
 
-const API_URL = process.env.API_URL || 'http://localhost:4000';
+const API_URL = process.env.API_URL || 'http://localhost:4000/api';
 const AUTH_USERNAME = process.env.AUTH_USERNAME || 'admin';
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'change-me';
 

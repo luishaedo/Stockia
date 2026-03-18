@@ -88,29 +88,6 @@ export type ArticleImportCommitResponse = {
 export class ArticlesApiService {
     constructor(private readonly client: HttpClient) {}
 
-    private buildApiUrl(path: string, forceApiPrefix = false) {
-        const baseUrl = this.client.getBaseURL().replace(/\/$/, '');
-        if (forceApiPrefix && !baseUrl.endsWith('/api')) {
-            return `${baseUrl}/api${path}`;
-        }
-        return `${baseUrl}${path}`;
-    }
-
-    private async fetchWithApiPrefixFallback(path: string, init?: RequestInit) {
-        const primaryResponse = await fetch(this.buildApiUrl(path), init);
-
-        const contentType = primaryResponse.headers.get('content-type')?.toLowerCase() ?? '';
-        const isJsonResponse = contentType.includes('application/json');
-        const shouldRetryWithApiPrefix =
-            primaryResponse.status === 404 || (primaryResponse.status === 400 && !isJsonResponse);
-
-        if (!shouldRetryWithApiPrefix || this.client.getBaseURL().replace(/\/$/, '').endsWith('/api')) {
-            return primaryResponse;
-        }
-
-        return fetch(this.buildApiUrl(path, true), init);
-    }
-
     private async ensureArticlesRouteExists(response: Response, path: string): Promise<Response> {
         if (response.status !== 404) {
             return response;
@@ -137,7 +114,7 @@ export class ArticlesApiService {
         if (params.limit) query.set('limit', String(params.limit));
 
         const path = `/articles/search?${query.toString()}`;
-        const response = await this.fetchWithApiPrefixFallback(path, {
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
             headers: this.client.getOptionalAccessTokenHeader()
         });
 
@@ -148,7 +125,7 @@ export class ArticlesApiService {
 
     async createArticle(payload: CreateArticlePayload) {
         const path = '/articles';
-        const response = await this.fetchWithApiPrefixFallback(path, {
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
             method: 'POST',
             headers: {
                 ...(await this.client.getAuthHeaders())
@@ -167,7 +144,7 @@ export class ArticlesApiService {
         const formData = new FormData();
         formData.set('file', file);
 
-        const response = await this.fetchWithApiPrefixFallback(path, {
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
             method: 'POST',
             headers: {
                 ...this.client.getAccessTokenHeader()
@@ -181,7 +158,7 @@ export class ArticlesApiService {
 
     async downloadArticleImportTemplate() {
         const path = '/admin/articles/import/template';
-        const response = await this.fetchWithApiPrefixFallback(path, {
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
             method: 'GET',
             headers: {
                 ...(await this.client.getAuthHeaders())
@@ -194,7 +171,7 @@ export class ArticlesApiService {
 
     async commitArticleImport(previewId: string, rowNumbers?: number[]) {
         const path = '/admin/articles/import/commit';
-        const response = await this.fetchWithApiPrefixFallback(path, {
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
             method: 'POST',
             headers: {
                 ...(await this.client.getAuthHeaders())
@@ -208,7 +185,7 @@ export class ArticlesApiService {
 
     async cloneArticle(articleId: string, payload: CloneArticlePayload) {
         const path = `/articles/${articleId}/clone`;
-        const response = await this.fetchWithApiPrefixFallback(path, {
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
             method: 'POST',
             headers: {
                 ...(await this.client.getAuthHeaders())

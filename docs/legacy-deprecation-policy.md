@@ -22,6 +22,28 @@ An alias can be removed when:
 
 | route_name | migration_target | introduced_at | deprecated_at | sunset_at | owner | rollback_strategy |
 | --- | --- | --- | --- | --- | --- | --- |
+| POST /auth/login | POST /api/auth/login | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /facturas | GET /api/facturas | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /facturas/:id | GET /api/facturas/:id | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| POST /facturas | POST /api/facturas | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| PATCH /facturas/:id/draft | PATCH /api/facturas/:id/draft | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| PATCH /facturas/:id/finalize | PATCH /api/facturas/:id/finalize | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /admin/invoices | GET /api/admin/invoices | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /admin/invoice-users | GET /api/admin/invoice-users | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /admin/catalogs/:catalog | GET /api/admin/catalogs/:catalog | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /admin/catalogs/:catalog/version | GET /api/admin/catalogs/:catalog/version | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| POST /admin/catalogs/:catalog | POST /api/admin/catalogs/:catalog | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| PUT /admin/catalogs/:catalog/:id | PUT /api/admin/catalogs/:catalog/:id | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| DELETE /admin/catalogs/:catalog/:id | DELETE /api/admin/catalogs/:catalog/:id | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| POST /admin/uploads/logo | POST /api/admin/uploads/logo | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /operations/catalogs | GET /api/operations/catalogs | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /operations/catalogs/version | GET /api/operations/catalogs/version | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /articles/search | GET /api/articles/search | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| POST /articles | POST /api/articles | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| POST /articles/:id/clone | POST /api/articles/:id/clone | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| GET /admin/articles/import/template | GET /api/admin/articles/import/template | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| POST /admin/articles/import/preview | POST /api/admin/articles/import/preview | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
+| POST /admin/articles/import/commit | POST /api/admin/articles/import/commit | 2026-03-18 | 2026-03-18 | 2026-09-30 | API Platform | Keep legacy root alias with deprecation headers until consumer traffic is below threshold |
 | GET /providers | GET /operations/catalogs (suppliers) | 2026-01-10 | 2026-02-27 | 2026-05-01 | API Platform | Re-enable route behind feature flag from previous release artifact |
 | GET /size-tables | GET /operations/catalogs (curves) | 2026-01-10 | 2026-02-27 | 2026-05-01 | API Platform | Re-enable route behind feature flag from previous release artifact |
 

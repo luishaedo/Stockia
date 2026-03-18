@@ -3,7 +3,9 @@ import { ApiErrorResponse, ErrorCodes } from '@stockia/shared';
 const envApiUrl = import.meta.env.VITE_API_URL;
 const isProduction = import.meta.env.PROD;
 
-export const apiURL = envApiUrl || 'http://localhost:4000';
+const normalizeApiUrl = (value: string) => value.replace(/\/$/, '');
+
+export const apiURL = normalizeApiUrl(envApiUrl || 'http://localhost:4000/api');
 
 if (isProduction && !envApiUrl) {
     throw new Error('Missing VITE_API_URL environment variable in production');
