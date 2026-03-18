@@ -76,9 +76,24 @@ export type PreviewResult = {
     fileWarnings: string[];
 };
 
+type CommitPreviewResponse = {
+    previewId: string;
+    status: 'committed' | 'replayed';
+    summary: {
+        requestedRows: number;
+        attemptedRows: number;
+        importedRows: number;
+        skippedRows: number;
+    };
+    createdRows: number[];
+    skippedRows: Array<{ rowNumber: number; reason: string }>;
+};
+
 type PreviewStoreEntry = {
     createdAt: number;
     result: PreviewResult;
+    consumedAt?: number;
+    commitResult?: CommitPreviewResponse;
 };
 
 const DESCRIPTION_COLUMNS: Record<ImportCatalogKey, string> = {
@@ -405,6 +420,13 @@ export class ArticleImportService {
             throw new Error('PREVIEW_NOT_FOUND');
         }
 
+        if (entry.commitResult) {
+            return {
+                ...entry.commitResult,
+                status: 'replayed' as const
+            };
+        }
+
         const selectableSet = selectedRowNumbers?.length ? new Set(selectedRowNumbers) : null;
         const rowsToImport = entry.result.rows.filter((row) => row.importable && (!selectableSet || selectableSet.has(row.rowNumber)));
 
@@ -438,8 +460,9 @@ export class ArticleImportService {
             }
         });
 
-        return {
+        const commitResult: CommitPreviewResponse = {
             previewId,
+            status: 'committed',
             summary: {
                 requestedRows: selectedRowNumbers?.length ?? rowsToImport.length,
                 attemptedRows: rowsToImport.length,
@@ -449,6 +472,12 @@ export class ArticleImportService {
             createdRows,
             skippedRows
         };
+
+        entry.consumedAt = Date.now();
+        entry.commitResult = commitResult;
+        this.previewStore.set(previewId, entry);
+
+        return commitResult;
     }
 }
 
