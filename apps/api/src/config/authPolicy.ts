@@ -15,9 +15,9 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /providers': { requiresAdminToken: false },
     'GET /size-tables': { requiresAdminToken: false },
     'GET /facturas/:id': { requiresAdminToken: false },
-    'POST /facturas': { requiresAdminToken: false },
-    'PATCH /facturas/:id/draft': { requiresAdminToken: false },
-    'PATCH /facturas/:id/finalize': { requiresAdminToken: false },
+    'POST /facturas': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'PATCH /facturas/:id/draft': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'PATCH /facturas/:id/finalize': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /admin/catalogs/:catalog': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/catalogs/:catalog': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'PUT /admin/catalogs/:catalog/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
@@ -26,11 +26,12 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /operations/catalogs': { requiresAdminToken: false },
     'GET /admin/catalogs/:catalog/version': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /operations/catalogs/version': { requiresAdminToken: false },
-    'POST /articles': { requiresAdminToken: false },
+    'POST /articles': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /articles/search': { requiresAdminToken: false },
-    'POST /articles/:id/clone': { requiresAdminToken: false },
+    'POST /articles/:id/clone': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/articles/import/preview': { requiresAdminToken: true, requiredHeader: 'authorization' },
-    'POST /admin/articles/import/commit': { requiresAdminToken: true, requiredHeader: 'authorization' }
+    'POST /admin/articles/import/commit': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /admin/articles/import/template': { requiresAdminToken: true, requiredHeader: 'authorization' }
 };
 
 export const assertAuthPolicyCoverage = () => {
