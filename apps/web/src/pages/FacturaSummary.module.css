@@ -138,6 +138,26 @@
     font-size: 0.9rem;
 }
 
+
+.pendingBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.resolveModalCard {
+    width: min(1180px, 100%);
+}
+
+
 .colorList {
     display: grid;
     gap: var(--space-1);
