@@ -139,6 +139,11 @@ export function FacturaSummary() {
             return;
         }
 
+        if (state.currentFactura.items.some((item) => !item.articleId?.trim())) {
+            setFeedback({ type: 'error', message: 'No podés finalizar mientras existan ítems sin artículo maestro asignado.' });
+            return;
+        }
+
         const confirmed = window.confirm('¿Seguro que querés finalizar esta factura? Esta acción no se puede deshacer.');
         if (!confirmed) return;
 
@@ -281,6 +286,7 @@ export function FacturaSummary() {
 
     const factura = state.currentFactura;
     const isFinal = factura.estado === FacturaEstado.FINAL;
+    const pendingArticleItems = factura.items.filter((item) => !item.articleId?.trim());
 
     return (
         <div className={styles.page}>
@@ -288,6 +294,12 @@ export function FacturaSummary() {
                 <div className={styles.finalBanner}>
                     <CheckCircle size={18} />
                     <span>Esta factura está finalizada y es de solo lectura.</span>
+                </div>
+            )}
+
+            {pendingArticleItems.length > 0 && !isFinal && (
+                <div className={`${styles.feedback} ${styles.feedbackError}`}>
+                    Tenés {pendingArticleItems.length} ítem(s) sin artículo maestro. Editalos desde el wizard antes de finalizar.
                 </div>
             )}
 
@@ -313,7 +325,7 @@ export function FacturaSummary() {
                                 <Button variant="secondary" onClick={() => navigate(`/facturas/${id}/wizard`)} className={styles.actionButton}>
                                     Editar
                                 </Button>
-                                <Button variant="primary" onClick={handleFinalize} isLoading={finalizing} className={styles.actionButton} icon={<CheckCircle size={16} />}>
+                                <Button variant="primary" onClick={handleFinalize} isLoading={finalizing} className={styles.actionButton} icon={<CheckCircle size={16} />} disabled={pendingArticleItems.length > 0}>
                                     Finalizar
                                 </Button>
                             </>

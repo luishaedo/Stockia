@@ -28,6 +28,7 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /operations/catalogs/version': { requiresAdminToken: false },
     'POST /articles': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /articles/search': { requiresAdminToken: false },
+    'POST /suppliers': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /articles/:id/clone': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/articles/import/preview': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/articles/import/commit': { requiresAdminToken: true, requiredHeader: 'authorization' },

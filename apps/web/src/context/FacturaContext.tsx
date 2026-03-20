@@ -101,7 +101,7 @@ export function FacturaProvider({ children }: { children: React.ReactNode }) {
     const createFactura = useCallback(async (nro: string, prov: string) => {
         dispatch({ type: 'START_SAVING' });
         try {
-            const factura = await api.createFactura({ nroFactura: nro, supplierId: prov, proveedor: prov });
+            const factura = await api.createFactura({ nroFactura: nro, supplierId: prov });
             dispatch({ type: 'SET_FACTURA', payload: factura });
             return factura.id;
         } catch (e: any) {

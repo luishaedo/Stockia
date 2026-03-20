@@ -122,6 +122,23 @@ export class CatalogsApiService {
         }
     }
 
+
+    async createSupplier(payload: { code: string; name: string; logoUrl?: string; logoPublicId?: string }) {
+        const path = '/suppliers';
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                method: 'POST',
+                headers: await this.client.getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            await this.client.assertOk(response, 'No pudimos crear el proveedor');
+            this.invalidateCatalogCache('suppliers');
+            return response.json() as Promise<{ id: string; code: string; name: string; logoUrl?: string | null }>;
+        } catch (error) {
+            return this.logAndThrowRequestError('createSupplier', path, error);
+        }
+    }
+
     async createAdminCatalog(catalog: AdminCatalogKey, payload: Record<string, unknown>) {
         const path = `/admin/catalogs/${catalog}`;
         try {

@@ -19,6 +19,7 @@ export type RouteDefinition = {
         | '/operations/catalogs/version'
         | '/articles'
         | '/articles/search'
+        | '/suppliers'
         | '/articles/:id/clone'
         | '/admin/articles/import/preview'
         | '/admin/articles/import/commit'
@@ -49,6 +50,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: false },
     { method: 'POST', path: '/articles', requiresAdminToken: true },
     { method: 'GET', path: '/articles/search', requiresAdminToken: false },
+    { method: 'POST', path: '/suppliers', requiresAdminToken: true },
     { method: 'POST', path: '/articles/:id/clone', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/preview', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true },
