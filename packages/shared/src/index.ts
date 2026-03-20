@@ -165,6 +165,13 @@ export const CloneArticleSchema = ArticlePayloadSchema.partial().extend({
     description: z.string().min(1)
 });
 
+export const CreateSupplierSchema = z.object({
+    code: z.string().min(1),
+    name: z.string().min(1),
+    logoUrl: z.string().min(1).optional(),
+    logoPublicId: z.string().min(1).optional()
+});
+
 export const AdminInvoicesQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
@@ -272,6 +279,7 @@ export type OperationCatalogsResponse = z.infer<typeof OperationCatalogsResponse
 export type ArticleSearchQuery = z.infer<typeof ArticleSearchQuerySchema>;
 export type CreateArticleDTO = z.infer<typeof CreateArticleSchema>;
 export type CloneArticleDTO = z.infer<typeof CloneArticleSchema>;
+export type CreateSupplierDTO = z.infer<typeof CreateSupplierSchema>;
 
 export interface Factura {
     id: string;
@@ -342,6 +350,7 @@ export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: false },
     { method: 'POST', path: '/articles', requiresAdminToken: true },
     { method: 'GET', path: '/articles/search', requiresAdminToken: false },
+    { method: 'POST', path: '/suppliers', requiresAdminToken: true },
     { method: 'POST', path: '/articles/:id/clone', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/preview', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true },

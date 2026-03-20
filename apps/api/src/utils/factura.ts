@@ -62,6 +62,10 @@ export const mergeItems = (items: FacturaItem[], handler: DuplicateHandler = 'ER
     return Array.from(itemMap.values());
 };
 
+
+export const getPendingArticleItems = (factura: { items?: Array<{ articleId?: string | null; codigoArticulo: string }> | null }) =>
+    (factura.items ?? []).filter((item) => !item.articleId?.trim());
+
 export const validateFacturaIntegrity = (factura: any): string | null => {
     if (!factura.items || factura.items.length === 0) {
         return 'Invoice must have at least one item';

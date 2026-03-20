@@ -15,7 +15,7 @@ import {
 } from '@stockia/shared';
 import { FacturaRepository } from '../repositories/facturaRepository.js';
 import { logger } from '../lib/logger.js';
-import { mergeItems, validateFacturaIntegrity } from '../utils/factura.js';
+import { getPendingArticleItems, mergeItems, validateFacturaIntegrity } from '../utils/factura.js';
 
 export class DomainError extends Error {
     constructor(public readonly code: string, message: string, public readonly status = 400, public readonly details?: unknown) {
@@ -418,6 +418,20 @@ export class FacturaService {
 
         if (factura.estado === FacturaEstado.FINAL) {
             throw new DomainError(ErrorCodes.INVOICE_ALREADY_FINALIZED, 'Invoice already finalized', 400);
+        }
+
+        const pendingArticleItems = getPendingArticleItems(factura);
+        if (pendingArticleItems.length > 0) {
+            throw new DomainError(
+                ErrorCodes.INVOICE_FINALIZE_INVALID,
+                'Invoice contains items without master article assignment',
+                422,
+                {
+                    reason: 'MISSING_ARTICLE_MASTER',
+                    invoiceId: id,
+                    pendingItems: pendingArticleItems.map((item) => item.codigoArticulo)
+                }
+            );
         }
 
         const integrityError = validateFacturaIntegrity(factura);

@@ -1,20 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, PackagePlus, Search, Store } from 'lucide-react';
+import { ArticleResponse, CreateArticlePayload } from '../../services/articlesApi';
+import { ApiError, api } from '../../services/api';
+import { SupplierCreateModal } from './SupplierCreateModal';
 import styles from './ArticleStep.module.css';
 
-type Option = { value: string; label: string };
+type Option = { value: string; label: string; id?: string; code?: string };
+
+type SupplierOption = { id: string; code: string; label: string };
+
+export interface ArticleDraftForm {
+    sku: string;
+    description: string;
+    familyId: string;
+    categoryId: string;
+    garmentTypeId: string;
+    classificationId: string;
+    materialId: string;
+    sizeCurveId: string;
+}
 
 interface ArticleStepProps {
-    draftItem: {
-        familyId: string;
-        categoryId: string;
-        garmentTypeId: string;
-        classificationId: string;
-        materialId: string;
-        codigoArticulo: string;
-        curvaTalles: string;
-    };
+    supplier?: SupplierOption | null;
+    supplierLocked?: boolean;
+    selectedArticle: ArticleResponse | null;
+    articleDraft: ArticleDraftForm;
     familyOptions: Option[];
     categoryOptions: Option[];
     garmentTypeOptions: Option[];
@@ -23,32 +33,30 @@ interface ArticleStepProps {
     sizeCurveOptions: Option[];
     catalogsLoading: boolean;
     catalogsError: string | null;
-    onChange: (field: string, value: string) => void;
+    onDraftChange: (field: keyof ArticleDraftForm, value: string) => void;
+    onArticleSelected: (article: ArticleResponse) => void;
     onNext: () => void;
+    onSupplierCreated: (supplier: SupplierOption) => void;
     readOnly?: boolean;
 }
 
-type AttributeStep = {
-    key: keyof ArticleStepProps['draftItem'];
-    title: string;
-    placeholder: string;
-    options: Option[];
-    icon: string;
+const getErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof ApiError) {
+        return `${error.message} [${error.code}]`;
+    }
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return fallback;
 };
 
-const SYMBOLS = ['🧩', '👕', '🏷️', '✅', '🧶', '📏', '🔢'];
-
-const formatOptionLabel = (label: string) => {
-    const [code, ...rest] = label.split(' - ');
-    const name = rest.join(' - ').trim();
-    return {
-        code: code.trim(),
-        name: name || code.trim()
-    };
-};
+const getOptionLabel = (options: Option[], value: string) => options.find((option) => option.value === value)?.label ?? '-';
 
 export function ArticleStep({
-    draftItem,
+    supplier,
+    supplierLocked = false,
+    selectedArticle,
+    articleDraft,
     familyOptions,
     categoryOptions,
     garmentTypeOptions,
@@ -57,143 +65,330 @@ export function ArticleStep({
     sizeCurveOptions,
     catalogsLoading,
     catalogsError,
-    onChange,
+    onDraftChange,
+    onArticleSelected,
     onNext,
+    onSupplierCreated,
     readOnly = false
 }: ArticleStepProps) {
-    const attributeSteps = useMemo<AttributeStep[]>(() => ([
-        { key: 'familyId', title: 'Familia', placeholder: 'Seleccionar familia', options: familyOptions, icon: '👪' },
-        { key: 'categoryId', title: 'Categoría', placeholder: 'Seleccionar categoría', options: categoryOptions, icon: '🗂️' },
-        { key: 'garmentTypeId', title: 'Tipo de prenda', placeholder: 'Seleccionar tipo', options: garmentTypeOptions, icon: '👕' },
-        { key: 'classificationId', title: 'Clasificación', placeholder: 'Seleccionar clasificación', options: classificationOptions, icon: '🏷️' },
-        { key: 'materialId', title: 'Material', placeholder: 'Seleccionar material', options: materialOptions, icon: '🧶' },
-        { key: 'curvaTalles', title: 'Curva de talles', placeholder: 'Seleccionar curva', options: sizeCurveOptions, icon: '📏' }
-    ]), [familyOptions, categoryOptions, garmentTypeOptions, classificationOptions, materialOptions, sizeCurveOptions]);
-
-    const [activeStepIndex, setActiveStepIndex] = useState(0);
+    const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<ArticleResponse[]>([]);
+    const [searching, setSearching] = useState(false);
+    const [searchError, setSearchError] = useState<string | null>(null);
+    const [createError, setCreateError] = useState<string | null>(null);
+    const [cloneError, setCloneError] = useState<string | null>(null);
+    const [savingArticle, setSavingArticle] = useState(false);
+    const [cloningArticleId, setCloningArticleId] = useState<string | null>(null);
 
     useEffect(() => {
-        const firstEmptyIndex = attributeSteps.findIndex((step) => !draftItem[step.key]);
-        if (firstEmptyIndex >= 0) {
-            setActiveStepIndex(firstEmptyIndex);
-            return;
-        }
+        setSearchResults([]);
+        setSearchQuery('');
+        setSearchError(null);
+    }, [supplier?.id]);
 
-        setActiveStepIndex(attributeSteps.length - 1);
-    }, [
-        attributeSteps,
-        draftItem.familyId,
-        draftItem.categoryId,
-        draftItem.garmentTypeId,
-        draftItem.classificationId,
-        draftItem.materialId,
-        draftItem.curvaTalles
-    ]);
-
-    const hasMissingCatalogs = attributeSteps.some((step) => step.options.length === 0);
+    const missingCatalogs = useMemo(() => {
+        const groups = [familyOptions, categoryOptions, garmentTypeOptions, classificationOptions, materialOptions, sizeCurveOptions];
+        return groups.some((options) => options.length === 0);
+    }, [familyOptions, categoryOptions, garmentTypeOptions, classificationOptions, materialOptions, sizeCurveOptions]);
 
     const catalogBlockReason = catalogsError
-        || (hasMissingCatalogs ? 'Faltan catálogos obligatorios para cargar el artículo. Revisá Administración.' : null);
+        || (missingCatalogs ? 'Faltan catálogos obligatorios para crear o clonar artículos.' : null);
 
-    const isValid = Boolean(
-        draftItem.familyId
-        && draftItem.categoryId
-        && draftItem.garmentTypeId
-        && draftItem.classificationId
-        && draftItem.materialId
-        && draftItem.curvaTalles
-        && draftItem.codigoArticulo
+    const canManageSupplier = !readOnly && !supplierLocked;
+    const canCreateArticle = Boolean(
+        supplier?.id
+        && articleDraft.sku.trim()
+        && articleDraft.description.trim()
+        && articleDraft.familyId
+        && articleDraft.categoryId
+        && articleDraft.garmentTypeId
+        && articleDraft.classificationId
+        && articleDraft.materialId
+        && articleDraft.sizeCurveId
         && !catalogBlockReason
     );
 
-    const activeStep = attributeSteps[activeStepIndex];
+    const searchArticles = async () => {
+        if (!supplier?.id) {
+            setSearchError('Primero necesitás un proveedor activo para buscar artículos.');
+            return;
+        }
 
-    const handleSelectOption = (field: string, value: string) => {
-        onChange(field, value);
-        if (activeStepIndex < attributeSteps.length - 1) {
-            setActiveStepIndex((prev) => prev + 1);
+        setSearching(true);
+        setSearchError(null);
+        try {
+            const response = await api.searchArticles({ supplierId: supplier.id, q: searchQuery.trim(), limit: 20 });
+            setSearchResults(response.items);
+        } catch (error) {
+            setSearchError(getErrorMessage(error, 'No pudimos buscar artículos.'));
+        } finally {
+            setSearching(false);
         }
     };
 
-    const goBack = () => {
-        setActiveStepIndex((prev) => Math.max(prev - 1, 0));
+    const createInlineArticle = async () => {
+        if (!supplier?.id) {
+            setCreateError('No hay proveedor seleccionado para crear el artículo.');
+            return;
+        }
+
+        const payload: CreateArticlePayload = {
+            sku: articleDraft.sku.trim(),
+            description: articleDraft.description.trim(),
+            supplierId: supplier.id,
+            familyId: articleDraft.familyId,
+            materialId: articleDraft.materialId,
+            categoryId: articleDraft.categoryId,
+            classificationId: articleDraft.classificationId,
+            garmentTypeId: articleDraft.garmentTypeId,
+            sizeCurveId: articleDraft.sizeCurveId
+        };
+
+        setSavingArticle(true);
+        setCreateError(null);
+        try {
+            const created = await api.createArticle(payload);
+            onArticleSelected(created);
+            setSearchResults((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
+            setSearchQuery(created.sku);
+        } catch (error) {
+            setCreateError(getErrorMessage(error, 'No pudimos crear el artículo.'));
+        } finally {
+            setSavingArticle(false);
+        }
     };
 
-    const selectedValue = draftItem[activeStep.key] as string;
+    const cloneFromBaseArticle = async (baseArticle: ArticleResponse) => {
+        setCloningArticleId(baseArticle.id);
+        setCloneError(null);
+        try {
+            const cloned = await api.cloneArticle(baseArticle.id, {
+                sku: articleDraft.sku.trim(),
+                description: articleDraft.description.trim(),
+                supplierId: supplier?.id,
+                familyId: articleDraft.familyId || undefined,
+                materialId: articleDraft.materialId || undefined,
+                categoryId: articleDraft.categoryId || undefined,
+                classificationId: articleDraft.classificationId || undefined,
+                garmentTypeId: articleDraft.garmentTypeId || undefined,
+                sizeCurveId: articleDraft.sizeCurveId || undefined
+            });
+            onArticleSelected(cloned);
+            setSearchResults((prev) => [cloned, ...prev.filter((item) => item.id !== cloned.id)]);
+            setSearchQuery(cloned.sku);
+        } catch (error) {
+            setCloneError(getErrorMessage(error, 'No pudimos clonar el artículo.'));
+        } finally {
+            setCloningArticleId(null);
+        }
+    };
 
     return (
         <section className={styles.wrapper}>
-            <h2 className={styles.title}>Paso 1 · Datos del artículo</h2>
-            <p className={styles.subtitle}>Seleccioná cada atributo tocando una card. Al elegir, avanzás al siguiente paso.</p>
-
-            <div className={styles.progressRow}>
-                {attributeSteps.map((step, index) => {
-                    const isDone = Boolean(draftItem[step.key]);
-                    const isActive = index === activeStepIndex;
-                    return (
-                        <span key={step.key} className={isActive ? styles.progressActive : styles.progressItem}>
-                            {isDone ? <CheckCircle2 size={14} /> : <span>{index + 1}</span>}
-                        </span>
-                    );
-                })}
-            </div>
-
-            <div className={styles.stepHeader}>
-                <button type="button" className={styles.backButton} onClick={goBack} disabled={activeStepIndex === 0 || readOnly || catalogsLoading}>
-                    <ArrowLeft size={16} />
-                </button>
+            <div className={styles.header}>
                 <div>
-                    <p className={styles.stepCounter}>Atributo {activeStepIndex + 1} de {attributeSteps.length}</p>
-                    <h3 className={styles.blockTitle}>{activeStep.icon} {activeStep.title}</h3>
+                    <h2>Paso 1 · Resolver artículo maestro</h2>
+                    <p>Buscá uno existente o crealo/clonalo sin salir del wizard. El ítem se guarda vinculado al catálogo maestro.</p>
+                </div>
+                <div className={styles.supplierBox}>
+                    <span className={styles.supplierLabel}>Proveedor actual</span>
+                    <strong>{supplier ? `${supplier.code} · ${supplier.label}` : 'Sin proveedor'}</strong>
+                    <button type="button" className={styles.inlineButton} onClick={() => setSupplierModalOpen(true)} disabled={!canManageSupplier}>
+                        <Store size={16} />
+                        {supplier ? 'Crear y usar otro proveedor' : 'Crear proveedor'}
+                    </button>
                 </div>
             </div>
 
-            <div className={styles.cardsGrid}>
-                {activeStep.options.map((option, index) => {
-                    const formatted = formatOptionLabel(option.label);
-                    const isSelected = selectedValue === option.value;
-                    return (
-                        <button
-                            key={option.value}
-                            type="button"
-                            className={isSelected ? styles.optionCardActive : styles.optionCard}
-                            onClick={() => handleSelectOption(activeStep.key, option.value)}
-                            disabled={readOnly || catalogsLoading}
-                        >
-                            <span className={styles.optionSymbol}>{SYMBOLS[index % SYMBOLS.length]}</span>
-                            <span className={styles.optionName}>{formatted.name}</span>
-                            <span className={styles.optionCode}>{formatted.code}</span>
-                        </button>
-                    );
-                })}
-            </div>
-
-            <label className={styles.label}>SKU</label>
-            <input
-                className={styles.input}
-                value={draftItem.codigoArticulo}
-                onChange={(e) => onChange('codigoArticulo', e.target.value)}
-                placeholder="Ej: NK-1002"
-                disabled={readOnly}
-            />
-
-            {catalogBlockReason && (
-                <div className={styles.warning}>
-                    <AlertCircle size={15} />
-                    <div>
-                        <p>{catalogBlockReason}</p>
-                        <Link to="/admin">Ir a Administración de catálogos</Link>
-                    </div>
+            {!canManageSupplier && (
+                <div className={styles.infoBanner}>
+                    <AlertCircle size={16} />
+                    <span>El proveedor no puede cambiarse cuando la factura ya tiene ítems o está en solo lectura.</span>
                 </div>
             )}
 
-            <button
-                onClick={onNext}
-                disabled={!isValid || readOnly || catalogsLoading}
-                className={styles.submitButton}
-            >
-                Continuar: agregar colores <ArrowRight size={16} />
-            </button>
+            {catalogBlockReason && (
+                <div className={styles.warningBanner}>
+                    <AlertCircle size={16} />
+                    <span>{catalogBlockReason}</span>
+                </div>
+            )}
+
+            <div className={styles.layout}>
+                <article className={styles.panel}>
+                    <div className={styles.panelHeader}>
+                        <Search size={18} />
+                        <div>
+                            <h3>Buscar y seleccionar existente</h3>
+                            <p>Filtrá por SKU o descripción dentro del proveedor actual.</p>
+                        </div>
+                    </div>
+
+                    <div className={styles.searchRow}>
+                        <input
+                            value={searchQuery}
+                            onChange={(event) => setSearchQuery(event.target.value)}
+                            placeholder="Ej: NK-1002 o Remera deportiva"
+                            disabled={readOnly || !supplier?.id}
+                        />
+                        <button type="button" className={styles.primaryButton} onClick={() => void searchArticles()} disabled={readOnly || searching || !supplier?.id}>
+                            {searching ? 'Buscando...' : 'Buscar'}
+                        </button>
+                    </div>
+
+                    {searchError && <p className={styles.errorText}>{searchError}</p>}
+
+                    <div className={styles.resultsList}>
+                        {searchResults.map((article) => (
+                            <div key={article.id} className={selectedArticle?.id === article.id ? styles.resultCardActive : styles.resultCard}>
+                                <div>
+                                    <strong>{article.sku}</strong>
+                                    <p>{article.description}</p>
+                                    <small>Curva: {article.sizeCurve.code} · {article.sizeCurve.values.join(', ')}</small>
+                                </div>
+                                <div className={styles.resultActions}>
+                                    <button type="button" className={styles.secondaryButton} onClick={() => onArticleSelected(article)} disabled={readOnly}>
+                                        Usar artículo
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={styles.secondaryButton}
+                                        onClick={() => void cloneFromBaseArticle(article)}
+                                        disabled={readOnly || !articleDraft.sku.trim() || !articleDraft.description.trim() || Boolean(catalogBlockReason) || cloningArticleId === article.id}
+                                    >
+                                        {cloningArticleId === article.id ? 'Clonando...' : 'Clonar desde este'}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {!searching && searchResults.length === 0 && (
+                            <p className={styles.emptyState}>No hay resultados todavía. Ejecutá una búsqueda o creá un artículo inline.</p>
+                        )}
+                    </div>
+
+                    {cloneError && <p className={styles.errorText}>{cloneError}</p>}
+                </article>
+
+                <article className={styles.panel}>
+                    <div className={styles.panelHeader}>
+                        <PackagePlus size={18} />
+                        <div>
+                            <h3>Crear o clonar inline</h3>
+                            <p>Completá el maestro desde cero o prepará los datos para clonar desde un artículo base.</p>
+                        </div>
+                    </div>
+
+                    <div className={styles.formGrid}>
+                        <label>
+                            <span>SKU</span>
+                            <input value={articleDraft.sku} onChange={(event) => onDraftChange('sku', event.target.value)} disabled={readOnly} />
+                        </label>
+                        <label>
+                            <span>Descripción</span>
+                            <input value={articleDraft.description} onChange={(event) => onDraftChange('description', event.target.value)} disabled={readOnly} />
+                        </label>
+                        <label>
+                            <span>Familia</span>
+                            <select value={articleDraft.familyId} onChange={(event) => onDraftChange('familyId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                <option value="">Seleccionar</option>
+                                {familyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Categoría</span>
+                            <select value={articleDraft.categoryId} onChange={(event) => onDraftChange('categoryId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                <option value="">Seleccionar</option>
+                                {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Tipo de prenda</span>
+                            <select value={articleDraft.garmentTypeId} onChange={(event) => onDraftChange('garmentTypeId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                <option value="">Seleccionar</option>
+                                {garmentTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Clasificación</span>
+                            <select value={articleDraft.classificationId} onChange={(event) => onDraftChange('classificationId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                <option value="">Seleccionar</option>
+                                {classificationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Material</span>
+                            <select value={articleDraft.materialId} onChange={(event) => onDraftChange('materialId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                <option value="">Seleccionar</option>
+                                {materialOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Curva</span>
+                            <select value={articleDraft.sizeCurveId} onChange={(event) => onDraftChange('sizeCurveId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                <option value="">Seleccionar</option>
+                                {sizeCurveOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                        </label>
+                    </div>
+
+                    <button type="button" className={styles.primaryButton} onClick={() => void createInlineArticle()} disabled={readOnly || savingArticle || !canCreateArticle}>
+                        <PackagePlus size={16} />
+                        {savingArticle ? 'Creando artículo...' : 'Crear artículo inline'}
+                    </button>
+
+                    {createError && <p className={styles.errorText}>{createError}</p>}
+                </article>
+            </div>
+
+            <article className={styles.selectionPanel}>
+                <div className={styles.panelHeader}>
+                    <CheckCircle2 size={18} />
+                    <div>
+                        <h3>Artículo listo para el ítem</h3>
+                        <p>El siguiente paso usa este maestro para completar snapshots, curva y proveedor.</p>
+                    </div>
+                </div>
+
+                {selectedArticle ? (
+                    <div className={styles.selectionCard}>
+                        <div>
+                            <strong>{selectedArticle.sku}</strong>
+                            <p>{selectedArticle.description}</p>
+                        </div>
+                        <dl className={styles.selectionMeta}>
+                            <div>
+                                <dt>Tipo</dt>
+                                <dd>{getOptionLabel(garmentTypeOptions, selectedArticle.garmentTypeId)}</dd>
+                            </div>
+                            <div>
+                                <dt>Curva</dt>
+                                <dd>{selectedArticle.sizeCurve.code} · {selectedArticle.sizeCurve.values.join(', ')}</dd>
+                            </div>
+                            <div>
+                                <dt>Proveedor</dt>
+                                <dd>{selectedArticle.supplier.code} · {selectedArticle.supplier.label}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                ) : (
+                    <p className={styles.emptyState}>Todavía no seleccionaste ningún artículo maestro.</p>
+                )}
+
+                <button type="button" className={styles.nextButton} onClick={onNext} disabled={!selectedArticle || readOnly}>
+                    Continuar con colores
+                </button>
+            </article>
+
+            <SupplierCreateModal
+                isOpen={supplierModalOpen}
+                onClose={() => setSupplierModalOpen(false)}
+                onCreated={(created) => {
+                    onSupplierCreated({ id: created.id, code: created.code, label: created.name });
+                    setSearchResults([]);
+                }}
+            />
         </section>
     );
 }

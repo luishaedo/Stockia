@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import { CloneArticleSchema, CreateArticleSchema, ErrorCodes, ArticleSearchQuerySchema } from '@stockia/shared';
+import { CloneArticleSchema, CreateArticleSchema, CreateSupplierSchema, ErrorCodes, ArticleSearchQuerySchema } from '@stockia/shared';
 import { RequestHandler, Router } from 'express';
+import { catalogVersionStore } from '../lib/catalogVersion.js';
 import { logger } from '../lib/logger.js';
 import { sendError } from '../middlewares/error.js';
 
@@ -120,6 +121,35 @@ export const createArticleRoutes = (
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'searchArticles' }, 'Failed to search articles');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to search articles', error, req.traceId);
+        }
+    });
+
+    router.post('/suppliers', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const validation = CreateSupplierSchema.safeParse(req.body);
+        if (!validation.success) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
+        }
+
+        try {
+            const created = await prisma.supplier.create({
+                data: {
+                    code: validation.data.code.trim(),
+                    name: validation.data.name.trim(),
+                    logoUrl: validation.data.logoUrl?.trim() || undefined,
+                    logoPublicId: validation.data.logoPublicId?.trim() || undefined
+                }
+            });
+
+            catalogVersionStore.bumpAdminCatalogVersion('suppliers');
+            catalogVersionStore.bumpOperationsCatalogVersion();
+
+            return res.status(201).json(created);
+        } catch (error: any) {
+            if (error?.code === 'P2002') {
+                return sendError(res, 409, ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION, 'Supplier code already exists', undefined, req.traceId);
+            }
+            logger.error({ err: error, traceId: req.traceId, operation: 'createSupplier' }, 'Failed to create supplier');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to create supplier', error, req.traceId);
         }
     });
 

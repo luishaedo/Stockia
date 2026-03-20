@@ -1,0 +1,97 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 50;
+}
+
+.modal {
+    width: min(100%, 520px);
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.55);
+}
+
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.header h2 {
+    margin: 0;
+    color: #f8fafc;
+}
+
+.header p {
+    margin: 6px 0 0;
+    color: #94a3b8;
+}
+
+.closeButton {
+    border: 0;
+    background: transparent;
+    color: #cbd5e1;
+    cursor: pointer;
+}
+
+.form {
+    display: grid;
+    gap: 16px;
+}
+
+.form label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+.form input {
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(15, 23, 42, 0.8);
+    color: #f8fafc;
+    padding: 12px 14px;
+}
+
+.error {
+    border-radius: 12px;
+    background: rgba(127, 29, 29, 0.25);
+    color: #fecaca;
+    padding: 12px 14px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.secondaryButton,
+.primaryButton {
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.secondaryButton {
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: transparent;
+    color: #e2e8f0;
+}
+
+.primaryButton {
+    border: 0;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+}
