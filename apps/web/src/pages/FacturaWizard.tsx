@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFactura } from '../context/FacturaContext';
-import { ArticleStep } from '../features/wizard/ArticleStep';
+import { ArticleStep, ArticleDraftForm } from '../features/wizard/ArticleStep';
 import { ColorStep } from '../features/wizard/ColorStep';
 import { FacturaItem, VarianteColor, FacturaEstado } from '@stockia/shared';
 import { AlertTriangle, Loader2, Lock, ArrowLeft } from 'lucide-react';
 import { useAutosave } from '../hooks/useAutosave';
+import { ArticleResponse } from '../services/articlesApi';
 import { ApiError, api } from '../services/api';
 import styles from './FacturaWizard.module.css';
 
@@ -18,6 +19,28 @@ type SizeCurveOption = { value: string; label: string; id: string; values: strin
 type AdminCatalogItem = { id: string; code: string; description?: string; name?: string };
 type SizeCurveCatalogItem = { id: string; code: string; description: string; values?: Array<{ value: string }> };
 
+const INITIAL_ARTICLE_DRAFT: ArticleDraftForm = {
+    sku: '',
+    description: '',
+    familyId: '',
+    categoryId: '',
+    garmentTypeId: '',
+    classificationId: '',
+    materialId: '',
+    sizeCurveId: ''
+};
+
+const mapArticleToDraft = (article: ArticleResponse): ArticleDraftForm => ({
+    sku: article.sku,
+    description: article.description,
+    familyId: article.familyId,
+    categoryId: article.categoryId,
+    garmentTypeId: article.garmentTypeId,
+    classificationId: article.classificationId,
+    materialId: article.materialId,
+    sizeCurveId: article.sizeCurveId
+});
+
 export function FacturaWizard() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -26,15 +49,8 @@ export function FacturaWizard() {
     const [step, setStep] = useState<WizardStep>('ARTICLE');
     const { conflictState, actions: autosaveActions } = useAutosave();
 
-    const [draftItem, setDraftItem] = useState({
-        familyId: '',
-        categoryId: '',
-        garmentTypeId: '',
-        classificationId: '',
-        materialId: '',
-        codigoArticulo: '',
-        curvaTalles: ''
-    });
+    const [articleDraft, setArticleDraft] = useState<ArticleDraftForm>(INITIAL_ARTICLE_DRAFT);
+    const [selectedArticle, setSelectedArticle] = useState<ArticleResponse | null>(null);
     const [draftColors, setDraftColors] = useState<VarianteColor[]>([]);
     const [familyOptions, setFamilyOptions] = useState<CatalogOption[]>([]);
     const [categoryOptions, setCategoryOptions] = useState<CatalogOption[]>([]);
@@ -87,7 +103,7 @@ export function FacturaWizard() {
                     return {
                         id: entry.id,
                         code: entry.code,
-                        value: values.join(','),
+                        value: entry.id,
                         values,
                         label: values.length > 0
                             ? `${entry.code} - ${entry.description} (${values.join(',')})`
@@ -106,31 +122,64 @@ export function FacturaWizard() {
     }, []);
 
     const isFinal = state.currentFactura?.estado === FacturaEstado.FINAL;
+    const pendingMasterItems = state.currentFactura?.items.filter((item) => !item.articleId?.trim()) ?? [];
+    const supplier = state.currentFactura?.supplierSnapshot
+        ? {
+            id: state.currentFactura.supplierSnapshot.id,
+            code: state.currentFactura.supplierSnapshot.code,
+            label: state.currentFactura.supplierSnapshot.label
+        }
+        : null;
 
-    const handleArticleChange = (field: string, value: string) => {
+    const handleDraftChange = (field: keyof ArticleDraftForm, value: string) => {
         if (isFinal) return;
-        setDraftItem((prev) => ({ ...prev, [field]: value }));
+        setArticleDraft((prev) => ({ ...prev, [field]: value }));
+        if (selectedArticle && mapArticleToDraft(selectedArticle)[field] !== value) {
+            setSelectedArticle(null);
+        }
+    };
+
+    const handleArticleSelected = (article: ArticleResponse) => {
+        if (isFinal) return;
+        setSelectedArticle(article);
+        setArticleDraft(mapArticleToDraft(article));
     };
 
     const handleFinishItem = () => {
-        if (isFinal || !state.currentFactura) return;
+        if (isFinal || !state.currentFactura || !selectedArticle) return;
 
-        const selectedGarmentType = garmentTypeOptions.find((option) => option.id === draftItem.garmentTypeId);
-        const selectedCurve = sizeCurveOptions.find((option) => option.value === draftItem.curvaTalles);
-        const curva = selectedCurve?.values?.length ? selectedCurve.values : draftItem.curvaTalles.split(',').map((s) => s.trim()).filter(Boolean);
+        const selectedGarmentType = garmentTypeOptions.find((option) => option.id === selectedArticle.garmentTypeId);
+        const selectedCurve = sizeCurveOptions.find((option) => option.id === selectedArticle.sizeCurveId);
+        const curveValues = selectedArticle.sizeCurve.values;
 
         const newItem: FacturaItem = {
-            supplierLabel: state.currentFactura.proveedor || '',
-            marca: state.currentFactura.proveedor || '',
+            articleId: selectedArticle.id,
+            articleSnapshot: {
+                sku: selectedArticle.sku,
+                description: selectedArticle.description,
+                supplier: {
+                    id: selectedArticle.supplier.id,
+                    code: selectedArticle.supplier.code,
+                    label: selectedArticle.supplier.label
+                },
+                sizeCurve: {
+                    id: selectedArticle.sizeCurve.id,
+                    code: selectedArticle.sizeCurve.code,
+                    label: selectedArticle.sizeCurve.label,
+                    values: curveValues
+                }
+            },
+            supplierLabel: selectedArticle.supplier.label,
+            marca: selectedArticle.supplier.label,
             tipoPrenda: selectedGarmentType?.label || '',
-            codigoArticulo: draftItem.codigoArticulo,
-            sizeCurveId: selectedCurve?.id,
-            curvaTalles: curva,
+            codigoArticulo: selectedArticle.sku,
+            sizeCurveId: selectedArticle.sizeCurveId,
+            curvaTalles: curveValues,
             garmentTypeSnapshot: selectedGarmentType
                 ? { id: selectedGarmentType.id, code: selectedGarmentType.code, label: selectedGarmentType.label }
                 : undefined,
             sizeCurveSnapshot: selectedCurve
-                ? { id: selectedCurve.id, code: selectedCurve.code, label: selectedCurve.label, values: curva }
+                ? { id: selectedCurve.id, code: selectedCurve.code, label: selectedCurve.label, values: curveValues }
                 : undefined,
             colores: draftColors
         };
@@ -138,11 +187,9 @@ export function FacturaWizard() {
         const updatedItems = [...(state.currentFactura.items || []), newItem];
         updateDraft({ items: updatedItems });
         setDraftColors([]);
+        setSelectedArticle(null);
+        setArticleDraft(INITIAL_ARTICLE_DRAFT);
         setStep('ARTICLE');
-        setDraftItem((prev) => ({
-            ...prev,
-            codigoArticulo: ''
-        }));
     };
 
     if (state.isLoading || !state.currentFactura) {
@@ -169,6 +216,15 @@ export function FacturaWizard() {
                 <div className={styles.noticeSuccess}><Lock size={16} /> La factura está finalizada y es de solo lectura.</div>
             )}
 
+            {!isFinal && pendingMasterItems.length > 0 && (
+                <div className={styles.noticeWarning}>
+                    <AlertTriangle size={16} />
+                    <div>
+                        <p>Esta factura tiene {pendingMasterItems.length} ítem(s) legado sin artículo maestro. Podés guardarla como borrador, pero no vas a poder finalizarla hasta resolverlos.</p>
+                    </div>
+                </div>
+            )}
+
             {conflictState.hasConflict && !isFinal && (
                 <div className={styles.noticeWarning}>
                     <AlertTriangle size={16} />
@@ -185,7 +241,10 @@ export function FacturaWizard() {
 
             {step === 'ARTICLE' && (
                 <ArticleStep
-                    draftItem={draftItem}
+                    supplier={supplier}
+                    supplierLocked={(state.currentFactura.items?.length ?? 0) > 0}
+                    selectedArticle={selectedArticle}
+                    articleDraft={articleDraft}
                     familyOptions={familyOptions}
                     categoryOptions={categoryOptions}
                     garmentTypeOptions={garmentTypeOptions}
@@ -194,19 +253,30 @@ export function FacturaWizard() {
                     sizeCurveOptions={sizeCurveOptions}
                     catalogsLoading={catalogsLoading}
                     catalogsError={catalogsError}
-                    onChange={handleArticleChange}
-                    onNext={() => !isFinal && setStep('COLOR')}
+                    onDraftChange={handleDraftChange}
+                    onArticleSelected={handleArticleSelected}
+                    onNext={() => !isFinal && selectedArticle && setStep('COLOR')}
+                    onSupplierCreated={(createdSupplier) => {
+                        setSelectedArticle(null);
+                        setDraftColors([]);
+                        setArticleDraft(INITIAL_ARTICLE_DRAFT);
+                        updateDraft({
+                            proveedor: createdSupplier.label,
+                            supplierSnapshot: createdSupplier,
+                            items: []
+                        });
+                    }}
                     readOnly={isFinal}
                 />
             )}
 
-            {step === 'COLOR' && (
+            {step === 'COLOR' && selectedArticle && (
                 <ColorStep
                     itemContext={{
-                        supplierLabel: state.currentFactura.proveedor || '',
-                        tipoPrenda: garmentTypeOptions.find((option) => option.id === draftItem.garmentTypeId)?.label || '-',
-                        codigoArticulo: draftItem.codigoArticulo,
-                        curvaTalles: draftItem.curvaTalles.split(',').map((s) => s.trim())
+                        supplierLabel: selectedArticle.supplier.label,
+                        tipoPrenda: garmentTypeOptions.find((option) => option.id === selectedArticle.garmentTypeId)?.label || '-',
+                        codigoArticulo: selectedArticle.sku,
+                        curvaTalles: selectedArticle.sizeCurve.values
                     }}
                     addedColors={draftColors}
                     onAddColor={(color) => !isFinal && setDraftColors((prev) => [...prev, color])}

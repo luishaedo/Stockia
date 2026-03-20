@@ -37,6 +37,7 @@ class ApiFacade {
     preloadAdminCatalogsIncremental = this.catalogsApi.preloadAdminCatalogsIncremental.bind(this.catalogsApi);
     getAdminCatalog = this.catalogsApi.getAdminCatalog.bind(this.catalogsApi);
     getAdminCatalogCached = this.catalogsApi.getAdminCatalogCached.bind(this.catalogsApi);
+    createSupplier = this.catalogsApi.createSupplier.bind(this.catalogsApi);
     invalidateCatalogCache = this.catalogsApi.invalidateCatalogCache.bind(this.catalogsApi);
     createAdminCatalog = this.catalogsApi.createAdminCatalog.bind(this.catalogsApi);
     updateAdminCatalog = this.catalogsApi.updateAdminCatalog.bind(this.catalogsApi);
