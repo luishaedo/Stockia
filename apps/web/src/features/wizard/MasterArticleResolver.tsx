@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, PackagePlus, Search, Store } from 'lucide-react';
+import { AlertCircle, CheckCircle2, PackagePlus, Pencil, Search } from 'lucide-react';
 import { ArticleResponse, CreateArticlePayload } from '../../services/articlesApi';
 import { ApiError, api } from '../../services/api';
 import { SupplierCreateModal } from './SupplierCreateModal';
@@ -7,6 +7,9 @@ import styles from './ArticleStep.module.css';
 
 type Option = { value: string; label: string; id?: string; code?: string };
 export type SupplierOption = { id: string; code: string; label: string };
+type SupplierCatalogItem = { id: string; label: string; logoUrl?: string | null };
+
+type ArticleModalMode = 'create' | 'clone';
 
 export interface ArticleDraftForm {
     sku: string;
@@ -21,7 +24,7 @@ export interface ArticleDraftForm {
 
 interface MasterArticleResolverProps {
     title: string;
-    subtitle: string;
+    subtitle?: string;
     confirmLabel: string;
     supplier?: SupplierOption | null;
     supplierLocked?: boolean;
@@ -79,6 +82,8 @@ export function MasterArticleResolver({
     readOnly = false
 }: MasterArticleResolverProps) {
     const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+    const [articleModalOpen, setArticleModalOpen] = useState(false);
+    const [articleModalMode, setArticleModalMode] = useState<ArticleModalMode>('create');
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<ArticleResponse[]>([]);
     const [searching, setSearching] = useState(false);
@@ -87,12 +92,63 @@ export function MasterArticleResolver({
     const [cloneError, setCloneError] = useState<string | null>(null);
     const [savingArticle, setSavingArticle] = useState(false);
     const [cloningArticleId, setCloningArticleId] = useState<string | null>(null);
+    const [supplierLogoUrl, setSupplierLogoUrl] = useState<string | null>(null);
+    const [supplierLogoError, setSupplierLogoError] = useState(false);
 
     useEffect(() => {
         setSearchResults([]);
         setSearchQuery('');
         setSearchError(null);
+        setSupplierLogoUrl(null);
+        setSupplierLogoError(false);
     }, [supplier?.id]);
+
+    useEffect(() => {
+        if (!supplier?.id) {
+            setSupplierLogoUrl(null);
+            return;
+        }
+
+        let cancelled = false;
+        const loadSupplierLogo = async () => {
+            try {
+                const suppliers = await api.getAdminCatalogCached<SupplierCatalogItem[]>('suppliers');
+                const supplierData = suppliers.find((item) => item.id === supplier.id);
+                if (!cancelled) {
+                    setSupplierLogoUrl(supplierData?.logoUrl ? api.resolveAssetUrl(supplierData.logoUrl) : null);
+                }
+            } catch {
+                if (!cancelled) {
+                    setSupplierLogoUrl(null);
+                }
+            }
+        };
+
+        void loadSupplierLogo();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [supplier?.id]);
+
+    useEffect(() => {
+        if (!supplier?.id || readOnly) {
+            return;
+        }
+
+        const normalizedQuery = searchQuery.trim();
+        if (!normalizedQuery) {
+            setSearchResults([]);
+            setSearchError(null);
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            void searchArticles(normalizedQuery, true);
+        }, 280);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [searchQuery, supplier?.id, readOnly]);
 
     const missingCatalogs = useMemo(() => {
         const groups = [familyOptions, categoryOptions, garmentTypeOptions, classificationOptions, materialOptions, sizeCurveOptions];
@@ -116,19 +172,29 @@ export function MasterArticleResolver({
         && !catalogBlockReason
     );
 
-    const searchArticles = async () => {
+    const canCloneArticle = Boolean(
+        articleDraft.sku.trim()
+        && articleDraft.description.trim()
+        && !catalogBlockReason
+    );
+
+    const searchArticles = async (query: string, silent = false) => {
         if (!supplier?.id) {
-            setSearchError('Primero necesitás un proveedor activo para buscar artículos.');
+            if (!silent) {
+                setSearchError('Primero necesitás un proveedor activo para buscar artículos.');
+            }
             return;
         }
 
         setSearching(true);
         setSearchError(null);
         try {
-            const response = await api.searchArticles({ supplierId: supplier.id, q: searchQuery.trim(), limit: 20 });
+            const response = await api.searchArticles({ supplierId: supplier.id, q: query.trim(), limit: 20 });
             setSearchResults(response.items);
         } catch (error) {
-            setSearchError(getErrorMessage(error, 'No pudimos buscar artículos.'));
+            if (!silent) {
+                setSearchError(getErrorMessage(error, 'No pudimos buscar artículos.'));
+            }
         } finally {
             setSearching(false);
         }
@@ -159,6 +225,9 @@ export function MasterArticleResolver({
             onArticleSelected(created);
             setSearchResults((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
             setSearchQuery(created.sku);
+            onDraftChange('sku', created.sku);
+            onDraftChange('description', created.description);
+            setArticleModalOpen(false);
         } catch (error) {
             setCreateError(getErrorMessage(error, 'No pudimos crear el artículo.'));
         } finally {
@@ -184,6 +253,9 @@ export function MasterArticleResolver({
             onArticleSelected(cloned);
             setSearchResults((prev) => [cloned, ...prev.filter((item) => item.id !== cloned.id)]);
             setSearchQuery(cloned.sku);
+            onDraftChange('sku', cloned.sku);
+            onDraftChange('description', cloned.description);
+            setArticleModalOpen(false);
         } catch (error) {
             setCloneError(getErrorMessage(error, 'No pudimos clonar el artículo.'));
         } finally {
@@ -191,23 +263,45 @@ export function MasterArticleResolver({
         }
     };
 
+    const handleUseArticle = (article: ArticleResponse) => {
+        onArticleSelected(article);
+        onDraftChange('sku', article.sku);
+        onDraftChange('description', article.description);
+        setSearchQuery(article.sku);
+    };
+
+    const supplierInitial = supplier?.label.charAt(0).toUpperCase() ?? '?';
+
     return (
         <section className={styles.wrapper}>
             <div className={styles.header}>
                 <div>
                     <h2>{title}</h2>
-                    <p>{subtitle}</p>
+                    {subtitle ? <p>{subtitle}</p> : null}
                 </div>
-                <div className={styles.supplierBox}>
-                    <span className={styles.supplierLabel}>Proveedor actual</span>
-                    <strong>{supplier ? `${supplier.code} · ${supplier.label}` : 'Sin proveedor'}</strong>
-                    {allowSupplierCreation && (
-                        <button type="button" className={styles.inlineButton} onClick={() => setSupplierModalOpen(true)} disabled={!canManageSupplier}>
-                            <Store size={16} />
-                            {supplier ? 'Crear y usar otro proveedor' : 'Crear proveedor'}
-                        </button>
+                <button
+                    type="button"
+                    className={styles.supplierAvatarButton}
+                    onClick={() => canManageSupplier && setSupplierModalOpen(true)}
+                    disabled={!canManageSupplier}
+                    title={canManageSupplier ? 'Editar proveedor' : supplier ? `${supplier.code} · ${supplier.label}` : 'Sin proveedor'}
+                >
+                    {supplierLogoUrl && !supplierLogoError ? (
+                        <img
+                            src={supplierLogoUrl}
+                            alt={supplier?.label ?? 'Proveedor'}
+                            className={styles.supplierAvatarImage}
+                            onError={() => setSupplierLogoError(true)}
+                        />
+                    ) : (
+                        <span className={styles.supplierAvatarFallback}>{supplierInitial}</span>
                     )}
-                </div>
+                    {canManageSupplier ? (
+                        <span className={styles.supplierAvatarOverlay}>
+                            <Pencil size={14} />
+                        </span>
+                    ) : null}
+                </button>
             </div>
 
             {allowSupplierCreation && !canManageSupplier && (
@@ -224,130 +318,63 @@ export function MasterArticleResolver({
                 </div>
             )}
 
-            <div className={styles.layout}>
+            <div className={styles.layoutSingleColumn}>
                 <article className={styles.panel}>
-                    <div className={styles.panelHeader}>
+                    <div className={styles.panelHeaderCompact}>
                         <Search size={18} />
-                        <div>
-                            <h3>Buscar y seleccionar existente</h3>
-                            <p>Filtrá por SKU o descripción dentro del proveedor actual.</p>
-                        </div>
+                        <h3>SKU</h3>
                     </div>
 
-                    <div className={styles.searchRow}>
+                    <div className={styles.searchRowCompact}>
                         <input
                             value={searchQuery}
-                            onChange={(event) => setSearchQuery(event.target.value)}
-                            placeholder="Ej: NK-1002 o Remera deportiva"
+                            onChange={(event) => {
+                                const value = event.target.value;
+                                setSearchQuery(value);
+                                onDraftChange('sku', value);
+                            }}
+                            placeholder="SKU"
                             disabled={readOnly || !supplier?.id}
                         />
-                        <button type="button" className={styles.primaryButton} onClick={() => void searchArticles()} disabled={readOnly || searching || !supplier?.id}>
-                            {searching ? 'Buscando...' : 'Buscar'}
+                        <button
+                            type="button"
+                            className={styles.iconButton}
+                            onClick={() => {
+                                setCreateError(null);
+                                setCloneError(null);
+                                setArticleModalOpen(true);
+                            }}
+                            disabled={readOnly || !supplier?.id}
+                            aria-label="Abrir opciones de nuevo o clonar"
+                        >
+                            <PackagePlus size={18} />
                         </button>
                     </div>
 
                     {searchError && <p className={styles.errorText}>{searchError}</p>}
 
-                    <div className={styles.resultsList}>
-                        {searchResults.map((article) => (
-                            <div key={article.id} className={selectedArticle?.id === article.id ? styles.resultCardActive : styles.resultCard}>
-                                <div>
-                                    <strong>{article.sku}</strong>
-                                    <p>{article.description}</p>
-                                    <small>Curva: {article.sizeCurve.code} · {article.sizeCurve.values.join(', ')}</small>
+                    {searchQuery.trim() && (
+                        <div className={styles.resultsList}>
+                            {searching ? <p className={styles.emptyState}>Buscando…</p> : null}
+                            {!searching && searchResults.length === 0 ? (
+                                <p className={styles.emptyState}>Sin coincidencias para ese SKU.</p>
+                            ) : null}
+
+                            {!searching && searchResults.map((article) => (
+                                <div key={article.id} className={selectedArticle?.id === article.id ? styles.resultCardActive : styles.resultCard}>
+                                    <div>
+                                        <strong>{article.sku}</strong>
+                                        <p>{article.description}</p>
+                                    </div>
+                                    <div className={styles.resultActions}>
+                                        <button type="button" className={styles.secondaryButton} onClick={() => handleUseArticle(article)} disabled={readOnly}>
+                                            Usar
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className={styles.resultActions}>
-                                    <button type="button" className={styles.secondaryButton} onClick={() => onArticleSelected(article)} disabled={readOnly}>
-                                        Usar artículo
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={styles.secondaryButton}
-                                        onClick={() => void cloneFromBaseArticle(article)}
-                                        disabled={readOnly || !articleDraft.sku.trim() || !articleDraft.description.trim() || Boolean(catalogBlockReason) || cloningArticleId === article.id}
-                                    >
-                                        {cloningArticleId === article.id ? 'Clonando...' : 'Clonar desde este'}
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-
-                        {!searching && searchResults.length === 0 && (
-                            <p className={styles.emptyState}>No hay resultados todavía. Ejecutá una búsqueda o creá un artículo inline.</p>
-                        )}
-                    </div>
-
-                    {cloneError && <p className={styles.errorText}>{cloneError}</p>}
-                </article>
-
-                <article className={styles.panel}>
-                    <div className={styles.panelHeader}>
-                        <PackagePlus size={18} />
-                        <div>
-                            <h3>Crear o clonar inline</h3>
-                            <p>Completá el maestro desde cero o prepará los datos para clonar desde un artículo base.</p>
+                            ))}
                         </div>
-                    </div>
-
-                    <div className={styles.formGrid}>
-                        <label>
-                            <span>SKU</span>
-                            <input value={articleDraft.sku} onChange={(event) => onDraftChange('sku', event.target.value)} disabled={readOnly} />
-                        </label>
-                        <label>
-                            <span>Descripción</span>
-                            <input value={articleDraft.description} onChange={(event) => onDraftChange('description', event.target.value)} disabled={readOnly} />
-                        </label>
-                        <label>
-                            <span>Familia</span>
-                            <select value={articleDraft.familyId} onChange={(event) => onDraftChange('familyId', event.target.value)} disabled={readOnly || catalogsLoading}>
-                                <option value="">Seleccionar</option>
-                                {familyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                            </select>
-                        </label>
-                        <label>
-                            <span>Categoría</span>
-                            <select value={articleDraft.categoryId} onChange={(event) => onDraftChange('categoryId', event.target.value)} disabled={readOnly || catalogsLoading}>
-                                <option value="">Seleccionar</option>
-                                {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                            </select>
-                        </label>
-                        <label>
-                            <span>Tipo de prenda</span>
-                            <select value={articleDraft.garmentTypeId} onChange={(event) => onDraftChange('garmentTypeId', event.target.value)} disabled={readOnly || catalogsLoading}>
-                                <option value="">Seleccionar</option>
-                                {garmentTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                            </select>
-                        </label>
-                        <label>
-                            <span>Clasificación</span>
-                            <select value={articleDraft.classificationId} onChange={(event) => onDraftChange('classificationId', event.target.value)} disabled={readOnly || catalogsLoading}>
-                                <option value="">Seleccionar</option>
-                                {classificationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                            </select>
-                        </label>
-                        <label>
-                            <span>Material</span>
-                            <select value={articleDraft.materialId} onChange={(event) => onDraftChange('materialId', event.target.value)} disabled={readOnly || catalogsLoading}>
-                                <option value="">Seleccionar</option>
-                                {materialOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                            </select>
-                        </label>
-                        <label>
-                            <span>Curva</span>
-                            <select value={articleDraft.sizeCurveId} onChange={(event) => onDraftChange('sizeCurveId', event.target.value)} disabled={readOnly || catalogsLoading}>
-                                <option value="">Seleccionar</option>
-                                {sizeCurveOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                            </select>
-                        </label>
-                    </div>
-
-                    <button type="button" className={styles.primaryButton} onClick={() => void createInlineArticle()} disabled={readOnly || savingArticle || !canCreateArticle}>
-                        <PackagePlus size={16} />
-                        {savingArticle ? 'Creando artículo...' : 'Crear artículo inline'}
-                    </button>
-
-                    {createError && <p className={styles.errorText}>{createError}</p>}
+                    )}
                 </article>
             </div>
 
@@ -362,27 +389,25 @@ export function MasterArticleResolver({
 
                 {selectedArticle ? (
                     <div className={styles.selectionCard}>
-                        <div>
-                            <strong>{selectedArticle.sku}</strong>
-                            <p>{selectedArticle.description}</p>
-                        </div>
+                        <strong>{selectedArticle.sku}</strong>
+                        <p>{selectedArticle.description}</p>
                         <dl className={styles.selectionMeta}>
-                            <div>
-                                <dt>Tipo</dt>
-                                <dd>{getOptionLabel(garmentTypeOptions, selectedArticle.garmentTypeId)}</dd>
-                            </div>
-                            <div>
-                                <dt>Curva</dt>
-                                <dd>{selectedArticle.sizeCurve.code} · {selectedArticle.sizeCurve.values.join(', ')}</dd>
-                            </div>
                             <div>
                                 <dt>Proveedor</dt>
                                 <dd>{selectedArticle.supplier.code} · {selectedArticle.supplier.label}</dd>
                             </div>
+                            <div>
+                                <dt>Familia</dt>
+                                <dd>{getOptionLabel(familyOptions, selectedArticle.familyId)}</dd>
+                            </div>
+                            <div>
+                                <dt>Material</dt>
+                                <dd>{getOptionLabel(materialOptions, selectedArticle.materialId)}</dd>
+                            </div>
                         </dl>
                     </div>
                 ) : (
-                    <p className={styles.emptyState}>Todavía no seleccionaste ningún artículo maestro.</p>
+                    <p className={styles.emptyState}>Seleccioná, creá o cloná un artículo para continuar.</p>
                 )}
 
                 <button type="button" className={styles.nextButton} onClick={onConfirm} disabled={!selectedArticle || readOnly}>
@@ -396,9 +421,127 @@ export function MasterArticleResolver({
                     onClose={() => setSupplierModalOpen(false)}
                     onCreated={(created) => {
                         onSupplierCreated({ id: created.id, code: created.code, label: created.name });
-                        setSearchResults([]);
+                        setSupplierModalOpen(false);
                     }}
                 />
+            )}
+
+            {articleModalOpen && (
+                <div className={styles.modalBackdrop} role="presentation" onClick={() => setArticleModalOpen(false)}>
+                    <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="article-modal-title" onClick={(event) => event.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 id="article-modal-title">Artículo</h3>
+                            <div className={styles.modalModes}>
+                                <button
+                                    type="button"
+                                    className={articleModalMode === 'create' ? styles.modalModeActive : styles.modalModeButton}
+                                    onClick={() => setArticleModalMode('create')}
+                                >
+                                    Nuevo
+                                </button>
+                                <button
+                                    type="button"
+                                    className={articleModalMode === 'clone' ? styles.modalModeActive : styles.modalModeButton}
+                                    onClick={() => setArticleModalMode('clone')}
+                                >
+                                    Clonar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className={styles.formGrid}>
+                            <label>
+                                <span>SKU</span>
+                                <input value={articleDraft.sku} onChange={(event) => onDraftChange('sku', event.target.value)} disabled={readOnly} />
+                            </label>
+                            <label>
+                                <span>Descripción</span>
+                                <input value={articleDraft.description} onChange={(event) => onDraftChange('description', event.target.value)} disabled={readOnly} />
+                            </label>
+                            <label>
+                                <span>Familia</span>
+                                <select value={articleDraft.familyId} onChange={(event) => onDraftChange('familyId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                    <option value="">Seleccionar</option>
+                                    {familyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                            </label>
+                            <label>
+                                <span>Categoría</span>
+                                <select value={articleDraft.categoryId} onChange={(event) => onDraftChange('categoryId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                    <option value="">Seleccionar</option>
+                                    {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                            </label>
+                            <label>
+                                <span>Tipo de prenda</span>
+                                <select value={articleDraft.garmentTypeId} onChange={(event) => onDraftChange('garmentTypeId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                    <option value="">Seleccionar</option>
+                                    {garmentTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                            </label>
+                            <label>
+                                <span>Clasificación</span>
+                                <select value={articleDraft.classificationId} onChange={(event) => onDraftChange('classificationId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                    <option value="">Seleccionar</option>
+                                    {classificationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                            </label>
+                            <label>
+                                <span>Material</span>
+                                <select value={articleDraft.materialId} onChange={(event) => onDraftChange('materialId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                    <option value="">Seleccionar</option>
+                                    {materialOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                            </label>
+                            <label>
+                                <span>Curva</span>
+                                <select value={articleDraft.sizeCurveId} onChange={(event) => onDraftChange('sizeCurveId', event.target.value)} disabled={readOnly || catalogsLoading}>
+                                    <option value="">Seleccionar</option>
+                                    {sizeCurveOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                            </label>
+                        </div>
+
+                        {articleModalMode === 'create' ? (
+                            <button type="button" className={styles.primaryButton} onClick={() => void createInlineArticle()} disabled={readOnly || savingArticle || !canCreateArticle}>
+                                <PackagePlus size={16} />
+                                {savingArticle ? 'Creando artículo…' : 'Crear nuevo'}
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    type="button"
+                                    className={styles.secondaryButton}
+                                    onClick={() => void searchArticles(searchQuery || articleDraft.sku)}
+                                    disabled={readOnly || !supplier?.id}
+                                >
+                                    Buscar base para clonar
+                                </button>
+                                <div className={styles.modalCloneList}>
+                                    {searchResults.map((article) => (
+                                        <div key={`clone-${article.id}`} className={styles.resultCard}>
+                                            <div>
+                                                <strong>{article.sku}</strong>
+                                                <p>{article.description}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={styles.secondaryButton}
+                                                onClick={() => void cloneFromBaseArticle(article)}
+                                                disabled={readOnly || !canCloneArticle || cloningArticleId === article.id}
+                                            >
+                                                {cloningArticleId === article.id ? 'Clonando…' : 'Clonar'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {!searchResults.length && <p className={styles.emptyState}>Buscá un SKU base para clonar.</p>}
+                                </div>
+                            </>
+                        )}
+
+                        {(createError || cloneError) && <p className={styles.errorText}>{createError || cloneError}</p>}
+                    </div>
+                </div>
             )}
         </section>
     );

@@ -12,14 +12,14 @@
 }
 
 .header h2,
-.panelHeader h3 {
+.panelHeader h3,
+.panelHeaderCompact h3 {
     margin: 0;
     color: #f8fafc;
 }
 
 .header p,
 .panelHeader p,
-.supplierLabel,
 .selectionMeta dt,
 .resultCard small,
 .resultCardActive small,
@@ -27,7 +27,6 @@
     color: #94a3b8;
 }
 
-.supplierBox,
 .panel,
 .selectionPanel {
     background: rgba(15, 23, 42, 0.88);
@@ -36,21 +35,55 @@
     padding: 20px;
 }
 
-.supplierBox {
-    min-width: 280px;
-    display: grid;
-    gap: 8px;
+.supplierAvatarButton {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(30, 41, 59, 0.9);
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
 }
 
-.supplierLabel {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+.supplierAvatarButton:disabled {
+    cursor: default;
 }
 
-.layout {
+.supplierAvatarImage,
+.supplierAvatarFallback {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e2e8f0;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.supplierAvatarOverlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.65);
+    color: #f8fafc;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+.supplierAvatarButton:hover .supplierAvatarOverlay,
+.supplierAvatarButton:focus-visible .supplierAvatarOverlay {
+    opacity: 1;
+}
+
+.layoutSingleColumn {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
 }
 
@@ -62,14 +95,22 @@
     color: #38bdf8;
 }
 
-.searchRow {
+.panelHeaderCompact {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+    color: #38bdf8;
+}
+
+.searchRowCompact {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
-.searchRow input,
+.searchRowCompact input,
 .formGrid input,
 .formGrid select {
     width: 100%;
@@ -78,6 +119,19 @@
     background: rgba(15, 23, 42, 0.7);
     color: #f8fafc;
     padding: 11px 13px;
+}
+
+.iconButton {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 0;
+    color: #ffffff;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .formGrid {
@@ -129,8 +183,9 @@
 
 .primaryButton,
 .secondaryButton,
-.inlineButton,
-.nextButton {
+.nextButton,
+.modalModeButton,
+.modalModeActive {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -142,14 +197,15 @@
 }
 
 .primaryButton,
-.nextButton {
+.nextButton,
+.modalModeActive {
     border: 0;
     color: white;
     background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
 .secondaryButton,
-.inlineButton {
+.modalModeButton {
     border: 1px solid rgba(148, 163, 184, 0.24);
     background: transparent;
     color: #e2e8f0;
@@ -198,14 +254,58 @@
     color: #fecaca;
 }
 
+.modalBackdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 70;
+}
+
+.modalCard {
+    width: min(920px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 20px;
+    padding: 18px;
+    display: grid;
+    gap: 14px;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+
+.modalModes {
+    display: inline-flex;
+    gap: 8px;
+}
+
+.modalCloneList {
+    display: grid;
+    gap: 10px;
+}
+
 @media (max-width: 960px) {
-    .layout,
     .formGrid,
     .selectionMeta {
         grid-template-columns: 1fr;
     }
 
-    .searchRow {
+    .searchRowCompact {
         grid-template-columns: 1fr;
+    }
+
+    .modalHeader {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
