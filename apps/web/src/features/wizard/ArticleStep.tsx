@@ -29,7 +29,7 @@ export function ArticleStep(props: ArticleStepProps) {
     return (
         <MasterArticleResolver
             title="Paso 1 · Resolver artículo maestro"
-            subtitle="Buscá uno existente o crealo/clonalo sin salir del wizard. El ítem se guarda vinculado al catálogo maestro."
+            subtitle=""
             confirmLabel="Continuar con colores"
             allowSupplierCreation
             onConfirm={props.onNext}
