@@ -86,6 +86,11 @@ export function MasterArticleResolver({
     const [articleModalMode, setArticleModalMode] = useState<ArticleModalMode>('create');
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<ArticleResponse[]>([]);
+    const [searchHint, setSearchHint] = useState<string | null>(null);
+    const [cloneSearchQuery, setCloneSearchQuery] = useState('');
+    const [cloneSearchResults, setCloneSearchResults] = useState<ArticleResponse[]>([]);
+    const [cloneSearchHint, setCloneSearchHint] = useState<string | null>(null);
+    const [selectedCloneBase, setSelectedCloneBase] = useState<ArticleResponse | null>(null);
     const [searching, setSearching] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
     const [createError, setCreateError] = useState<string | null>(null);
@@ -99,6 +104,11 @@ export function MasterArticleResolver({
         setSearchResults([]);
         setSearchQuery('');
         setSearchError(null);
+        setSearchHint(null);
+        setCloneSearchQuery('');
+        setCloneSearchResults([]);
+        setCloneSearchHint(null);
+        setSelectedCloneBase(null);
         setSupplierLogoUrl(null);
         setSupplierLogoError(false);
     }, [supplier?.id]);
@@ -140,15 +150,51 @@ export function MasterArticleResolver({
         if (!normalizedQuery) {
             setSearchResults([]);
             setSearchError(null);
+            setSearchHint(null);
+            return;
+        }
+
+        if (normalizedQuery.length < 3) {
+            setSearchResults([]);
+            setSearchError(null);
+            setSearchHint('Ingresá al menos 3 caracteres.');
             return;
         }
 
         const timeoutId = window.setTimeout(() => {
-            void searchArticles(normalizedQuery, true);
-        }, 280);
+            void searchArticles(normalizedQuery, {
+                silent: true,
+                setResults: setSearchResults,
+                setHint: setSearchHint
+            });
+        }, 350);
 
         return () => window.clearTimeout(timeoutId);
     }, [searchQuery, supplier?.id, readOnly]);
+
+    useEffect(() => {
+        if (articleModalMode !== 'clone' || !supplier?.id || readOnly) {
+            return;
+        }
+
+        const normalizedQuery = cloneSearchQuery.trim();
+        if (!normalizedQuery || normalizedQuery.length < 3) {
+            setCloneSearchResults([]);
+            setSearchError(null);
+            setCloneSearchHint('Ingresá al menos 3 caracteres.');
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            void searchArticles(normalizedQuery, {
+                silent: true,
+                setResults: setCloneSearchResults,
+                setHint: setCloneSearchHint
+            });
+        }, 350);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [articleModalMode, cloneSearchQuery, supplier?.id, readOnly]);
 
     const missingCatalogs = useMemo(() => {
         const groups = [familyOptions, categoryOptions, garmentTypeOptions, classificationOptions, materialOptions, sizeCurveOptions];
@@ -178,7 +224,15 @@ export function MasterArticleResolver({
         && !catalogBlockReason
     );
 
-    const searchArticles = async (query: string, silent = false) => {
+    const searchArticles = async (
+        query: string,
+        options: {
+            silent?: boolean;
+            setResults?: (items: ArticleResponse[]) => void;
+            setHint?: (value: string | null) => void;
+        } = {}
+    ) => {
+        const { silent = false, setResults = setSearchResults, setHint } = options;
         if (!supplier?.id) {
             if (!silent) {
                 setSearchError('Primero necesitás un proveedor activo para buscar artículos.');
@@ -186,11 +240,22 @@ export function MasterArticleResolver({
             return;
         }
 
+        const normalizedQuery = query.trim();
+        if (normalizedQuery.length < 3) {
+            setResults([]);
+            setHint?.('Ingresá al menos 3 caracteres.');
+            if (!silent) {
+                setSearchError(null);
+            }
+            return;
+        }
+
         setSearching(true);
         setSearchError(null);
+        setHint?.(null);
         try {
-            const response = await api.searchArticles({ supplierId: supplier.id, q: query.trim(), limit: 20 });
-            setSearchResults(response.items);
+            const response = await api.searchArticles({ supplierId: supplier.id, q: normalizedQuery, limit: 20 });
+            setResults(response.items);
         } catch (error) {
             if (!silent) {
                 setSearchError(getErrorMessage(error, 'No pudimos buscar artículos.'));
@@ -270,6 +335,18 @@ export function MasterArticleResolver({
         setSearchQuery(article.sku);
     };
 
+    const handleSelectCloneBase = (baseArticle: ArticleResponse) => {
+        setSelectedCloneBase(baseArticle);
+        onDraftChange('description', baseArticle.description);
+        onDraftChange('familyId', baseArticle.familyId ?? '');
+        onDraftChange('categoryId', baseArticle.categoryId ?? '');
+        onDraftChange('garmentTypeId', baseArticle.garmentTypeId ?? '');
+        onDraftChange('classificationId', baseArticle.classificationId ?? '');
+        onDraftChange('materialId', baseArticle.materialId ?? '');
+        onDraftChange('sizeCurveId', baseArticle.sizeCurveId ?? '');
+        onDraftChange('sku', '');
+    };
+
     const supplierInitial = supplier?.label.charAt(0).toUpperCase() ?? '?';
 
     return (
@@ -342,6 +419,11 @@ export function MasterArticleResolver({
                             onClick={() => {
                                 setCreateError(null);
                                 setCloneError(null);
+                                setArticleModalMode('create');
+                                setCloneSearchQuery('');
+                                setCloneSearchResults([]);
+                                setCloneSearchHint(null);
+                                setSelectedCloneBase(null);
                                 setArticleModalOpen(true);
                             }}
                             disabled={readOnly || !supplier?.id}
@@ -352,8 +434,9 @@ export function MasterArticleResolver({
                     </div>
 
                     {searchError && <p className={styles.errorText}>{searchError}</p>}
+                    {searchHint && !searchError && <p className={styles.emptyState}>{searchHint}</p>}
 
-                    {searchQuery.trim() && (
+                    {searchQuery.trim().length >= 3 && (
                         <div className={styles.resultsList}>
                             {searching ? <p className={styles.emptyState}>Buscando…</p> : null}
                             {!searching && searchResults.length === 0 ? (
@@ -449,6 +532,56 @@ export function MasterArticleResolver({
                             </div>
                         </div>
 
+                        <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={() => setArticleModalMode('clone')}
+                            disabled={readOnly || !supplier?.id}
+                        >
+                            Buscar base para clonar
+                        </button>
+
+                        {articleModalMode === 'clone' && (
+                            <div className={styles.modalCloneList}>
+                                <label>
+                                    <span>SKU a clonar</span>
+                                    <input
+                                        value={cloneSearchQuery}
+                                        onChange={(event) => {
+                                            const value = event.target.value;
+                                            setCloneSearchQuery(value);
+                                            if (value.trim().length < 3) {
+                                                setCloneSearchResults([]);
+                                                setCloneSearchHint('Ingresá al menos 3 caracteres.');
+                                            }
+                                        }}
+                                        placeholder="Ingresá SKU base"
+                                        disabled={readOnly || !supplier?.id}
+                                    />
+                                </label>
+                                {cloneSearchHint && !searchError && <p className={styles.emptyState}>{cloneSearchHint}</p>}
+                                {cloneSearchResults.map((article) => (
+                                    <div key={`clone-base-${article.id}`} className={selectedCloneBase?.id === article.id ? styles.resultCardActive : styles.resultCard}>
+                                        <div>
+                                            <strong>{article.sku}</strong>
+                                            <p>{article.description}</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className={styles.secondaryButton}
+                                            onClick={() => handleSelectCloneBase(article)}
+                                            disabled={readOnly}
+                                        >
+                                            Seleccionar base
+                                        </button>
+                                    </div>
+                                ))}
+                                {!searching && cloneSearchQuery.trim().length >= 3 && cloneSearchResults.length === 0 && (
+                                    <p className={styles.emptyState}>Sin coincidencias para ese SKU base.</p>
+                                )}
+                            </div>
+                        )}
+
                         <div className={styles.formGrid}>
                             <label>
                                 <span>SKU</span>
@@ -509,33 +642,20 @@ export function MasterArticleResolver({
                             </button>
                         ) : (
                             <>
+                                {selectedCloneBase ? (
+                                    <p className={styles.emptyState}>Base seleccionada: <strong>{selectedCloneBase.sku}</strong></p>
+                                ) : (
+                                    <p className={styles.emptyState}>Seleccioná una base para habilitar el clonado.</p>
+                                )}
                                 <button
                                     type="button"
-                                    className={styles.secondaryButton}
-                                    onClick={() => void searchArticles(searchQuery || articleDraft.sku)}
-                                    disabled={readOnly || !supplier?.id}
+                                    className={styles.primaryButton}
+                                    onClick={() => selectedCloneBase && void cloneFromBaseArticle(selectedCloneBase)}
+                                    disabled={readOnly || !canCloneArticle || !selectedCloneBase || cloningArticleId === selectedCloneBase?.id}
                                 >
-                                    Buscar base para clonar
+                                    <PackagePlus size={16} />
+                                    {cloningArticleId === selectedCloneBase?.id ? 'Clonando…' : 'Clonar desde base'}
                                 </button>
-                                <div className={styles.modalCloneList}>
-                                    {searchResults.map((article) => (
-                                        <div key={`clone-${article.id}`} className={styles.resultCard}>
-                                            <div>
-                                                <strong>{article.sku}</strong>
-                                                <p>{article.description}</p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                className={styles.secondaryButton}
-                                                onClick={() => void cloneFromBaseArticle(article)}
-                                                disabled={readOnly || !canCloneArticle || cloningArticleId === article.id}
-                                            >
-                                                {cloningArticleId === article.id ? 'Clonando…' : 'Clonar'}
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {!searchResults.length && <p className={styles.emptyState}>Buscá un SKU base para clonar.</p>}
-                                </div>
                             </>
                         )}
 
