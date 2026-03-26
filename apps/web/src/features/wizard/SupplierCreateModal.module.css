@@ -1,7 +1,7 @@
 .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.7);
+    background: rgba(15, 23, 42, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -10,12 +10,16 @@
 }
 
 .modal {
-    width: min(100%, 520px);
-    background: #0f172a;
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    width: min(100%, 640px);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
     border-radius: 20px;
     padding: 24px;
-    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.55);
+    box-shadow: var(--shadow-md);
+    display: grid;
+    gap: 14px;
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
 }
 
 .header {
@@ -28,45 +32,141 @@
 
 .header h2 {
     margin: 0;
-    color: #f8fafc;
+    color: var(--color-text-main);
 }
 
 .header p {
     margin: 6px 0 0;
-    color: #94a3b8;
+    color: var(--color-text-muted);
 }
 
 .closeButton {
-    border: 0;
-    background: transparent;
-    color: #cbd5e1;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: #ffffff;
+    color: var(--color-text-main);
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.form {
-    display: grid;
-    gap: 16px;
+.closeButton:hover {
+    border-color: #a5b4fc;
+    background: #f8faff;
 }
 
-.form label {
+.searchBar {
     display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-input);
+    border-radius: 999px;
+    padding: 8px 12px;
+}
+
+.searchBar svg {
+    color: var(--color-text-muted);
+}
+
+.searchBar input {
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--color-text-main);
+    padding: 8px 4px;
+}
+
+.searchBar:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.list {
+    display: grid;
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.supplierCard,
+.supplierCardActive {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 10px 12px;
+    cursor: pointer;
+    position: relative;
+}
+
+.supplierCard:hover {
+    border-color: #a5b4fc;
+    background: #f8faff;
+}
+
+.supplierCardActive {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.18);
+}
+
+.checkIcon {
+    color: #4f46e5;
+}
+
+.supplierLogo,
+.supplierAvatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    object-fit: cover;
+}
+
+.supplierAvatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #e2e8f0;
+    color: #334155;
+    font-weight: 700;
+}
+
+.supplierMeta {
+    display: grid;
+    gap: 2px;
+}
+
+.supplierMeta strong {
+    color: var(--color-text-main);
+}
+
+.supplierMeta span {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.emptyState {
+    display: inline-flex;
+    align-items: center;
     gap: 8px;
-    color: #cbd5e1;
-    font-weight: 600;
-}
-
-.form input {
-    border-radius: 12px;
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    background: rgba(15, 23, 42, 0.8);
-    color: #f8fafc;
-    padding: 12px 14px;
+    color: var(--color-text-muted);
+    padding: 12px 4px;
 }
 
 .error {
     border-radius: 12px;
-    background: rgba(127, 29, 29, 0.25);
-    color: #fecaca;
+    background: rgba(220, 38, 38, 0.1);
+    color: #991b1b;
     padding: 12px 14px;
 }
 
@@ -85,13 +185,19 @@
 }
 
 .secondaryButton {
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    background: transparent;
-    color: #e2e8f0;
+    border: 1px solid var(--color-border);
+    background: #ffffff;
+    color: var(--color-text-main);
 }
 
 .primaryButton {
     border: 0;
-    background: linear-gradient(135deg, #22c55e, #16a34a);
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     color: white;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

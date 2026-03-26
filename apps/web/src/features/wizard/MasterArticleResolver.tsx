@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, PackagePlus, Pencil, Search } from 'lucide-react';
+import { AlertCircle, CheckCircle2, PackagePlus, Pencil, Search, X } from 'lucide-react';
 import { ArticleResponse, CreateArticlePayload } from '../../services/articlesApi';
 import { ApiError, api } from '../../services/api';
 import { SupplierCreateModal } from './SupplierCreateModal';
@@ -530,16 +530,15 @@ export function MasterArticleResolver({
                                     Clonar
                                 </button>
                             </div>
+                            <button
+                                type="button"
+                                className={styles.modalCloseButton}
+                                onClick={() => setArticleModalOpen(false)}
+                                aria-label="Cerrar modal de artículo"
+                            >
+                                <X size={18} />
+                            </button>
                         </div>
-
-                        <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() => setArticleModalMode('clone')}
-                            disabled={readOnly || !supplier?.id}
-                        >
-                            Buscar
-                        </button>
 
                         {articleModalMode === 'clone' && (
                             <div className={styles.modalCloneList}>
