@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, PackagePlus, Pencil, Search } from 'lucide-react';
+import { AlertCircle, CheckCircle2, PackagePlus, Pencil, Search, X } from 'lucide-react';
 import { ArticleResponse, CreateArticlePayload } from '../../services/articlesApi';
 import { ApiError, api } from '../../services/api';
 import { SupplierCreateModal } from './SupplierCreateModal';
@@ -530,34 +530,44 @@ export function MasterArticleResolver({
                                     Clonar
                                 </button>
                             </div>
+                            <button
+                                type="button"
+                                className={styles.modalCloseButton}
+                                onClick={() => setArticleModalOpen(false)}
+                                aria-label="Cerrar modal de artículo"
+                            >
+                                <X size={18} />
+                            </button>
                         </div>
-
-                        <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() => setArticleModalMode('clone')}
-                            disabled={readOnly || !supplier?.id}
-                        >
-                            Buscar base para clonar
-                        </button>
 
                         {articleModalMode === 'clone' && (
                             <div className={styles.modalCloneList}>
-                                <label>
+                                <label className={styles.cloneSearchLabel}>
                                     <span>SKU a clonar</span>
-                                    <input
-                                        value={cloneSearchQuery}
-                                        onChange={(event) => {
-                                            const value = event.target.value;
-                                            setCloneSearchQuery(value);
-                                            if (value.trim().length < 3) {
-                                                setCloneSearchResults([]);
-                                                setCloneSearchHint('Ingresá al menos 3 caracteres.');
-                                            }
-                                        }}
-                                        placeholder="Ingresá SKU base"
-                                        disabled={readOnly || !supplier?.id}
-                                    />
+                                    <div className={styles.cloneSearchBar}>
+                                        <Search size={18} aria-hidden="true" />
+                                        <input
+                                            value={cloneSearchQuery}
+                                            onChange={(event) => {
+                                                const value = event.target.value;
+                                                setCloneSearchQuery(value);
+                                                if (value.trim().length < 3) {
+                                                    setCloneSearchResults([]);
+                                                    setCloneSearchHint('Ingresá al menos 3 caracteres.');
+                                                }
+                                            }}
+                                            placeholder="Buscar"
+                                            disabled={readOnly || !supplier?.id}
+                                        />
+                                        <button
+                                            type="button"
+                                            className={styles.cloneSearchButton}
+                                            onClick={() => setCloneSearchQuery((previous) => previous.trim())}
+                                            disabled={readOnly || !supplier?.id || !cloneSearchQuery.trim()}
+                                        >
+                                            Buscar
+                                        </button>
+                                    </div>
                                 </label>
                                 {cloneSearchHint && !searchError && <p className={styles.emptyState}>{cloneSearchHint}</p>}
                                 {cloneSearchResults.map((article) => (
@@ -572,7 +582,7 @@ export function MasterArticleResolver({
                                             onClick={() => handleSelectCloneBase(article)}
                                             disabled={readOnly}
                                         >
-                                            Seleccionar base
+                                            Seleccionar
                                         </button>
                                     </div>
                                 ))}

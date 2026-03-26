@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, CheckCircle2, Search, X } from 'lucide-react';
 import { ApiError, api } from '../../services/api';
 import styles from './SupplierCreateModal.module.css';
 
@@ -17,43 +17,81 @@ interface SupplierCreateModalProps {
 }
 
 export function SupplierCreateModal({ isOpen, onClose, onCreated }: SupplierCreateModalProps) {
-    const [code, setCode] = useState('');
-    const [name, setName] = useState('');
+    const [query, setQuery] = useState('');
+    const [selectedSupplierId, setSelectedSupplierId] = useState('');
+    const [suppliers, setSuppliers] = useState<Array<{ id: string; code?: string; label: string; logoUrl?: string | null }>>([]);
     const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [failedSupplierLogos, setFailedSupplierLogos] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (!isOpen) {
-            setCode('');
-            setName('');
+            setQuery('');
+            setSelectedSupplierId('');
+            setSuppliers([]);
+            setFailedSupplierLogos({});
             setError(null);
+            setLoading(false);
             setSaving(false);
+            return;
         }
+
+        const loadSuppliers = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const response = await api.getOperationsCatalogs(true);
+                setSuppliers(response.suppliers.map((supplier: { id: string; code: string; label: string; logoUrl?: string | null }) => ({
+                    id: supplier.id,
+                    code: supplier.code,
+                    label: supplier.label,
+                    logoUrl: supplier.logoUrl ? api.resolveAssetUrl(supplier.logoUrl) : null
+                })));
+            } catch (err) {
+                if (err instanceof ApiError) {
+                    setError(`${err.message} [${err.code}]`);
+                } else if (err instanceof Error) {
+                    setError(err.message);
+                } else {
+                    setError('No pudimos cargar proveedores.');
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        void loadSuppliers();
     }, [isOpen]);
 
     if (!isOpen) return null;
 
-    const handleSubmit = async (event: FormEvent) => {
-        event.preventDefault();
-        if (!code.trim() || !name.trim()) {
-            setError('Código y nombre son obligatorios.');
+    const filteredSuppliers = useMemo(() => {
+        const normalizedQuery = query.trim().toLowerCase();
+        if (!normalizedQuery) return suppliers;
+        return suppliers.filter((supplier) => (
+            supplier.label.toLowerCase().includes(normalizedQuery)
+            || (supplier.code ?? '').toLowerCase().includes(normalizedQuery)
+        ));
+    }, [query, suppliers]);
+
+    const handleConfirm = async () => {
+        const selectedSupplier = suppliers.find((supplier) => supplier.id === selectedSupplierId);
+        if (!selectedSupplier) {
+            setError('Seleccioná un proveedor existente.');
             return;
         }
 
         setSaving(true);
         setError(null);
         try {
-            const created = await api.createSupplier({ code: code.trim(), name: name.trim() });
-            onCreated(created);
+            onCreated({
+                id: selectedSupplier.id,
+                code: selectedSupplier.code ?? '',
+                name: selectedSupplier.label,
+                logoUrl: selectedSupplier.logoUrl
+            });
             onClose();
-        } catch (err) {
-            if (err instanceof ApiError) {
-                setError(`${err.message} [${err.code}]`);
-            } else if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError('No pudimos crear el proveedor.');
-            }
         } finally {
             setSaving(false);
         }
@@ -64,32 +102,69 @@ export function SupplierCreateModal({ isOpen, onClose, onCreated }: SupplierCrea
             <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="create-supplier-title" onClick={(event) => event.stopPropagation()}>
                 <div className={styles.header}>
                     <div>
-                        <h2 id="create-supplier-title">Crear proveedor</h2>
-                        <p>Crealo en contexto y dejalo seleccionado para esta factura.</p>
+                        <h2 id="create-supplier-title">Seleccionar proveedor</h2>
+                        <p>Elegí un proveedor existente para esta factura.</p>
                     </div>
                     <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Cerrar modal">
                         <X size={18} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className={styles.form}>
-                    <label>
-                        <span>Código</span>
-                        <input value={code} onChange={(event) => setCode(event.target.value)} placeholder="Ej: NIKE" disabled={saving} />
-                    </label>
+                <div className={styles.searchBar}>
+                    <Search size={16} />
+                    <input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Buscar proveedor"
+                        disabled={saving || loading}
+                    />
+                </div>
 
-                    <label>
-                        <span>Nombre</span>
-                        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ej: Nike" disabled={saving} />
-                    </label>
+                <div className={styles.list} role="listbox" aria-label="Lista de proveedores">
+                    {filteredSuppliers.map((supplier) => {
+                        const active = selectedSupplierId === supplier.id;
+                        return (
+                            <button
+                                key={supplier.id}
+                                type="button"
+                                className={active ? styles.supplierCardActive : styles.supplierCard}
+                                onClick={() => setSelectedSupplierId(supplier.id)}
+                                disabled={saving}
+                            >
+                                {active && <CheckCircle2 size={16} className={styles.checkIcon} />}
+                                {supplier.logoUrl && !failedSupplierLogos[supplier.id] ? (
+                                    <img
+                                        src={supplier.logoUrl}
+                                        alt={supplier.label}
+                                        className={styles.supplierLogo}
+                                        onError={() => setFailedSupplierLogos((prev) => ({ ...prev, [supplier.id]: true }))}
+                                    />
+                                ) : (
+                                    <span className={styles.supplierAvatar}>{supplier.label.charAt(0).toUpperCase()}</span>
+                                )}
+                                <div className={styles.supplierMeta}>
+                                    <strong>{supplier.label}</strong>
+                                    <span>{supplier.code || 'Sin código'}</span>
+                                </div>
+                            </button>
+                        );
+                    })}
+                    {!loading && filteredSuppliers.length === 0 && (
+                        <div className={styles.emptyState}>
+                            <AlertCircle size={16} />
+                            <span>No encontramos proveedores con ese criterio.</span>
+                        </div>
+                    )}
+                </div>
 
-                    {error && <div className={styles.error}>{error}</div>}
+                {error && <div className={styles.error}>{error}</div>}
 
-                    <div className={styles.actions}>
-                        <button type="button" className={styles.secondaryButton} onClick={onClose} disabled={saving}>Cancelar</button>
-                        <button type="submit" className={styles.primaryButton} disabled={saving}>{saving ? 'Guardando...' : 'Crear proveedor'}</button>
-                    </div>
-                </form>
+                <div className={styles.actions}>
+                    <button type="button" className={styles.secondaryButton} onClick={onClose} disabled={saving}>Cancelar</button>
+                    <button type="button" className={styles.primaryButton} onClick={() => void handleConfirm()} disabled={saving || !selectedSupplierId}>
+                        {saving ? 'Guardando...' : 'Seleccionar proveedor'}
+                    </button>
+                </div>
             </div>
         </div>
     );
