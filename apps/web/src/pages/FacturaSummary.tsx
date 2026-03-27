@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Factura, FacturaEstado, FacturaItem } from '@stockia/shared';
-import { Loader2, ArrowLeft, CheckCircle, Download, PencilLine, Trash2, Link2 } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle, Download, PencilLine, Trash2, Link2, X } from 'lucide-react';
 import { useFactura } from '../context/FacturaContext';
 import { api, ApiError } from '../services/api';
 import { Button } from '../components/ui/Button';
@@ -617,7 +617,12 @@ export function FacturaSummary() {
                 <div className={styles.modalOverlay} role="presentation" onClick={closeEditModal}>
                     <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="edit-item-title" onClick={(event) => event.stopPropagation()}>
                         <div className={styles.modalHeader}>
-                            <h3 id="edit-item-title">Editar ítem</h3>
+                            <div className={styles.modalHeaderRow}>
+                                <h3 id="edit-item-title">Editar ítem</h3>
+                                <button type="button" className={styles.modalCloseButton} onClick={closeEditModal} aria-label="Cerrar edición de ítem">
+                                    <X size={16} />
+                                </button>
+                            </div>
                             <p>{draftItem.codigoArticulo} • {draftItem.tipoPrenda}</p>
                         </div>
 
@@ -655,7 +660,12 @@ export function FacturaSummary() {
                 <div className={styles.modalOverlay} role="presentation" onClick={closeResolveModal}>
                     <div className={`${styles.modalCard} ${styles.resolveModalCard}`} role="dialog" aria-modal="true" aria-labelledby="resolve-item-title" onClick={(event) => event.stopPropagation()}>
                         <div className={styles.modalHeader}>
-                            <h3 id="resolve-item-title">Resolver artículo pendiente</h3>
+                            <div className={styles.modalHeaderRow}>
+                                <h3 id="resolve-item-title">Resolver artículo pendiente</h3>
+                                <button type="button" className={styles.modalCloseButton} onClick={closeResolveModal} aria-label="Cerrar resolución de artículo">
+                                    <X size={16} />
+                                </button>
+                            </div>
                             <p>Buscá, creá o cloná un maestro y vinculalo sobre este ítem legacy.</p>
                         </div>
 
