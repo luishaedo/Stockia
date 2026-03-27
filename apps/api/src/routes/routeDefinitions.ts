@@ -13,6 +13,8 @@ export type RouteDefinition = {
         | '/facturas/:id/finalize'
         | '/admin/catalogs/:catalog'
         | '/admin/catalogs/:catalog/:id'
+        | '/admin/catalogs/quick-curves'
+        | '/admin/catalogs/quick-curves/:id'
         | '/admin/uploads/logo'
         | '/operations/catalogs'
         | '/admin/catalogs/:catalog/version'
@@ -41,6 +43,10 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     { method: 'PATCH', path: '/facturas/:id/draft', requiresAdminToken: true },
     { method: 'PATCH', path: '/facturas/:id/finalize', requiresAdminToken: true },
     { method: 'GET', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
+    { method: 'GET', path: '/admin/catalogs/quick-curves', requiresAdminToken: true },
+    { method: 'POST', path: '/admin/catalogs/quick-curves', requiresAdminToken: true },
+    { method: 'PUT', path: '/admin/catalogs/quick-curves/:id', requiresAdminToken: true },
+    { method: 'DELETE', path: '/admin/catalogs/quick-curves/:id', requiresAdminToken: true },
     { method: 'POST', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
     { method: 'PUT', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },

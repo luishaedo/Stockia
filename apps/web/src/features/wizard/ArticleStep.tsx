@@ -28,9 +28,9 @@ export type { ArticleDraftForm, SupplierOption };
 export function ArticleStep(props: ArticleStepProps) {
     return (
         <MasterArticleResolver
-            title="Paso 1 · Resolver artículo maestro"
+            title="Selecciona el articulo"
             subtitle=""
-            confirmLabel="Continuar con colores"
+            confirmLabel="Cargar Curva"
             allowSupplierCreation
             onConfirm={props.onNext}
             {...props}

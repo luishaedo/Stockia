@@ -13,6 +13,47 @@ import {
     validateCatalogPayload
 } from '../services/adminCatalogHandlers.js';
 
+type QuickCurvePayload = {
+    sizeCurveId?: string;
+    code?: string;
+    label?: string;
+    values?: Record<string, number>;
+};
+
+const normalizeQuickCurveValues = (values: Record<string, number> | undefined) => {
+    if (!values || typeof values !== 'object') {
+        return null;
+    }
+
+    const entries = Object.entries(values)
+        .map(([sizeKey, quantity]) => ({ sizeKey: sizeKey.trim(), quantity: Number(quantity) }))
+        .filter((entry) => entry.sizeKey.length > 0);
+
+    if (entries.length === 0) {
+        return null;
+    }
+
+    if (entries.some((entry) => !Number.isFinite(entry.quantity) || entry.quantity < 0 || !Number.isInteger(entry.quantity))) {
+        return null;
+    }
+
+    return entries;
+};
+
+const mapQuickCurveRecord = (record: {
+    id: string;
+    sizeCurveId: string;
+    code: string;
+    label: string;
+    values: Array<{ sizeKey: string; quantity: number }>;
+}) => ({
+    id: record.id,
+    sizeCurveId: record.sizeCurveId,
+    code: record.code,
+    label: record.label,
+    values: Object.fromEntries(record.values.map((entry) => [entry.sizeKey, entry.quantity]))
+});
+
 const mapCatalogWriteError = (error: unknown): { status: number; code: string; message: string } => {
     const prismaError = error as { code?: string };
 
@@ -63,6 +104,146 @@ export const createAdminCatalogRoutes = (
 ) => {
     const router = Router();
     const handlers = createAdminCatalogHandlers(prisma);
+
+    router.get('/admin/catalogs/quick-curves', readRateLimitMiddleware, requireAuth, async (req, res) => {
+        const sizeCurveId = String(req.query.sizeCurveId ?? '').trim();
+        if (!sizeCurveId) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'sizeCurveId is required', undefined, req.traceId);
+        }
+
+        try {
+            const sizeCurve = await prisma.sizeCurve.findUnique({ where: { id: sizeCurveId }, select: { id: true } });
+            if (!sizeCurve) {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Size curve not found', undefined, req.traceId);
+            }
+
+            const records = await prisma.quickCurve.findMany({
+                where: { sizeCurveId },
+                include: { values: { orderBy: { sortOrder: 'asc' } } },
+                orderBy: { code: 'asc' }
+            });
+            return res.json(records.map(mapQuickCurveRecord));
+        } catch (error) {
+            logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId }, 'Failed to load quick curves');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load quick curves', error, req.traceId);
+        }
+    });
+
+    router.post('/admin/catalogs/quick-curves', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const payload = req.body as QuickCurvePayload;
+        const sizeCurveId = payload.sizeCurveId?.trim();
+        const code = payload.code?.trim();
+        const label = payload.label?.trim();
+        const normalizedValues = normalizeQuickCurveValues(payload.values);
+
+        if (!sizeCurveId || !code || !label || !normalizedValues) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'sizeCurveId, code, label and valid values are required', undefined, req.traceId);
+        }
+
+        try {
+            const sizeCurve = await prisma.sizeCurve.findUnique({
+                where: { id: sizeCurveId },
+                include: { values: { orderBy: { sortOrder: 'asc' } } }
+            });
+            if (!sizeCurve) {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Size curve not found', undefined, req.traceId);
+            }
+
+            const allowedSizes = new Set(sizeCurve.values.map((entry) => entry.value));
+            const includesInvalidSize = normalizedValues.some((entry) => !allowedSizes.has(entry.sizeKey));
+            if (includesInvalidSize) {
+                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Quick curve values include unknown size keys', undefined, req.traceId);
+            }
+
+            const created = await prisma.quickCurve.create({
+                data: {
+                    sizeCurveId,
+                    code,
+                    label,
+                    values: {
+                        create: normalizedValues.map((entry, index) => ({
+                            sizeKey: entry.sizeKey,
+                            quantity: entry.quantity,
+                            sortOrder: index
+                        }))
+                    }
+                },
+                include: { values: { orderBy: { sortOrder: 'asc' } } }
+            });
+            return res.status(201).json(mapQuickCurveRecord(created));
+        } catch (error) {
+            const mapped = mapCatalogWriteError(error);
+            logger.error({ err: error, traceId: req.traceId, operation: 'createQuickCurve', payload }, 'Failed to create quick curve');
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+        }
+    });
+
+    router.put('/admin/catalogs/quick-curves/:id', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const { id } = req.params;
+        const payload = req.body as QuickCurvePayload;
+        const sizeCurveId = payload.sizeCurveId?.trim();
+        const code = payload.code?.trim();
+        const label = payload.label?.trim();
+        const normalizedValues = normalizeQuickCurveValues(payload.values);
+
+        if (!sizeCurveId || !code || !label || !normalizedValues) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'sizeCurveId, code, label and valid values are required', undefined, req.traceId);
+        }
+
+        try {
+            const sizeCurve = await prisma.sizeCurve.findUnique({
+                where: { id: sizeCurveId },
+                include: { values: { orderBy: { sortOrder: 'asc' } } }
+            });
+            if (!sizeCurve) {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Size curve not found', undefined, req.traceId);
+            }
+
+            const allowedSizes = new Set(sizeCurve.values.map((entry) => entry.value));
+            const includesInvalidSize = normalizedValues.some((entry) => !allowedSizes.has(entry.sizeKey));
+            if (includesInvalidSize) {
+                return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Quick curve values include unknown size keys', undefined, req.traceId);
+            }
+
+            const updated = await prisma.$transaction(async (tx) => {
+                await tx.quickCurveValue.deleteMany({ where: { quickCurveId: id } });
+                return tx.quickCurve.update({
+                    where: { id },
+                    data: {
+                        sizeCurveId,
+                        code,
+                        label,
+                        values: {
+                            create: normalizedValues.map((entry, index) => ({
+                                sizeKey: entry.sizeKey,
+                                quantity: entry.quantity,
+                                sortOrder: index
+                            }))
+                        }
+                    },
+                    include: { values: { orderBy: { sortOrder: 'asc' } } }
+                });
+            });
+
+            return res.json(mapQuickCurveRecord(updated));
+        } catch (error) {
+            const mapped = mapCatalogWriteError(error);
+            logger.error({ err: error, traceId: req.traceId, operation: 'updateQuickCurve', quickCurveId: id, payload }, 'Failed to update quick curve');
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+        }
+    });
+
+    router.delete('/admin/catalogs/quick-curves/:id', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const { id } = req.params;
+        try {
+            await prisma.quickCurve.delete({ where: { id } });
+            return res.status(204).send();
+        } catch (error) {
+            const mapped = mapCatalogWriteError(error);
+            logger.error({ err: error, traceId: req.traceId, operation: 'deleteQuickCurve', quickCurveId: id }, 'Failed to delete quick curve');
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+        }
+    });
 
     router.get('/admin/catalogs/:catalog', readRateLimitMiddleware, requireAuth, async (req, res) => {
         const { catalog } = req.params;

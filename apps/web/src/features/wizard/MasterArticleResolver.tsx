@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, PackagePlus, Pencil, Search, X } from 'lucide-react';
+import { AlertCircle, PackagePlus, Pencil, Search, X } from 'lucide-react';
 import { ArticleResponse, CreateArticlePayload } from '../../services/articlesApi';
 import { ApiError, api } from '../../services/api';
 import { SupplierCreateModal } from './SupplierCreateModal';
@@ -55,8 +55,6 @@ const getErrorMessage = (error: unknown, fallback: string) => {
     }
     return fallback;
 };
-
-const getOptionLabel = (options: Option[], value: string) => options.find((option) => option.value === value)?.label ?? '-';
 
 export function MasterArticleResolver({
     title,
@@ -461,42 +459,15 @@ export function MasterArticleResolver({
                 </article>
             </div>
 
-            <article className={styles.selectionPanel}>
-                <div className={styles.panelHeader}>
-                    <CheckCircle2 size={18} />
-                    <div>
-                        <h3>Artículo listo para el ítem</h3>
-                        <p>La confirmación aplica este maestro sobre el ítem actual.</p>
-                    </div>
+            {selectedArticle ? (
+                <div className={styles.actionsInline}>
+                    <button type="button" className={styles.nextButton} onClick={onConfirm} disabled={readOnly}>
+                        {confirmLabel}
+                    </button>
                 </div>
-
-                {selectedArticle ? (
-                    <div className={styles.selectionCard}>
-                        <strong>{selectedArticle.sku}</strong>
-                        <p>{selectedArticle.description}</p>
-                        <dl className={styles.selectionMeta}>
-                            <div>
-                                <dt>Proveedor</dt>
-                                <dd>{selectedArticle.supplier.code} · {selectedArticle.supplier.label}</dd>
-                            </div>
-                            <div>
-                                <dt>Familia</dt>
-                                <dd>{getOptionLabel(familyOptions, selectedArticle.familyId)}</dd>
-                            </div>
-                            <div>
-                                <dt>Material</dt>
-                                <dd>{getOptionLabel(materialOptions, selectedArticle.materialId)}</dd>
-                            </div>
-                        </dl>
-                    </div>
-                ) : (
-                    <p className={styles.emptyState}>Seleccioná, creá o cloná un artículo para continuar.</p>
-                )}
-
-                <button type="button" className={styles.nextButton} onClick={onConfirm} disabled={!selectedArticle || readOnly}>
-                    {confirmLabel}
-                </button>
-            </article>
+            ) : (
+                <p className={styles.emptyState}>Seleccioná, creá o cloná un artículo para continuar.</p>
+            )}
 
             {allowSupplierCreation && onSupplierCreated && (
                 <SupplierCreateModal

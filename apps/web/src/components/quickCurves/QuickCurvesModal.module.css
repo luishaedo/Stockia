@@ -1,0 +1,140 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    display: grid;
+    place-items: center;
+    z-index: 50;
+}
+
+.modal {
+    width: min(760px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #cbd5e1;
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.field {
+    display: grid;
+    gap: 6px;
+}
+
+.field span {
+    font-size: 13px;
+    color: #475569;
+}
+
+.field input,
+.field select {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.list {
+    display: grid;
+    gap: 8px;
+}
+
+.listItem,
+.listItemActive {
+    width: 100%;
+    text-align: left;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.listItemActive {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18);
+}
+
+.listItem p {
+    margin: 2px 0;
+}
+
+.muted {
+    color: #64748b;
+    margin: 0;
+}
+
+.error {
+    margin: 0;
+    color: #b91c1c;
+}
+
+.applyRow {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 10px;
+    align-items: end;
+}
+
+.fieldRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.valuesGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.primaryButton,
+.secondaryButton,
+.iconButton {
+    border-radius: 10px;
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    cursor: pointer;
+}
+
+.primaryButton {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+
+.secondaryButton,
+.iconButton {
+    background: #fff;
+    color: #0f172a;
+}
+
+.inlineActions {
+    display: inline-flex;
+    gap: 8px;
+    color: #334155;
+}
+
+.inlineActions span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
