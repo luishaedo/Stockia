@@ -559,14 +559,6 @@ export function MasterArticleResolver({
                                             placeholder="Buscar"
                                             disabled={readOnly || !supplier?.id}
                                         />
-                                        <button
-                                            type="button"
-                                            className={styles.cloneSearchButton}
-                                            onClick={() => setCloneSearchQuery((previous) => previous.trim())}
-                                            disabled={readOnly || !supplier?.id || !cloneSearchQuery.trim()}
-                                        >
-                                            Buscar
-                                        </button>
                                     </div>
                                 </label>
                                 {cloneSearchHint && !searchError && <p className={styles.emptyState}>{cloneSearchHint}</p>}

@@ -42,7 +42,7 @@ export function SupplierCreateModal({ isOpen, onClose, onCreated }: SupplierCrea
             setError(null);
             try {
                 const response = await api.getOperationsCatalogs(true);
-                setSuppliers(response.suppliers.map((supplier: { id: string; code: string; label: string; logoUrl?: string | null }) => ({
+                setSuppliers(response.suppliers.map((supplier: { id: string; code?: string; label: string; logoUrl?: string | null }) => ({
                     id: supplier.id,
                     code: supplier.code,
                     label: supplier.label,
