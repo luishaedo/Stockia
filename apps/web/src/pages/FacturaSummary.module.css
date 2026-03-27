@@ -313,6 +313,11 @@
         grid-template-columns: repeat(3, minmax(0, max-content));
     }
 
+    .actionGroupPrimary {
+        grid-template-columns: repeat(4, minmax(0, max-content));
+        align-items: center;
+    }
+
     .actionGroupExport {
         justify-content: end;
     }

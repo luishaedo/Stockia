@@ -499,9 +499,9 @@ export function FacturaSummary() {
                 </div>
 
                 <div className={styles.actions}>
-                    <div className={styles.actionGroup}>
-                        <Button variant="ghost" onClick={() => navigate('/facturas')} className={styles.actionButton} icon={<ArrowLeft size={16} />}>
-                            Volver al listado
+                    <div className={`${styles.actionGroup} ${styles.actionGroupPrimary}`}>
+                        <Button variant="ghost" onClick={() => navigate(`/facturas/${id}/wizard`)} className={styles.actionButton} icon={<ArrowLeft size={16} />}>
+                            Volver
                         </Button>
                         {!isFinal && (
                             <>
@@ -514,7 +514,7 @@ export function FacturaSummary() {
                             </>
                         )}
                         <Button variant="danger" onClick={() => setConfirmDeleteOpen(true)} className={styles.actionButton} icon={<Trash2 size={16} />}>
-                            Eliminar factura
+                            Eliminar
                         </Button>
                     </div>
 
