@@ -5,6 +5,7 @@ import { api, ApiError } from '../services/api';
 import styles from './AdminCatalogPage.module.css';
 import { FileUploadField } from '../components/ui/FileUploadField';
 import { AttributesModal } from '../components/attributes/AttributesModal';
+import { QuickCurvesModal } from '../components/quickCurves/QuickCurvesModal';
 
 type CatalogKey = 'suppliers' | 'size-curves' | 'families' | 'categories' | 'garment-types' | 'materials' | 'classifications';
 
@@ -59,6 +60,7 @@ export function AdminCatalogPage() {
     const [logoUrl, setLogoUrl] = useState('');
     const [logoPublicId, setLogoPublicId] = useState('');
     const [attributesModalOpen, setAttributesModalOpen] = useState(false);
+    const [quickCurvesOpen, setQuickCurvesOpen] = useState(false);
 
     const isSupplier = selectedCatalog === 'suppliers';
     const requiresLogo = isSupplier;
@@ -225,6 +227,11 @@ export function AdminCatalogPage() {
                     <form onSubmit={handleSubmit} className={styles.formCard}>
                         <input className={styles.input} placeholder="Código" value={code} onChange={(e) => setCode(e.target.value)} required />
                         <input className={styles.input} placeholder={isSupplier ? 'Nombre' : 'Descripción'} value={description} onChange={(e) => setDescription(e.target.value)} required />
+                        {selectedCatalog === 'size-curves' && (
+                            <button type="button" className={styles.secondaryButtonInline} onClick={() => setQuickCurvesOpen(true)}>
+                                Curva rápida
+                            </button>
+                        )}
                         {requiresLogo && (
                             <>
                                 <FileUploadField
@@ -292,6 +299,17 @@ export function AdminCatalogPage() {
                 initialCatalog={selectedCatalog === 'materials' || selectedCatalog === 'families' || selectedCatalog === 'classifications' || selectedCatalog === 'categories' || selectedCatalog === 'garment-types' || selectedCatalog === 'size-curves'
                     ? selectedCatalog
                     : 'materials'}
+            />
+            <QuickCurvesModal
+                isOpen={quickCurvesOpen}
+                onClose={() => setQuickCurvesOpen(false)}
+                mode="manage"
+                sizeCurveOptions={items.map((item) => ({
+                    id: item.id,
+                    code: item.code,
+                    description: getDisplayDescription(item),
+                    values: (item.values ?? []).map((entry) => entry.value)
+                }))}
             />
         </section>
     );

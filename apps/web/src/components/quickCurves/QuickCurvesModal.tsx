@@ -55,6 +55,11 @@ export function QuickCurvesModal({
         }
     }, [isOpen, initialSizeCurveId, sizeCurveOptions]);
 
+    useEffect(() => {
+        if (!isOpen || !selectedSizeCurveId) return;
+        setForm((prev) => ({ ...prev, sizeCurveId: selectedSizeCurveId }));
+    }, [isOpen, selectedSizeCurveId]);
+
     const selectedSizeCurve = useMemo(
         () => sizeCurveOptions.find((option) => option.id === selectedSizeCurveId) ?? null,
         [selectedSizeCurveId, sizeCurveOptions]
