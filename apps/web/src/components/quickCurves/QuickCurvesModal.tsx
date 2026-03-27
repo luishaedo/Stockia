@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { X, Trash2, Pencil } from 'lucide-react';
-import { api, QuickCurveRecord } from '../../services/api';
+import { api, ApiError, QuickCurveRecord } from '../../services/api';
 import styles from './QuickCurvesModal.module.css';
 
 type SizeCurveOption = {
@@ -27,6 +27,24 @@ const emptyPayload = (sizeCurveId: string): QuickCurvePayload => ({
     label: '',
     values: {}
 });
+
+const getQuickCurvesErrorMessage = (error: unknown, fallbackMessage: string) => {
+    if (error instanceof ApiError) {
+        if (error.status === 401 || error.status === 403) {
+            return 'Tu sesión expiró o no tenés permisos para administrar curvas rápidas. Volvé a iniciar sesión.';
+        }
+
+        if (error.status === 503) {
+            return 'El catálogo de curvas rápidas no está disponible todavía. Ejecutá las migraciones pendientes del backend.';
+        }
+    }
+
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return fallbackMessage;
+};
 
 export function QuickCurvesModal({
     isOpen,
@@ -80,7 +98,7 @@ export function QuickCurvesModal({
             setSelectedQuickCurveId(response[0]?.id ?? '');
             resetForm(sizeCurveId);
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : 'No pudimos cargar las curvas rápidas.');
+            setError(getQuickCurvesErrorMessage(loadError, 'No pudimos cargar las curvas rápidas.'));
             setQuickCurves([]);
             setSelectedQuickCurveId('');
         } finally {
@@ -138,7 +156,7 @@ export function QuickCurvesModal({
             }
             await loadQuickCurves(form.sizeCurveId);
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : 'No pudimos guardar la curva rápida.');
+            setError(getQuickCurvesErrorMessage(saveError, 'No pudimos guardar la curva rápida.'));
         } finally {
             setSaving(false);
         }
@@ -151,7 +169,7 @@ export function QuickCurvesModal({
             await api.deleteQuickCurve(id);
             await loadQuickCurves(selectedSizeCurveId);
         } catch (removeError) {
-            setError(removeError instanceof Error ? removeError.message : 'No pudimos eliminar la curva rápida.');
+            setError(getQuickCurvesErrorMessage(removeError, 'No pudimos eliminar la curva rápida.'));
         } finally {
             setSaving(false);
         }

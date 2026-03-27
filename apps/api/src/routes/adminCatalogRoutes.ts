@@ -89,10 +89,35 @@ const mapCatalogWriteError = (error: unknown): { status: number; code: string; m
         };
     }
 
+    if (prismaError?.code === 'P2021' || prismaError?.code === 'P2022') {
+        return {
+            status: 503,
+            code: ErrorCodes.INTERNAL_SERVER_ERROR,
+            message: 'Quick curves catalog is not ready yet. Please run pending database migrations'
+        };
+    }
+
     return {
         status: 500,
         code: ErrorCodes.INTERNAL_SERVER_ERROR,
         message: 'Unexpected error while processing catalog item'
+    };
+};
+
+const mapQuickCurvesReadError = (error: unknown): { status: number; code: string; message: string } => {
+    const prismaError = error as { code?: string };
+    if (prismaError?.code === 'P2021' || prismaError?.code === 'P2022') {
+        return {
+            status: 503,
+            code: ErrorCodes.INTERNAL_SERVER_ERROR,
+            message: 'Quick curves catalog is not ready yet. Please run pending database migrations'
+        };
+    }
+
+    return {
+        status: 500,
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'Failed to load quick curves'
     };
 };
 
@@ -125,7 +150,8 @@ export const createAdminCatalogRoutes = (
             return res.json(records.map(mapQuickCurveRecord));
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId }, 'Failed to load quick curves');
-            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load quick curves', error, req.traceId);
+            const mapped = mapQuickCurvesReadError(error);
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
 
