@@ -64,8 +64,6 @@ export function SupplierCreateModal({ isOpen, onClose, onCreated }: SupplierCrea
         void loadSuppliers();
     }, [isOpen]);
 
-    if (!isOpen) return null;
-
     const filteredSuppliers = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
         if (!normalizedQuery) return suppliers;
@@ -74,6 +72,8 @@ export function SupplierCreateModal({ isOpen, onClose, onCreated }: SupplierCrea
             || (supplier.code ?? '').toLowerCase().includes(normalizedQuery)
         ));
     }, [query, suppliers]);
+
+    if (!isOpen) return null;
 
     const handleConfirm = async () => {
         const selectedSupplier = suppliers.find((supplier) => supplier.id === selectedSupplierId);
