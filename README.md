@@ -273,6 +273,7 @@ This repository includes `render.yaml` for a production API service.
 - Build command: `npm ci && npm run build -w @stockia/shared && npm run build -w api`
 - Start command: `npm run start -w api`
 - Health check: `GET /health`
+- Failed migration recovery runbook: `docs/prisma-migration-recovery.md`
 
 Required API environment variables on Render:
 
