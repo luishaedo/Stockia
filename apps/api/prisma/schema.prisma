@@ -274,6 +274,7 @@ model SizeCurve {
   updatedAt   DateTime         @updatedAt
   articles    Article[]
   values      SizeCurveValue[]
+  quickCurves QuickCurve[]
 
   @@index([code])
   @@index([description])
@@ -289,4 +290,31 @@ model SizeCurveValue {
   @@unique([sizeCurveId, value])
   @@unique([sizeCurveId, sortOrder])
   @@index([sizeCurveId])
+}
+
+model QuickCurve {
+  id          String            @id @default(uuid())
+  sizeCurveId String
+  code        String
+  label       String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  sizeCurve   SizeCurve         @relation(fields: [sizeCurveId], references: [id], onDelete: Cascade)
+  values      QuickCurveValue[]
+
+  @@unique([sizeCurveId, code])
+  @@index([sizeCurveId])
+}
+
+model QuickCurveValue {
+  id           String     @id @default(uuid())
+  quickCurveId String
+  sizeKey      String
+  quantity     Int
+  sortOrder    Int
+  quickCurve   QuickCurve @relation(fields: [quickCurveId], references: [id], onDelete: Cascade)
+
+  @@unique([quickCurveId, sizeKey])
+  @@unique([quickCurveId, sortOrder])
+  @@index([quickCurveId])
 }

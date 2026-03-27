@@ -236,8 +236,12 @@
 }
 
 .nextButton {
-    width: 100%;
-    margin-top: 16px;
+    min-width: 220px;
+}
+
+.actionsInline {
+    display: flex;
+    justify-content: flex-start;
 }
 
 .selectionMeta {

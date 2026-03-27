@@ -15,7 +15,7 @@ const getEstadoLabel = (estado: string) => (estado === 'FINAL' ? 'Final' : 'Borr
 type WizardStep = 'ARTICLE' | 'COLOR';
 
 type CatalogOption = { value: string; label: string; id: string; code: string };
-type SizeCurveOption = { value: string; label: string; id: string; values: string[]; code: string };
+type SizeCurveOption = { value: string; label: string; id: string; values: string[]; code: string; description: string };
 type AdminCatalogItem = { id: string; code: string; description?: string; name?: string };
 type SizeCurveCatalogItem = { id: string; code: string; description: string; values?: Array<{ value: string }> };
 
@@ -103,6 +103,7 @@ export function FacturaWizard() {
                     return {
                         id: entry.id,
                         code: entry.code,
+                        description: entry.description,
                         value: entry.id,
                         values,
                         label: values.length > 0
@@ -199,7 +200,7 @@ export function FacturaWizard() {
     return (
         <div className={styles.page}>
             <header className={styles.hero}>
-                <button type="button" className={styles.backButton} onClick={() => navigate(-1)}>
+                <button type="button" className={styles.backButton} onClick={() => navigate('/')}>
                     <ArrowLeft size={18} />
                 </button>
                 <h1>Factura: {state.currentFactura.nroFactura}</h1>
@@ -273,9 +274,9 @@ export function FacturaWizard() {
             {step === 'COLOR' && selectedArticle && (
                 <ColorStep
                     itemContext={{
-                        supplierLabel: selectedArticle.supplier.label,
-                        tipoPrenda: garmentTypeOptions.find((option) => option.id === selectedArticle.garmentTypeId)?.label || '-',
                         codigoArticulo: selectedArticle.sku,
+                        descripcionArticulo: selectedArticle.description,
+                        sizeCurveId: selectedArticle.sizeCurve.id,
                         curvaTalles: selectedArticle.sizeCurve.values
                     }}
                     addedColors={draftColors}
@@ -283,6 +284,7 @@ export function FacturaWizard() {
                     onRemoveColor={(index) => !isFinal && setDraftColors((prev) => prev.filter((_, i) => i !== index))}
                     onFinishItem={handleFinishItem}
                     onBack={() => setStep('ARTICLE')}
+                    sizeCurveOptions={sizeCurveOptions}
                     readOnly={isFinal}
                 />
             )}

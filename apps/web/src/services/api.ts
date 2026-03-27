@@ -4,6 +4,7 @@ import { AdminApiService } from './adminApi';
 import { CatalogsApiService } from './catalogsApi';
 import { ArticlesApiService } from './articlesApi';
 import { ApiError, authTokenStore, HttpClient } from './httpClient';
+export type { QuickCurveRecord } from './catalogsApi';
 
 export { ApiError, authTokenStore };
 export type { AdminCatalogKey } from './types';
@@ -42,6 +43,10 @@ class ApiFacade {
     createAdminCatalog = this.catalogsApi.createAdminCatalog.bind(this.catalogsApi);
     updateAdminCatalog = this.catalogsApi.updateAdminCatalog.bind(this.catalogsApi);
     deleteAdminCatalog = this.catalogsApi.deleteAdminCatalog.bind(this.catalogsApi);
+    getQuickCurves = this.catalogsApi.getQuickCurves.bind(this.catalogsApi);
+    createQuickCurve = this.catalogsApi.createQuickCurve.bind(this.catalogsApi);
+    updateQuickCurve = this.catalogsApi.updateQuickCurve.bind(this.catalogsApi);
+    deleteQuickCurve = this.catalogsApi.deleteQuickCurve.bind(this.catalogsApi);
 
     searchArticles = this.articlesApi.searchArticles.bind(this.articlesApi);
     createArticle = this.articlesApi.createArticle.bind(this.articlesApi);

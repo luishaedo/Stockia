@@ -4,6 +4,13 @@ import { HttpClient } from './httpClient';
 import { AdminCatalogKey } from './types';
 
 const DEFAULT_VERSION = 'W/"0"';
+export type QuickCurveRecord = {
+    id: string;
+    sizeCurveId: string;
+    code: string;
+    label: string;
+    values: Record<string, number>;
+};
 
 export class CatalogsApiService {
     constructor(private client: HttpClient) {}
@@ -182,6 +189,62 @@ export class CatalogsApiService {
             this.invalidateCatalogCache(catalog);
         } catch (error) {
             return this.logAndThrowRequestError('deleteAdminCatalog', path, error);
+        }
+    }
+
+    async getQuickCurves(sizeCurveId: string): Promise<QuickCurveRecord[]> {
+        const path = `/admin/catalogs/quick-curves?sizeCurveId=${encodeURIComponent(sizeCurveId)}`;
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos cargar las curvas rápidas');
+            return response.json() as Promise<QuickCurveRecord[]>;
+        } catch (error) {
+            return this.logAndThrowRequestError('getQuickCurves', path, error);
+        }
+    }
+
+    async createQuickCurve(payload: Omit<QuickCurveRecord, 'id'>): Promise<QuickCurveRecord> {
+        const path = '/admin/catalogs/quick-curves';
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                method: 'POST',
+                headers: await this.client.getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            await this.client.assertOk(response, 'No pudimos crear la curva rápida');
+            return response.json() as Promise<QuickCurveRecord>;
+        } catch (error) {
+            return this.logAndThrowRequestError('createQuickCurve', path, error);
+        }
+    }
+
+    async updateQuickCurve(id: string, payload: Omit<QuickCurveRecord, 'id'>): Promise<QuickCurveRecord> {
+        const path = `/admin/catalogs/quick-curves/${id}`;
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                method: 'PUT',
+                headers: await this.client.getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            await this.client.assertOk(response, 'No pudimos actualizar la curva rápida');
+            return response.json() as Promise<QuickCurveRecord>;
+        } catch (error) {
+            return this.logAndThrowRequestError('updateQuickCurve', path, error);
+        }
+    }
+
+    async deleteQuickCurve(id: string): Promise<void> {
+        const path = `/admin/catalogs/quick-curves/${id}`;
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                method: 'DELETE',
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos eliminar la curva rápida');
+        } catch (error) {
+            return this.logAndThrowRequestError('deleteQuickCurve', path, error);
         }
     }
     private async logAndThrowRequestError(context: string, path: string, error: unknown): Promise<never> {
