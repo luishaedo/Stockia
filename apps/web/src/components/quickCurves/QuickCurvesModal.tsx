@@ -37,6 +37,11 @@ const getQuickCurvesErrorMessage = (error: unknown, fallbackMessage: string) => 
         if (error.status === 503) {
             return 'El catálogo de curvas rápidas no está disponible todavía. Ejecutá las migraciones pendientes del backend.';
         }
+
+        if (error.status >= 500) {
+            const trace = error.traceId ? ` (traceId: ${error.traceId})` : '';
+            return `No pudimos procesar la curva rápida por un error interno. Reintentá y, si persiste, compartí este identificador con soporte${trace}.`;
+        }
     }
 
     if (error instanceof Error) {
