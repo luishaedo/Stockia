@@ -96,6 +96,54 @@ const mapCatalogWriteError = (error: unknown): { status: number; code: string; m
     };
 };
 
+const getPrismaErrorDiagnostics = (error: unknown) => {
+    const prismaError = error as { code?: string; meta?: unknown; name?: string };
+    return {
+        prismaCode: prismaError?.code,
+        prismaMeta: prismaError?.meta,
+        errorName: prismaError?.name
+    };
+};
+
+const mapQuickCurvesWriteError = (error: unknown): { status: number; code: string; message: string } => {
+    const prismaError = error as { code?: string };
+    if (prismaError?.code === 'P2021' || prismaError?.code === 'P2022') {
+        return {
+            status: 503,
+            code: ErrorCodes.QUICK_CURVES_SCHEMA_NOT_READY,
+            message: 'Quick curves catalog is not ready yet. Please run pending database migrations'
+        };
+    }
+
+    const mapped = mapCatalogWriteError(error);
+    if (mapped.status !== 500 || mapped.code !== ErrorCodes.INTERNAL_SERVER_ERROR) {
+        return mapped;
+    }
+
+    return {
+        status: 500,
+        code: ErrorCodes.QUICK_CURVES_WRITE_FAILED,
+        message: 'Unexpected error while processing quick curve'
+    };
+};
+
+const mapQuickCurvesReadError = (error: unknown): { status: number; code: string; message: string } => {
+    const prismaError = error as { code?: string };
+    if (prismaError?.code === 'P2021' || prismaError?.code === 'P2022') {
+        return {
+            status: 503,
+            code: ErrorCodes.QUICK_CURVES_SCHEMA_NOT_READY,
+            message: 'Quick curves catalog is not ready yet. Please run pending database migrations'
+        };
+    }
+
+    return {
+        status: 500,
+        code: ErrorCodes.QUICK_CURVES_READ_FAILED,
+        message: 'Unexpected error while loading quick curves'
+    };
+};
+
 export const createAdminCatalogRoutes = (
     prisma: PrismaClient,
     requireAuth: RequestHandler,
@@ -124,8 +172,11 @@ export const createAdminCatalogRoutes = (
             });
             return res.json(records.map(mapQuickCurveRecord));
         } catch (error) {
-            logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId }, 'Failed to load quick curves');
-            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to load quick curves', error, req.traceId);
+            const diagnostics = getPrismaErrorDiagnostics(error);
+            logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId, ...diagnostics }, 'Failed to load quick curves');
+            const mapped = mapQuickCurvesReadError(error);
+            const details = diagnostics.prismaCode ? { prismaCode: diagnostics.prismaCode } : undefined;
+            return sendError(res, mapped.status, mapped.code, mapped.message, details, req.traceId);
         }
     });
 
@@ -172,9 +223,14 @@ export const createAdminCatalogRoutes = (
             });
             return res.status(201).json(mapQuickCurveRecord(created));
         } catch (error) {
-            const mapped = mapCatalogWriteError(error);
-            logger.error({ err: error, traceId: req.traceId, operation: 'createQuickCurve', payload }, 'Failed to create quick curve');
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            const mapped = mapQuickCurvesWriteError(error);
+            const diagnostics = getPrismaErrorDiagnostics(error);
+            logger.error(
+                { err: error, traceId: req.traceId, operation: 'createQuickCurve', payload, ...diagnostics },
+                'Failed to create quick curve'
+            );
+            const details = diagnostics.prismaCode ? { prismaCode: diagnostics.prismaCode } : undefined;
+            return sendError(res, mapped.status, mapped.code, mapped.message, details, req.traceId);
         }
     });
 
@@ -227,9 +283,14 @@ export const createAdminCatalogRoutes = (
 
             return res.json(mapQuickCurveRecord(updated));
         } catch (error) {
-            const mapped = mapCatalogWriteError(error);
-            logger.error({ err: error, traceId: req.traceId, operation: 'updateQuickCurve', quickCurveId: id, payload }, 'Failed to update quick curve');
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            const mapped = mapQuickCurvesWriteError(error);
+            const diagnostics = getPrismaErrorDiagnostics(error);
+            logger.error(
+                { err: error, traceId: req.traceId, operation: 'updateQuickCurve', quickCurveId: id, payload, ...diagnostics },
+                'Failed to update quick curve'
+            );
+            const details = diagnostics.prismaCode ? { prismaCode: diagnostics.prismaCode } : undefined;
+            return sendError(res, mapped.status, mapped.code, mapped.message, details, req.traceId);
         }
     });
 
@@ -239,9 +300,14 @@ export const createAdminCatalogRoutes = (
             await prisma.quickCurve.delete({ where: { id } });
             return res.status(204).send();
         } catch (error) {
-            const mapped = mapCatalogWriteError(error);
-            logger.error({ err: error, traceId: req.traceId, operation: 'deleteQuickCurve', quickCurveId: id }, 'Failed to delete quick curve');
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            const mapped = mapQuickCurvesWriteError(error);
+            const diagnostics = getPrismaErrorDiagnostics(error);
+            logger.error(
+                { err: error, traceId: req.traceId, operation: 'deleteQuickCurve', quickCurveId: id, ...diagnostics },
+                'Failed to delete quick curve'
+            );
+            const details = diagnostics.prismaCode ? { prismaCode: diagnostics.prismaCode } : undefined;
+            return sendError(res, mapped.status, mapped.code, mapped.message, details, req.traceId);
         }
     });
 
