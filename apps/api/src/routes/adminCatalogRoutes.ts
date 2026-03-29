@@ -89,6 +89,14 @@ const mapCatalogWriteError = (error: unknown): { status: number; code: string; m
         };
     }
 
+    if (prismaError?.code === 'P2021' || prismaError?.code === 'P2022') {
+        return {
+            status: 503,
+            code: ErrorCodes.INTERNAL_SERVER_ERROR,
+            message: 'Quick curves catalog is not ready yet. Please run pending database migrations'
+        };
+    }
+
     return {
         status: 500,
         code: ErrorCodes.INTERNAL_SERVER_ERROR,
@@ -172,11 +180,9 @@ export const createAdminCatalogRoutes = (
             });
             return res.json(records.map(mapQuickCurveRecord));
         } catch (error) {
-            const diagnostics = getPrismaErrorDiagnostics(error);
-            logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId, ...diagnostics }, 'Failed to load quick curves');
+            logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId }, 'Failed to load quick curves');
             const mapped = mapQuickCurvesReadError(error);
-            const details = diagnostics.prismaCode ? { prismaCode: diagnostics.prismaCode } : undefined;
-            return sendError(res, mapped.status, mapped.code, mapped.message, details, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
 
@@ -224,13 +230,11 @@ export const createAdminCatalogRoutes = (
             return res.status(201).json(mapQuickCurveRecord(created));
         } catch (error) {
             const mapped = mapQuickCurvesWriteError(error);
-            const diagnostics = getPrismaErrorDiagnostics(error);
             logger.error(
-                { err: error, traceId: req.traceId, operation: 'createQuickCurve', payload, ...diagnostics },
+                { err: error, traceId: req.traceId, operation: 'createQuickCurve', payload, ...getPrismaErrorDiagnostics(error) },
                 'Failed to create quick curve'
             );
-            const details = diagnostics.prismaCode ? { prismaCode: diagnostics.prismaCode } : undefined;
-            return sendError(res, mapped.status, mapped.code, mapped.message, details, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
 
@@ -284,13 +288,11 @@ export const createAdminCatalogRoutes = (
             return res.json(mapQuickCurveRecord(updated));
         } catch (error) {
             const mapped = mapQuickCurvesWriteError(error);
-            const diagnostics = getPrismaErrorDiagnostics(error);
             logger.error(
-                { err: error, traceId: req.traceId, operation: 'updateQuickCurve', quickCurveId: id, payload, ...diagnostics },
+                { err: error, traceId: req.traceId, operation: 'updateQuickCurve', quickCurveId: id, payload, ...getPrismaErrorDiagnostics(error) },
                 'Failed to update quick curve'
             );
-            const details = diagnostics.prismaCode ? { prismaCode: diagnostics.prismaCode } : undefined;
-            return sendError(res, mapped.status, mapped.code, mapped.message, details, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
 
@@ -301,13 +303,11 @@ export const createAdminCatalogRoutes = (
             return res.status(204).send();
         } catch (error) {
             const mapped = mapQuickCurvesWriteError(error);
-            const diagnostics = getPrismaErrorDiagnostics(error);
             logger.error(
-                { err: error, traceId: req.traceId, operation: 'deleteQuickCurve', quickCurveId: id, ...diagnostics },
+                { err: error, traceId: req.traceId, operation: 'deleteQuickCurve', quickCurveId: id, ...getPrismaErrorDiagnostics(error) },
                 'Failed to delete quick curve'
             );
-            const details = diagnostics.prismaCode ? { prismaCode: diagnostics.prismaCode } : undefined;
-            return sendError(res, mapped.status, mapped.code, mapped.message, details, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
         }
     });
 

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { X, Trash2, Pencil } from 'lucide-react';
-import { ErrorCodes } from '@stockia/shared';
 import { api, ApiError, QuickCurveRecord } from '../../services/api';
 import styles from './QuickCurvesModal.module.css';
 
@@ -31,15 +30,6 @@ const emptyPayload = (sizeCurveId: string): QuickCurvePayload => ({
 
 const getQuickCurvesErrorMessage = (error: unknown, fallbackMessage: string) => {
     if (error instanceof ApiError) {
-        if (error.code === ErrorCodes.QUICK_CURVES_SCHEMA_NOT_READY) {
-            return 'El catálogo de curvas rápidas no está disponible todavía. Ejecutá las migraciones pendientes del backend.';
-        }
-
-        if (error.code === ErrorCodes.QUICK_CURVES_READ_FAILED || error.code === ErrorCodes.QUICK_CURVES_WRITE_FAILED) {
-            const trace = error.traceId ? ` (traceId: ${error.traceId})` : '';
-            return `No pudimos procesar la curva rápida por un error interno. Reintentá y, si persiste, compartí este identificador con soporte${trace}.`;
-        }
-
         if (error.status === 401 || error.status === 403) {
             return 'Tu sesión expiró o no tenés permisos para administrar curvas rápidas. Volvé a iniciar sesión.';
         }
