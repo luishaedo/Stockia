@@ -33,7 +33,7 @@ const normalizeQuickCurveValues = (values: Record<string, number> | undefined) =
         return null;
     }
 
-    if (entries.some((entry) => !Number.isFinite(entry.quantity) || entry.quantity < 0 || !Number.isInteger(entry.quantity))) {
+    if (entries.some((entry) => !Number.isFinite(entry.quantity) || entry.quantity < 0 || !Number.isInteger(entry.quantity) || entry.quantity > 2147483647)) {
         return null;
     }
 
@@ -55,9 +55,26 @@ const mapQuickCurveRecord = (record: {
 });
 
 const mapCatalogWriteError = (error: unknown): { status: number; code: string; message: string } => {
-    const prismaError = error as { code?: string };
+    const prismaError = error as { code?: string; meta?: { target?: unknown } };
+    const target = Array.isArray(prismaError?.meta?.target) ? prismaError.meta.target.join(',') : String(prismaError?.meta?.target ?? '');
 
     if (prismaError?.code === 'P2002') {
+        if (target.includes('sizeCurveId') && target.includes('code')) {
+            return {
+                status: 409,
+                code: ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION,
+                message: 'A quick curve with this code already exists for the selected size curve'
+            };
+        }
+
+        if (target.includes('quickCurveId') && target.includes('sizeKey')) {
+            return {
+                status: 400,
+                code: ErrorCodes.VALIDATION_FAILED,
+                message: 'Quick curve includes duplicated size entries'
+            };
+        }
+
         return {
             status: 409,
             code: ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION,
@@ -73,7 +90,7 @@ const mapCatalogWriteError = (error: unknown): { status: number; code: string; m
         };
     }
 
-    if (prismaError?.code === 'P2009' || prismaError?.code === 'P2012') {
+    if (prismaError?.code === 'P2009' || prismaError?.code === 'P2012' || prismaError?.code === 'P2000' || prismaError?.code === 'P2020') {
         return {
             status: 400,
             code: ErrorCodes.VALIDATION_FAILED,
