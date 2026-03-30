@@ -97,6 +97,7 @@ export function MasterArticleResolver({
     const [cloningArticleId, setCloningArticleId] = useState<string | null>(null);
     const [supplierLogoUrl, setSupplierLogoUrl] = useState<string | null>(null);
     const [supplierLogoError, setSupplierLogoError] = useState(false);
+    const [supplierToastVisible, setSupplierToastVisible] = useState(false);
 
     useEffect(() => {
         setSearchResults([]);
@@ -203,6 +204,7 @@ export function MasterArticleResolver({
         || (missingCatalogs ? 'Faltan catálogos obligatorios para crear o clonar artículos.' : null);
 
     const canManageSupplier = allowSupplierCreation && !readOnly && !supplierLocked && Boolean(onSupplierCreated);
+    const canAttemptSupplierEdit = allowSupplierCreation && !readOnly && Boolean(onSupplierCreated);
     const canCreateArticle = Boolean(
         supplier?.id
         && articleDraft.sku.trim()
@@ -347,6 +349,26 @@ export function MasterArticleResolver({
 
     const supplierInitial = supplier?.label.charAt(0).toUpperCase() ?? '?';
 
+    const handleSupplierEditClick = () => {
+        if (canManageSupplier) {
+            setSupplierModalOpen(true);
+            return;
+        }
+
+        if (supplierLocked) {
+            setSupplierToastVisible(true);
+        }
+    };
+
+    useEffect(() => {
+        if (!supplierToastVisible) {
+            return;
+        }
+
+        const toastTimeout = window.setTimeout(() => setSupplierToastVisible(false), 3000);
+        return () => window.clearTimeout(toastTimeout);
+    }, [supplierToastVisible]);
+
     return (
         <section className={styles.wrapper}>
             <div className={styles.header}>
@@ -357,8 +379,8 @@ export function MasterArticleResolver({
                 <button
                     type="button"
                     className={styles.supplierAvatarButton}
-                    onClick={() => canManageSupplier && setSupplierModalOpen(true)}
-                    disabled={!canManageSupplier}
+                    onClick={handleSupplierEditClick}
+                    disabled={!canAttemptSupplierEdit}
                     title={canManageSupplier ? 'Editar proveedor' : supplier ? `${supplier.code} · ${supplier.label}` : 'Sin proveedor'}
                 >
                     {supplierLogoUrl && !supplierLogoError ? (
@@ -379,10 +401,10 @@ export function MasterArticleResolver({
                 </button>
             </div>
 
-            {allowSupplierCreation && !canManageSupplier && (
-                <div className={styles.infoBanner}>
+            {supplierToastVisible && (
+                <div className={styles.supplierToast} role="status" aria-live="polite">
                     <AlertCircle size={16} />
-                    <span>El proveedor no puede cambiarse cuando la factura ya tiene ítems o está en solo lectura.</span>
+                    <span>El proveedor no puede cambiarse cuando la factura ya tiene ítems.</span>
                 </div>
             )}
 

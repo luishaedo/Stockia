@@ -2,7 +2,6 @@ import { ClipboardEvent, useEffect, useMemo, useState } from 'react';
 import { Plus, Trash2, Save, X } from 'lucide-react';
 import { ApiError, api } from '../../services/api';
 import { AdminCatalogKey } from '../../services/types';
-import { QuickCurvesModal } from '../quickCurves/QuickCurvesModal';
 import styles from './AttributesModal.module.css';
 
 type CatalogOption = {
@@ -93,7 +92,6 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [quickCurvesOpen, setQuickCurvesOpen] = useState(false);
 
     const selectedCount = useMemo(() => rows.filter((row) => row.selected).length, [rows]);
 
@@ -284,11 +282,6 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
 
                     <div className={styles.actions}>
                         <button type="button" className={styles.secondaryButton} onClick={addRow}><Plus size={14} /> Agregar fila</button>
-                        {isSizeCurveCatalog && (
-                            <button type="button" className={styles.secondaryButton} onClick={() => setQuickCurvesOpen(true)}>
-                                Curvas rápidas
-                            </button>
-                        )}
                         <button type="button" className={styles.secondaryButton} onClick={deleteSelected} disabled={selectedCount === 0}><Trash2 size={14} /> Eliminar seleccionados</button>
                         <button type="button" className={styles.dangerButton} onClick={clearAll} disabled={rows.length === 0}>Borrar todo</button>
                         <button type="button" className={styles.primaryButton} onClick={saveChanges} disabled={saving || loading}><Save size={14} /> {saving ? 'Guardando...' : 'Guardar cambios'}</button>
@@ -365,19 +358,6 @@ export function AttributesModal({ isOpen, onClose, onSaved, initialCatalog = 'ma
                     )}
                 </div>
 
-                <QuickCurvesModal
-                    isOpen={quickCurvesOpen}
-                    onClose={() => setQuickCurvesOpen(false)}
-                    mode="manage"
-                    sizeCurveOptions={rows
-                        .filter((row) => row.id)
-                        .map((row) => ({
-                            id: row.id as string,
-                            code: row.code,
-                            description: row.description,
-                            values: row.curve.split(',').map((value) => value.trim()).filter(Boolean)
-                        }))}
-                />
             </div>
         </div>
     );

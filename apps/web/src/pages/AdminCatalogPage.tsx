@@ -255,7 +255,7 @@ export function AdminCatalogPage() {
                         )}
                         {selectedCatalog === 'size-curves' && (
                             <button type="button" className={styles.secondaryButtonInline} onClick={() => setQuickCurvesOpen(true)}>
-                                Curva rápida
+                                Curvas rápidas
                             </button>
                         )}
                         {requiresLogo && (
