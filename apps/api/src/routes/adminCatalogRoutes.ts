@@ -20,8 +20,13 @@ type QuickCurvePayload = {
     values?: Record<string, number>;
 };
 
-const normalizeQuickCurveValues = (values: Record<string, number> | undefined) => {
-    if (!values || typeof values !== 'object') {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const toTrimmedString = (value: unknown): string | null => (typeof value === 'string' ? value.trim() : null);
+
+const normalizeQuickCurveValues = (values: unknown) => {
+    if (!isRecord(values)) {
         return null;
     }
 
@@ -38,6 +43,23 @@ const normalizeQuickCurveValues = (values: Record<string, number> | undefined) =
     }
 
     return entries;
+};
+
+const normalizeQuickCurvePayload = (payload: unknown): QuickCurvePayload | null => {
+    if (!isRecord(payload)) {
+        return null;
+    }
+
+    const sizeCurveId = toTrimmedString(payload.sizeCurveId);
+    const code = toTrimmedString(payload.code);
+    const label = toTrimmedString(payload.label);
+
+    return {
+        sizeCurveId: sizeCurveId ?? undefined,
+        code: code ?? undefined,
+        label: label ?? undefined,
+        values: isRecord(payload.values) ? (payload.values as Record<string, number>) : undefined
+    };
 };
 
 const mapQuickCurveRecord = (record: {
@@ -57,6 +79,14 @@ const mapQuickCurveRecord = (record: {
 const mapCatalogWriteError = (error: unknown): { status: number; code: string; message: string } => {
     const prismaError = error as { code?: string; meta?: { target?: unknown } };
     const target = Array.isArray(prismaError?.meta?.target) ? prismaError.meta.target.join(',') : String(prismaError?.meta?.target ?? '');
+
+    if ((error as { name?: string } | null)?.name === 'PrismaClientValidationError') {
+        return {
+            status: 400,
+            code: ErrorCodes.VALIDATION_FAILED,
+            message: 'Invalid catalog payload'
+        };
+    }
 
     if (prismaError?.code === 'P2002') {
         if (target.includes('sizeCurveId') && target.includes('code')) {
@@ -145,6 +175,14 @@ const mapQuickCurvesWriteError = (error: unknown): { status: number; code: strin
 
 const mapQuickCurvesReadError = (error: unknown): { status: number; code: string; message: string } => {
     const prismaError = error as { code?: string };
+    if ((error as { name?: string } | null)?.name === 'PrismaClientValidationError') {
+        return {
+            status: 400,
+            code: ErrorCodes.VALIDATION_FAILED,
+            message: 'Invalid quick curve request'
+        };
+    }
+
     if (prismaError?.code === 'P2021' || prismaError?.code === 'P2022') {
         return {
             status: 503,
@@ -195,7 +233,11 @@ export const createAdminCatalogRoutes = (
     });
 
     router.post('/admin/catalogs/quick-curves', writeRateLimitMiddleware, requireAuth, async (req, res) => {
-        const payload = req.body as QuickCurvePayload;
+        const payload = normalizeQuickCurvePayload(req.body);
+        if (!payload) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Invalid quick curve payload', undefined, req.traceId);
+        }
+
         const sizeCurveId = payload.sizeCurveId?.trim();
         const code = payload.code?.trim();
         const label = payload.label?.trim();
@@ -248,7 +290,11 @@ export const createAdminCatalogRoutes = (
 
     router.put('/admin/catalogs/quick-curves/:id', writeRateLimitMiddleware, requireAuth, async (req, res) => {
         const { id } = req.params;
-        const payload = req.body as QuickCurvePayload;
+        const payload = normalizeQuickCurvePayload(req.body);
+        if (!payload) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Invalid quick curve payload', undefined, req.traceId);
+        }
+
         const sizeCurveId = payload.sizeCurveId?.trim();
         const code = payload.code?.trim();
         const label = payload.label?.trim();
