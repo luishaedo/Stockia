@@ -76,6 +76,13 @@ const mapQuickCurveRecord = (record: {
     values: Object.fromEntries(record.values.map((entry) => [entry.sizeKey, entry.quantity]))
 });
 
+type QuickCurveBaseRecord = {
+    id: string;
+    sizeCurveId: string;
+    code: string;
+    label: string;
+};
+
 const mapCatalogWriteError = (error: unknown): { status: number; code: string; message: string } => {
     const prismaError = error as { code?: string; meta?: { target?: unknown } };
     const target = Array.isArray(prismaError?.meta?.target) ? prismaError.meta.target.join(',') : String(prismaError?.meta?.target ?? '');
@@ -229,6 +236,29 @@ export const createAdminCatalogRoutes = (
     const router = Router();
     const handlers = createAdminCatalogHandlers(prisma);
 
+    const loadQuickCurveValuesSafely = async (curve: QuickCurveBaseRecord, traceId?: string) => {
+        try {
+            return await prisma.quickCurveValue.findMany({
+                where: { quickCurveId: curve.id },
+                orderBy: { sortOrder: 'asc' },
+                select: { sizeKey: true, quantity: true }
+            });
+        } catch (error) {
+            logger.error(
+                {
+                    err: error,
+                    traceId,
+                    operation: 'listQuickCurveValues',
+                    quickCurveId: curve.id,
+                    sizeCurveId: curve.sizeCurveId,
+                    ...getPrismaErrorDiagnostics(error)
+                },
+                'Failed to load quick curve values; skipping corrupted quick curve'
+            );
+            return null;
+        }
+    };
+
     router.get('/admin/catalogs/quick-curves', readRateLimitMiddleware, requireAuth, async (req, res) => {
         const sizeCurveId = String(req.query.sizeCurveId ?? '').trim();
         if (!sizeCurveId) {
@@ -243,10 +273,26 @@ export const createAdminCatalogRoutes = (
 
             const records = await prisma.quickCurve.findMany({
                 where: { sizeCurveId },
-                include: { values: { orderBy: { sortOrder: 'asc' } } },
+                select: {
+                    id: true,
+                    sizeCurveId: true,
+                    code: true,
+                    label: true
+                },
                 orderBy: { code: 'asc' }
             });
-            return res.json(records.map(mapQuickCurveRecord));
+
+            const safeRecords = [];
+            for (const record of records) {
+                const values = await loadQuickCurveValuesSafely(record, req.traceId);
+                if (!values) {
+                    continue;
+                }
+
+                safeRecords.push(mapQuickCurveRecord({ ...record, values }));
+            }
+
+            return res.json(safeRecords);
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId }, 'Failed to load quick curves');
             const mapped = mapQuickCurvesReadError(error);
