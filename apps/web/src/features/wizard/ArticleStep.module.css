@@ -259,7 +259,8 @@
 
 .infoBanner,
 .warningBanner,
-.errorText {
+.errorText,
+.supplierToast {
     border-radius: 14px;
     padding: 12px 14px;
     display: flex;
@@ -275,6 +276,17 @@
 .warningBanner {
     background: rgba(120, 53, 15, 0.25);
     color: #fde68a;
+}
+
+.supplierToast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 90;
+    background: rgba(120, 53, 15, 0.95);
+    color: #fde68a;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+    max-width: min(420px, calc(100vw - 40px));
 }
 
 .errorText {
