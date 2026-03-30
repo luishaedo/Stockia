@@ -74,8 +74,11 @@ export function QuickCurvesModal({
         if (!isOpen) return;
         if (initialSizeCurveId) {
             setSelectedSizeCurveId(initialSizeCurveId);
-        } else if (hasSizeCurveOptions) {
-            setSelectedSizeCurveId(sizeCurveOptions[0].id);
+        } else {
+            setSelectedSizeCurveId('');
+            setQuickCurves([]);
+            setSelectedQuickCurveId('');
+            resetForm('');
         }
     }, [isOpen, initialSizeCurveId, sizeCurveOptions, hasSizeCurveOptions]);
 
@@ -207,9 +210,13 @@ export function QuickCurvesModal({
                             onChange={(event) => {
                                 setSelectedSizeCurveId(event.target.value);
                                 setForm((prev) => ({ ...prev, sizeCurveId: event.target.value }));
+                                setQuickCurves([]);
+                                setSelectedQuickCurveId('');
+                                setEditingId(null);
                             }}
                             disabled={Boolean(initialSizeCurveId) && mode === 'apply'}
                         >
+                            {!initialSizeCurveId && <option value="">Seleccioná una curva de talle</option>}
                             {sizeCurveOptions.map((option) => (
                                 <option key={option.id} value={option.id}>
                                     {option.code} - {option.description}
@@ -221,31 +228,33 @@ export function QuickCurvesModal({
 
                 {error && <p className={styles.error}>{error}</p>}
 
-                {hasSizeCurveOptions && (loading ? <p className={styles.muted}>Cargando curvas rápidas...</p> : (
-                    <div className={styles.list}>
-                        {quickCurves.length === 0 && <p className={styles.muted}>No hay curvas rápidas para esta curva de talle.</p>}
-                        {quickCurves.map((curve) => (
-                            <button
-                                type="button"
-                                key={curve.id}
-                                className={curve.id === selectedQuickCurveId ? styles.listItemActive : styles.listItem}
-                                onClick={() => setSelectedQuickCurveId(curve.id)}
-                            >
-                                <div>
-                                    <strong>{curve.code}</strong>
-                                    <p>{curve.label}</p>
-                                    <small>{Object.entries(curve.values).map(([size, qty]) => `${size}/${qty}`).join(' ')}</small>
-                                </div>
-                                {mode === 'manage' && (
-                                    <span className={styles.inlineActions}>
-                                        <span onClick={(event) => { event.stopPropagation(); handleEdit(curve); }}><Pencil size={14} /></span>
-                                        <span onClick={(event) => { event.stopPropagation(); void removeQuickCurve(curve.id); }}><Trash2 size={14} /></span>
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                ))}
+                {hasSizeCurveOptions && (
+                    !selectedSizeCurveId ? <p className={styles.muted}>Seleccioná una curva de talle para ver o crear curvas rápidas.</p> : loading ? <p className={styles.muted}>Cargando curvas rápidas...</p> : (
+                        <div className={styles.list}>
+                            {quickCurves.length === 0 && <p className={styles.muted}>No hay curvas rápidas para esta curva de talle.</p>}
+                            {quickCurves.map((curve) => (
+                                <button
+                                    type="button"
+                                    key={curve.id}
+                                    className={curve.id === selectedQuickCurveId ? styles.listItemActive : styles.listItem}
+                                    onClick={() => setSelectedQuickCurveId(curve.id)}
+                                >
+                                    <div>
+                                        <strong>{curve.code}</strong>
+                                        <p>{curve.label}</p>
+                                        <small>{Object.entries(curve.values).map(([size, qty]) => `${size}/${qty}`).join(' ')}</small>
+                                    </div>
+                                    {mode === 'manage' && (
+                                        <span className={styles.inlineActions}>
+                                            <span onClick={(event) => { event.stopPropagation(); handleEdit(curve); }}><Pencil size={14} /></span>
+                                            <span onClick={(event) => { event.stopPropagation(); void removeQuickCurve(curve.id); }}><Trash2 size={14} /></span>
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )
+                )}
 
                 {hasSizeCurveOptions && mode === 'apply' && (
                     <div className={styles.applyRow}>
