@@ -57,12 +57,14 @@ export function AdminCatalogPage() {
 
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
+    const [sizeCurveValues, setSizeCurveValues] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
     const [logoPublicId, setLogoPublicId] = useState('');
     const [attributesModalOpen, setAttributesModalOpen] = useState(false);
     const [quickCurvesOpen, setQuickCurvesOpen] = useState(false);
 
     const isSupplier = selectedCatalog === 'suppliers';
+    const isSizeCurveCatalog = selectedCatalog === 'size-curves';
     const requiresLogo = isSupplier;
 
     const title = useMemo(() => {
@@ -74,6 +76,7 @@ export function AdminCatalogPage() {
         setEditingId(null);
         setCode('');
         setDescription('');
+        setSizeCurveValues('');
         setLogoUrl('');
         setSelectedLogoFileName('Ningún archivo seleccionado');
         setLogoPublicId('');
@@ -110,6 +113,7 @@ export function AdminCatalogPage() {
         setEditingId(item.id);
         setCode(item.code);
         setDescription(item.name || item.description || '');
+        setSizeCurveValues((item.values ?? []).map((entry) => entry.value).join(', '));
         setLogoUrl(item.logoUrl || '');
         setLogoPublicId(item.logoPublicId || '');
     };
@@ -144,6 +148,18 @@ export function AdminCatalogPage() {
             return;
         }
 
+        const normalizedSizeValues = isSizeCurveCatalog
+            ? sizeCurveValues
+                .split(',')
+                .map((entry) => entry.trim())
+                .filter(Boolean)
+            : [];
+
+        if (isSizeCurveCatalog && normalizedSizeValues.length === 0) {
+            setError('Ingresá al menos un talle para la curva (ej: XS, S, M, L).');
+            return;
+        }
+
         if (!selectedCatalog) {
             setError('Seleccioná un catálogo para continuar.');
             return;
@@ -151,7 +167,8 @@ export function AdminCatalogPage() {
 
         const payload: Record<string, unknown> = {
             code: trimmedCode,
-            ...(isSupplier ? { name: trimmedDescription } : { description: trimmedDescription })
+            ...(isSupplier ? { name: trimmedDescription } : { description: trimmedDescription }),
+            ...(isSizeCurveCatalog ? { values: normalizedSizeValues } : {})
         };
         if (isSupplier && logoUrl.trim()) payload.logoUrl = logoUrl.trim();
         if (isSupplier && logoPublicId.trim()) payload.logoPublicId = logoPublicId.trim();
@@ -227,6 +244,15 @@ export function AdminCatalogPage() {
                     <form onSubmit={handleSubmit} className={styles.formCard}>
                         <input className={styles.input} placeholder="Código" value={code} onChange={(e) => setCode(e.target.value)} required />
                         <input className={styles.input} placeholder={isSupplier ? 'Nombre' : 'Descripción'} value={description} onChange={(e) => setDescription(e.target.value)} required />
+                        {isSizeCurveCatalog && (
+                            <input
+                                className={styles.input}
+                                placeholder="Talles separados por coma (ej: XS, S, M, L, XL)"
+                                value={sizeCurveValues}
+                                onChange={(event) => setSizeCurveValues(event.target.value)}
+                                required
+                            />
+                        )}
                         {selectedCatalog === 'size-curves' && (
                             <button type="button" className={styles.secondaryButtonInline} onClick={() => setQuickCurvesOpen(true)}>
                                 Curva rápida
