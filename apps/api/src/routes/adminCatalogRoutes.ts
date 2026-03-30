@@ -160,6 +160,20 @@ const getPrismaErrorDiagnostics = (error: unknown) => {
     };
 };
 
+const getSafeErrorDetails = (error: unknown) => {
+    if (!error || typeof error !== 'object') {
+        return undefined;
+    }
+
+    const diagnostics = getPrismaErrorDiagnostics(error);
+    const message = error instanceof Error ? error.message : undefined;
+
+    return {
+        ...diagnostics,
+        message
+    };
+};
+
 const mapQuickCurvesWriteError = (error: unknown): { status: number; code: string; message: string } => {
     const mapped = mapCatalogWriteError(error);
     if (mapped.status !== 500 || mapped.code !== ErrorCodes.INTERNAL_SERVER_ERROR) {
@@ -176,6 +190,14 @@ const mapQuickCurvesWriteError = (error: unknown): { status: number; code: strin
 const mapQuickCurvesReadError = (error: unknown): { status: number; code: string; message: string } => {
     const prismaError = error as { code?: string };
     if ((error as { name?: string } | null)?.name === 'PrismaClientValidationError') {
+        return {
+            status: 400,
+            code: ErrorCodes.VALIDATION_FAILED,
+            message: 'Invalid quick curve request'
+        };
+    }
+
+    if (prismaError?.code === 'P2009' || prismaError?.code === 'P2012' || prismaError?.code === 'P2000' || prismaError?.code === 'P2020' || prismaError?.code === 'P2023') {
         return {
             status: 400,
             code: ErrorCodes.VALIDATION_FAILED,
@@ -228,7 +250,7 @@ export const createAdminCatalogRoutes = (
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId }, 'Failed to load quick curves');
             const mapped = mapQuickCurvesReadError(error);
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, getSafeErrorDetails(error), req.traceId);
         }
     });
 
@@ -284,7 +306,7 @@ export const createAdminCatalogRoutes = (
                 { err: error, traceId: req.traceId, operation: 'createQuickCurve', payload, ...getPrismaErrorDiagnostics(error) },
                 'Failed to create quick curve'
             );
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, getSafeErrorDetails(error), req.traceId);
         }
     });
 
@@ -346,7 +368,7 @@ export const createAdminCatalogRoutes = (
                 { err: error, traceId: req.traceId, operation: 'updateQuickCurve', quickCurveId: id, payload, ...getPrismaErrorDiagnostics(error) },
                 'Failed to update quick curve'
             );
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, getSafeErrorDetails(error), req.traceId);
         }
     });
 
@@ -361,7 +383,7 @@ export const createAdminCatalogRoutes = (
                 { err: error, traceId: req.traceId, operation: 'deleteQuickCurve', quickCurveId: id, ...getPrismaErrorDiagnostics(error) },
                 'Failed to delete quick curve'
             );
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, getSafeErrorDetails(error), req.traceId);
         }
     });
 
