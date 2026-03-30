@@ -76,6 +76,13 @@ const mapQuickCurveRecord = (record: {
     values: Object.fromEntries(record.values.map((entry) => [entry.sizeKey, entry.quantity]))
 });
 
+type QuickCurveBaseRecord = {
+    id: string;
+    sizeCurveId: string;
+    code: string;
+    label: string;
+};
+
 const mapCatalogWriteError = (error: unknown): { status: number; code: string; message: string } => {
     const prismaError = error as { code?: string; meta?: { target?: unknown } };
     const target = Array.isArray(prismaError?.meta?.target) ? prismaError.meta.target.join(',') : String(prismaError?.meta?.target ?? '');
@@ -160,6 +167,20 @@ const getPrismaErrorDiagnostics = (error: unknown) => {
     };
 };
 
+const getSafeErrorDetails = (error: unknown) => {
+    if (!error || typeof error !== 'object') {
+        return undefined;
+    }
+
+    const diagnostics = getPrismaErrorDiagnostics(error);
+    const message = error instanceof Error ? error.message : undefined;
+
+    return {
+        ...diagnostics,
+        message
+    };
+};
+
 const mapQuickCurvesWriteError = (error: unknown): { status: number; code: string; message: string } => {
     const mapped = mapCatalogWriteError(error);
     if (mapped.status !== 500 || mapped.code !== ErrorCodes.INTERNAL_SERVER_ERROR) {
@@ -176,6 +197,14 @@ const mapQuickCurvesWriteError = (error: unknown): { status: number; code: strin
 const mapQuickCurvesReadError = (error: unknown): { status: number; code: string; message: string } => {
     const prismaError = error as { code?: string };
     if ((error as { name?: string } | null)?.name === 'PrismaClientValidationError') {
+        return {
+            status: 400,
+            code: ErrorCodes.VALIDATION_FAILED,
+            message: 'Invalid quick curve request'
+        };
+    }
+
+    if (prismaError?.code === 'P2009' || prismaError?.code === 'P2012' || prismaError?.code === 'P2000' || prismaError?.code === 'P2020' || prismaError?.code === 'P2023') {
         return {
             status: 400,
             code: ErrorCodes.VALIDATION_FAILED,
@@ -207,6 +236,29 @@ export const createAdminCatalogRoutes = (
     const router = Router();
     const handlers = createAdminCatalogHandlers(prisma);
 
+    const loadQuickCurveValuesSafely = async (curve: QuickCurveBaseRecord, traceId?: string) => {
+        try {
+            return await prisma.quickCurveValue.findMany({
+                where: { quickCurveId: curve.id },
+                orderBy: { sortOrder: 'asc' },
+                select: { sizeKey: true, quantity: true }
+            });
+        } catch (error) {
+            logger.error(
+                {
+                    err: error,
+                    traceId,
+                    operation: 'listQuickCurveValues',
+                    quickCurveId: curve.id,
+                    sizeCurveId: curve.sizeCurveId,
+                    ...getPrismaErrorDiagnostics(error)
+                },
+                'Failed to load quick curve values; skipping corrupted quick curve'
+            );
+            return null;
+        }
+    };
+
     router.get('/admin/catalogs/quick-curves', readRateLimitMiddleware, requireAuth, async (req, res) => {
         const sizeCurveId = String(req.query.sizeCurveId ?? '').trim();
         if (!sizeCurveId) {
@@ -221,14 +273,30 @@ export const createAdminCatalogRoutes = (
 
             const records = await prisma.quickCurve.findMany({
                 where: { sizeCurveId },
-                include: { values: { orderBy: { sortOrder: 'asc' } } },
+                select: {
+                    id: true,
+                    sizeCurveId: true,
+                    code: true,
+                    label: true
+                },
                 orderBy: { code: 'asc' }
             });
-            return res.json(records.map(mapQuickCurveRecord));
+
+            const safeRecords = [];
+            for (const record of records) {
+                const values = await loadQuickCurveValuesSafely(record, req.traceId);
+                if (!values) {
+                    continue;
+                }
+
+                safeRecords.push(mapQuickCurveRecord({ ...record, values }));
+            }
+
+            return res.json(safeRecords);
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'listQuickCurves', sizeCurveId }, 'Failed to load quick curves');
             const mapped = mapQuickCurvesReadError(error);
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, getSafeErrorDetails(error), req.traceId);
         }
     });
 
@@ -284,7 +352,7 @@ export const createAdminCatalogRoutes = (
                 { err: error, traceId: req.traceId, operation: 'createQuickCurve', payload, ...getPrismaErrorDiagnostics(error) },
                 'Failed to create quick curve'
             );
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, getSafeErrorDetails(error), req.traceId);
         }
     });
 
@@ -346,7 +414,7 @@ export const createAdminCatalogRoutes = (
                 { err: error, traceId: req.traceId, operation: 'updateQuickCurve', quickCurveId: id, payload, ...getPrismaErrorDiagnostics(error) },
                 'Failed to update quick curve'
             );
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, getSafeErrorDetails(error), req.traceId);
         }
     });
 
@@ -361,7 +429,7 @@ export const createAdminCatalogRoutes = (
                 { err: error, traceId: req.traceId, operation: 'deleteQuickCurve', quickCurveId: id, ...getPrismaErrorDiagnostics(error) },
                 'Failed to delete quick curve'
             );
-            return sendError(res, mapped.status, mapped.code, mapped.message, error, req.traceId);
+            return sendError(res, mapped.status, mapped.code, mapped.message, getSafeErrorDetails(error), req.traceId);
         }
     });
 
