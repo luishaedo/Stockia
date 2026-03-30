@@ -36,7 +36,6 @@ export function ColorStep({
     const [name, setName] = useState('');
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [error, setError] = useState('');
-    const [showManualCurve, setShowManualCurve] = useState(true);
     const [quickCurveOpen, setQuickCurveOpen] = useState(false);
 
     const activeCurveOption = useMemo(
@@ -54,7 +53,6 @@ export function ColorStep({
             itemContext.curvaTalles.map((sizeKey) => [sizeKey, Number(values[sizeKey] ?? 0)])
         );
         setQuantities((prev) => ({ ...prev, ...normalized }));
-        setShowManualCurve(true);
     };
 
     const handleAddColor = () => {
@@ -121,34 +119,29 @@ export function ColorStep({
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <Button variant={showManualCurve ? 'primary' : 'secondary'} onClick={() => setShowManualCurve(true)} disabled={readOnly}>
-                            Cargar curva manual
-                        </Button>
                         <Button variant="secondary" onClick={() => setQuickCurveOpen(true)} disabled={readOnly}>
                             Curva rápida
                         </Button>
                     </div>
 
-                    {showManualCurve && (
-                        <div className="mt-1">
-                            <label className="text-sm font-medium text-slate-400 mb-2 block">Cantidades por talle</label>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                {itemContext.curvaTalles.map((size) => (
-                                    <div key={size} className="flex flex-col">
-                                        <span className="text-xs text-center text-slate-500 mb-1">{size}</span>
-                                        <Input
-                                            type="number"
-                                            min="0"
-                                            className="text-center"
-                                            value={quantities[size] ?? ''}
-                                            onChange={(e) => handleQtyChange(size, e.target.value)}
-                                            disabled={readOnly}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+                    <div className="mt-1">
+                        <label className="text-sm font-medium text-slate-400 mb-2 block">Cantidades por talle</label>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            {itemContext.curvaTalles.map((size) => (
+                                <div key={size} className="flex flex-col">
+                                    <span className="text-xs text-center text-slate-500 mb-1">{size}</span>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        className="text-center"
+                                        value={quantities[size] ?? ''}
+                                        onChange={(e) => handleQtyChange(size, e.target.value)}
+                                        disabled={readOnly}
+                                    />
+                                </div>
+                            ))}
                         </div>
-                    )}
+                    </div>
 
                     {error && <p className="text-red-500 text-sm">{error}</p>}
 
