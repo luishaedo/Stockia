@@ -59,6 +59,7 @@ export function QuickCurvesModal({
     initialSizeCurveId,
     onApply
 }: QuickCurvesModalProps) {
+    const hasSizeCurveOptions = sizeCurveOptions.length > 0;
     const [selectedSizeCurveId, setSelectedSizeCurveId] = useState(initialSizeCurveId ?? '');
     const [quickCurves, setQuickCurves] = useState<QuickCurveRecord[]>([]);
     const [multiplier, setMultiplier] = useState(1);
@@ -73,10 +74,10 @@ export function QuickCurvesModal({
         if (!isOpen) return;
         if (initialSizeCurveId) {
             setSelectedSizeCurveId(initialSizeCurveId);
-        } else if (sizeCurveOptions.length > 0) {
+        } else if (hasSizeCurveOptions) {
             setSelectedSizeCurveId(sizeCurveOptions[0].id);
         }
-    }, [isOpen, initialSizeCurveId, sizeCurveOptions]);
+    }, [isOpen, initialSizeCurveId, sizeCurveOptions, hasSizeCurveOptions]);
 
     useEffect(() => {
         if (!isOpen || !selectedSizeCurveId) return;
@@ -145,19 +146,23 @@ export function QuickCurvesModal({
             return;
         }
 
-        const hasValues = Object.values(form.values).some((value) => Number(value) >= 0);
+        const normalizedValues = Object.fromEntries(
+            (selectedSizeCurve?.values ?? []).map((sizeKey) => [sizeKey, Number(form.values[sizeKey] ?? 0)])
+        );
+        const hasValues = Object.values(normalizedValues).some((value) => Number(value) > 0);
         if (!hasValues) {
-            setError('Ingresá al menos un valor de cantidad.');
+            setError('Ingresá al menos una cantidad mayor a 0.');
             return;
         }
 
         setSaving(true);
         setError(null);
+        const payload = { ...form, values: normalizedValues };
         try {
             if (editingId) {
-                await api.updateQuickCurve(editingId, form);
+                await api.updateQuickCurve(editingId, payload);
             } else {
-                await api.createQuickCurve(form);
+                await api.createQuickCurve(payload);
             }
             await loadQuickCurves(form.sizeCurveId);
         } catch (saveError) {
@@ -188,27 +193,35 @@ export function QuickCurvesModal({
                     <button type="button" className={styles.iconButton} onClick={onClose}><X size={16} /></button>
                 </div>
 
-                <label className={styles.field}>
-                    <span>Curva de talle</span>
-                    <select
-                        value={selectedSizeCurveId}
-                        onChange={(event) => {
-                            setSelectedSizeCurveId(event.target.value);
-                            setForm((prev) => ({ ...prev, sizeCurveId: event.target.value }));
-                        }}
-                        disabled={Boolean(initialSizeCurveId)}
-                    >
-                        {sizeCurveOptions.map((option) => (
-                            <option key={option.id} value={option.id}>
-                                {option.code} - {option.description}
-                            </option>
-                        ))}
-                    </select>
-                </label>
+                {!hasSizeCurveOptions && (
+                    <p className={styles.muted}>
+                        Todavía no hay curvas de talle base para usar en curvas rápidas. Creá primero una curva de talle en “Gestionar atributos”.
+                    </p>
+                )}
+
+                {hasSizeCurveOptions && (
+                    <label className={styles.field}>
+                        <span>Curva de talle</span>
+                        <select
+                            value={selectedSizeCurveId}
+                            onChange={(event) => {
+                                setSelectedSizeCurveId(event.target.value);
+                                setForm((prev) => ({ ...prev, sizeCurveId: event.target.value }));
+                            }}
+                            disabled={Boolean(initialSizeCurveId) && mode === 'apply'}
+                        >
+                            {sizeCurveOptions.map((option) => (
+                                <option key={option.id} value={option.id}>
+                                    {option.code} - {option.description}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                )}
 
                 {error && <p className={styles.error}>{error}</p>}
 
-                {loading ? <p className={styles.muted}>Cargando curvas rápidas...</p> : (
+                {hasSizeCurveOptions && (loading ? <p className={styles.muted}>Cargando curvas rápidas...</p> : (
                     <div className={styles.list}>
                         {quickCurves.length === 0 && <p className={styles.muted}>No hay curvas rápidas para esta curva de talle.</p>}
                         {quickCurves.map((curve) => (
@@ -232,9 +245,9 @@ export function QuickCurvesModal({
                             </button>
                         ))}
                     </div>
-                )}
+                ))}
 
-                {mode === 'apply' && (
+                {hasSizeCurveOptions && mode === 'apply' && (
                     <div className={styles.applyRow}>
                         <label className={styles.field}>
                             <span>Multiplicador</span>
@@ -246,7 +259,7 @@ export function QuickCurvesModal({
                     </div>
                 )}
 
-                {mode === 'manage' && selectedSizeCurve && (
+                {hasSizeCurveOptions && mode === 'manage' && selectedSizeCurve && (
                     <div className={styles.editor}>
                         <h4>{editingId ? 'Editar curva rápida' : 'Nueva curva rápida'}</h4>
                         <div className={styles.fieldRow}>
