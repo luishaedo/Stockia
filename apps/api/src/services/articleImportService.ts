@@ -434,16 +434,16 @@ export class ArticleImportService {
         const skippedRows: Array<{ rowNumber: number; reason: string }> = [];
 
         for (const row of rowsToImport) {
-            const data: Prisma.ArticleCreateInput = {
+            const data: Prisma.ArticleUncheckedCreateInput = {
                 sku: row.normalized.sku,
                 description: row.normalized.description,
-                supplier: { connect: { id: row.resolutions.supplier.catalogId! } },
-                family: { connect: { id: row.resolutions.family.catalogId! } },
-                material: { connect: { id: row.resolutions.material.catalogId! } },
-                category: { connect: { id: row.resolutions.category.catalogId! } },
-                classification: { connect: { id: row.resolutions.classification.catalogId! } },
-                garmentType: { connect: { id: row.resolutions.garmentType.catalogId! } },
-                sizeCurve: { connect: { id: row.resolutions.sizeCurve.catalogId! } }
+                supplierId: row.resolutions.supplier.catalogId!,
+                familyId: row.resolutions.family.catalogId!,
+                materialId: row.resolutions.material.catalogId!,
+                categoryId: row.resolutions.category.catalogId!,
+                classificationId: row.resolutions.classification.catalogId!,
+                garmentTypeId: row.resolutions.garmentType.catalogId!,
+                sizeCurveId: row.resolutions.sizeCurve.catalogId!
             };
 
             try {
