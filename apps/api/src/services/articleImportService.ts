@@ -433,38 +433,36 @@ export class ArticleImportService {
         const createdRows: number[] = [];
         const skippedRows: Array<{ rowNumber: number; reason: string }> = [];
 
-        await this.prisma.$transaction(
-            async (tx) => {
-                for (const row of rowsToImport) {
-                    const data: Prisma.ArticleCreateInput = {
-                        sku: row.normalized.sku,
-                        description: row.normalized.description,
-                        supplier: { connect: { id: row.resolutions.supplier.catalogId! } },
-                        family: { connect: { id: row.resolutions.family.catalogId! } },
-                        material: { connect: { id: row.resolutions.material.catalogId! } },
-                        category: { connect: { id: row.resolutions.category.catalogId! } },
-                        classification: { connect: { id: row.resolutions.classification.catalogId! } },
-                        garmentType: { connect: { id: row.resolutions.garmentType.catalogId! } },
-                        sizeCurve: { connect: { id: row.resolutions.sizeCurve.catalogId! } }
-                    };
+        for (const row of rowsToImport) {
+            const data: Prisma.ArticleCreateInput = {
+                sku: row.normalized.sku,
+                description: row.normalized.description,
+                supplier: { connect: { id: row.resolutions.supplier.catalogId! } },
+                family: { connect: { id: row.resolutions.family.catalogId! } },
+                material: { connect: { id: row.resolutions.material.catalogId! } },
+                category: { connect: { id: row.resolutions.category.catalogId! } },
+                classification: { connect: { id: row.resolutions.classification.catalogId! } },
+                garmentType: { connect: { id: row.resolutions.garmentType.catalogId! } },
+                sizeCurve: { connect: { id: row.resolutions.sizeCurve.catalogId! } }
+            };
 
-                    try {
-                        await tx.article.create({ data });
-                        createdRows.push(row.rowNumber);
-                    } catch (error: any) {
-                        if (error?.code === 'P2002') {
-                            skippedRows.push({ rowNumber: row.rowNumber, reason: 'Violación de restricción única al momento de confirmar' });
-                            continue;
-                        }
-                        throw error;
-                    }
+            try {
+                await this.prisma.article.create({ data });
+                createdRows.push(row.rowNumber);
+            } catch (error: any) {
+                if (error?.code === 'P2002') {
+                    skippedRows.push({ rowNumber: row.rowNumber, reason: 'Violación de restricción única al momento de confirmar' });
+                    continue;
                 }
-            },
-            {
-                maxWait: 10_000,
-                timeout: 120_000
+
+                if (error?.code === 'P2025') {
+                    skippedRows.push({ rowNumber: row.rowNumber, reason: 'No se pudieron resolver referencias de catálogo al momento de confirmar' });
+                    continue;
+                }
+
+                throw error;
             }
-        );
+        }
 
         const commitResult: CommitPreviewResponse = {
             previewId,
