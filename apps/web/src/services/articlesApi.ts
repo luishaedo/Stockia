@@ -72,6 +72,19 @@ export type ArticleImportPreviewResponse = {
     };
 };
 
+
+export type ArticleImportBatchResponse = {
+    previewId: string;
+    successCount: number;
+    failedCount: number;
+    results: Array<{
+        rowNumber: number;
+        sku: string;
+        status: 'created' | 'rejected';
+        reason?: string;
+    }>;
+};
+
 export type ArticleImportCommitResponse = {
     previewId: string;
     status?: 'committed' | 'replayed';
@@ -167,6 +180,21 @@ export class ArticlesApiService {
 
         await this.client.assertOk(response, 'No pudimos descargar el template de importación');
         return response.blob();
+    }
+
+
+    async commitArticleImportBatch(previewId: string, rowNumbers: number[]) {
+        const path = '/admin/articles/import/batch';
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+            method: 'POST',
+            headers: {
+                ...(await this.client.getAuthHeaders())
+            },
+            body: JSON.stringify({ previewId, rowNumbers })
+        });
+
+        await this.client.assertOk(response, 'No pudimos importar el lote de artículos');
+        return response.json() as Promise<ArticleImportBatchResponse>;
     }
 
     async commitArticleImport(previewId: string, rowNumbers?: number[]) {

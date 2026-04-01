@@ -60,6 +60,28 @@ export const createArticleImportRoutes = (
         }
     });
 
+    router.post('/admin/articles/import/batch', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const previewId = typeof req.body?.previewId === 'string' ? req.body.previewId : '';
+        const rowNumbers = Array.isArray(req.body?.rowNumbers)
+            ? req.body.rowNumbers.map((value: unknown) => Number(value)).filter((value: number) => Number.isInteger(value))
+            : undefined;
+
+        if (!previewId) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'previewId es obligatorio', undefined, req.traceId);
+        }
+
+        try {
+            const result = await service.commitPreviewBatch(previewId, rowNumbers);
+            return res.status(201).json(result);
+        } catch (error: any) {
+            if (error?.message === 'PREVIEW_NOT_FOUND') {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'La sesión de preview no se encontró o expiró', undefined, req.traceId);
+            }
+            logger.error({ err: error, traceId: req.traceId, operation: 'commitArticleImportBatch' }, 'Failed to import article batch');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo procesar el lote de importación', error, req.traceId);
+        }
+    });
+
     router.post('/admin/articles/import/commit', writeRateLimitMiddleware, requireAuth, async (req, res) => {
         const previewId = typeof req.body?.previewId === 'string' ? req.body.previewId : '';
         const rowNumbers = Array.isArray(req.body?.rowNumbers)

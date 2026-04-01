@@ -53,6 +53,7 @@ class ApiFacade {
     cloneArticle = this.articlesApi.cloneArticle.bind(this.articlesApi);
     previewArticleImport = this.articlesApi.previewArticleImport.bind(this.articlesApi);
     downloadArticleImportTemplate = this.articlesApi.downloadArticleImportTemplate.bind(this.articlesApi);
+    commitArticleImportBatch = this.articlesApi.commitArticleImportBatch.bind(this.articlesApi);
     commitArticleImport = this.articlesApi.commitArticleImport.bind(this.articlesApi);
 }
 

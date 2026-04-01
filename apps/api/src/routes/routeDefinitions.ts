@@ -25,6 +25,7 @@ export type RouteDefinition = {
         | '/articles/:id/clone'
         | '/admin/articles/import/preview'
         | '/admin/articles/import/commit'
+        | '/admin/articles/import/batch'
         | '/admin/articles/import/template';
     requiresAdminToken: boolean;
 };
@@ -60,6 +61,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     { method: 'POST', path: '/articles/:id/clone', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/preview', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true },
+    { method: 'POST', path: '/admin/articles/import/batch', requiresAdminToken: true },
     { method: 'GET', path: '/admin/articles/import/template', requiresAdminToken: true }
 ];
 
