@@ -272,7 +272,6 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
                 <header className={styles.header}>
                     <div>
                         <h2 id="bulk-articles-modal-title">Importación masiva de artículos</h2>
-                        <p>Pipeline separado de alta manual: preview → validación por fila → commit confirmado.</p>
                     </div>
                     <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Cerrar modal">
                         <X size={16} />
@@ -281,7 +280,7 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
 
                 <section className={styles.section}>
                     <label className={styles.label}>
-                        <span>Proveedor (referencia UI)</span>
+                        <span>Proveedor</span>
                         <select className={styles.select} value={selectedSupplierId} onChange={(event) => onSupplierChange(event.target.value)} disabled={committing}>
                             <option value="">Seleccionar proveedor</option>
                             {supplierOptions.map((supplier) => (
@@ -298,26 +297,26 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
                         selectedFileName={selectedFile?.name ?? 'Ningún archivo seleccionado'}
                         accept=".csv,.xls,.xlsx"
                         onFileSelect={handleFileSelect}
-                        helperText="Soportado: CSV/XLS/XLSX. Resolverá catálogos por CODE y preservará ceros a la izquierda."
+                        helperText="Soportado: CSV/XLS/XLSX."
                     />
                     <div className={styles.actionRow}>
                         <button type="button" className={styles.secondaryButton} onClick={() => void onDownloadTemplate()} disabled={downloadingTemplate || committing}>
-                            {downloadingTemplate ? 'Descargando template...' : 'Descargar template XLSX'}
+                            {downloadingTemplate ? 'Descargando template...' : 'Descargar template'}
                         </button>
                         <button type="button" className={styles.primaryButton} onClick={() => void onPreview()} disabled={loadingPreview || !selectedFile || committing}>
                             {loadingPreview ? 'Procesando preview...' : 'Generar preview'}
                         </button>
                         <button type="button" className={styles.primaryButton} onClick={() => void onCommitImportable()} disabled={committing || !previewResponse?.previewId || importableRowNumbers.length === 0}>
-                            {committing ? 'Importando...' : 'Importar importables'}
+                            {committing ? 'Importando...' : 'Importar'}
                         </button>
                         <button type="button" className={styles.primaryButton} onClick={() => void onCommitSelected()} disabled={committing || !previewResponse?.previewId || selectedImportableRowNumbers.length === 0}>
-                            {committing ? 'Importando...' : 'Import selected'}
+                            {committing ? 'Importando...' : 'Importar Seleccion'}
                         </button>
                         <button type="button" className={styles.secondaryButton} onClick={onRemoveSelected} disabled={committing || selectedRowNumbers.size === 0}>
-                            Remove selected from preview
+                            Quitar
                         </button>
                         <button type="button" className={styles.secondaryButton} onClick={onDownloadReport} disabled={!previewRows.length}>
-                            Descargar reporte CSV
+                            Descargar Reporte
                         </button>
                     </div>
 
@@ -358,7 +357,7 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
                             </div>
                             <label className={styles.selectAllLabel}>
                                 <input type="checkbox" checked={allRowsSelected} onChange={toggleSelectAll} disabled={committing || rows.length === 0} />
-                                <span>Select all visible rows</span>
+                                <span>Seleccionar todo</span>
                             </label>
                         </>
                     )}
