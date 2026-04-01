@@ -184,17 +184,63 @@ export class ArticlesApiService {
 
 
     async commitArticleImportBatch(previewId: string, rowNumbers: number[]) {
-        const path = '/admin/articles/import/batch';
-        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+        const batchPath = '/admin/articles/import/batch';
+        const payload = JSON.stringify({ previewId, rowNumbers });
+
+        const batchResponse = await fetch(`${this.client.getBaseURL()}${batchPath}`, {
             method: 'POST',
             headers: {
                 ...(await this.client.getAuthHeaders())
             },
-            body: JSON.stringify({ previewId, rowNumbers })
+            body: payload
         });
 
-        await this.client.assertOk(response, 'No pudimos importar el lote de artículos');
-        return response.json() as Promise<ArticleImportBatchResponse>;
+        const batchContentType = batchResponse.headers.get('content-type')?.toLowerCase() ?? '';
+        const shouldFallbackToCommit =
+            batchResponse.status === 404 &&
+            !batchContentType.includes('application/json') &&
+            (batchResponse.headers.get('link')?.includes('/api/admin/articles/import/batch') ?? false);
+
+        if (!shouldFallbackToCommit) {
+            await this.client.assertOk(batchResponse, 'No pudimos importar el lote de artículos');
+            return batchResponse.json() as Promise<ArticleImportBatchResponse>;
+        }
+
+        const commitPath = '/admin/articles/import/commit';
+        const commitResponse = await fetch(`${this.client.getBaseURL()}${commitPath}`, {
+            method: 'POST',
+            headers: {
+                ...(await this.client.getAuthHeaders())
+            },
+            body: payload
+        });
+
+        await this.client.assertOk(commitResponse, 'No pudimos importar el lote de artículos');
+        const commitResult = (await commitResponse.json()) as ArticleImportCommitResponse;
+        const createdRows = new Set(commitResult.createdRows);
+
+        return {
+            previewId: commitResult.previewId,
+            successCount: commitResult.summary.importedRows,
+            failedCount: commitResult.summary.skippedRows,
+            results: rowNumbers.map((rowNumber) => {
+                if (createdRows.has(rowNumber)) {
+                    return {
+                        rowNumber,
+                        sku: '',
+                        status: 'created' as const
+                    };
+                }
+
+                const skipped = commitResult.skippedRows.find((item) => item.rowNumber === rowNumber);
+                return {
+                    rowNumber,
+                    sku: '',
+                    status: 'rejected' as const,
+                    reason: skipped?.reason ?? 'Row was skipped by commit endpoint'
+                };
+            })
+        };
     }
 
     async commitArticleImport(previewId: string, rowNumbers?: number[]) {
