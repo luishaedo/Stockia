@@ -89,6 +89,20 @@ type CommitPreviewResponse = {
     skippedRows: Array<{ rowNumber: number; reason: string }>;
 };
 
+type BatchCommitItemResult = {
+    rowNumber: number;
+    sku: string;
+    status: 'created' | 'rejected';
+    reason?: string;
+};
+
+type BatchCommitResponse = {
+    previewId: string;
+    successCount: number;
+    failedCount: number;
+    results: BatchCommitItemResult[];
+};
+
 type PreviewStoreEntry = {
     createdAt: number;
     result: PreviewResult;
@@ -413,6 +427,72 @@ export class ArticleImportService {
         return { previewId, result };
     }
 
+
+    private getImportableRows(entry: PreviewStoreEntry, selectedRowNumbers?: number[]) {
+        const selectableSet = selectedRowNumbers?.length ? new Set(selectedRowNumbers) : null;
+        return entry.result.rows.filter((row) => row.importable && (!selectableSet || selectableSet.has(row.rowNumber)));
+    }
+
+    async commitPreviewBatch(previewId: string, selectedRowNumbers?: number[]): Promise<BatchCommitResponse> {
+        this.cleanupPreviewStore();
+        const entry = this.previewStore.get(previewId);
+        if (!entry) {
+            throw new Error('PREVIEW_NOT_FOUND');
+        }
+
+        const rowsToImport = this.getImportableRows(entry, selectedRowNumbers);
+        const results: BatchCommitItemResult[] = [];
+
+        for (const row of rowsToImport) {
+            const data: Prisma.ArticleUncheckedCreateInput = {
+                sku: row.normalized.sku,
+                description: row.normalized.description,
+                supplierId: row.resolutions.supplier.catalogId!,
+                familyId: row.resolutions.family.catalogId!,
+                materialId: row.resolutions.material.catalogId!,
+                categoryId: row.resolutions.category.catalogId!,
+                classificationId: row.resolutions.classification.catalogId!,
+                garmentTypeId: row.resolutions.garmentType.catalogId!,
+                sizeCurveId: row.resolutions.sizeCurve.catalogId!
+            };
+
+            try {
+                await this.prisma.article.create({ data });
+                results.push({ rowNumber: row.rowNumber, sku: row.normalized.sku, status: 'created' });
+            } catch (error: any) {
+                if (error?.code === 'P2002') {
+                    results.push({
+                        rowNumber: row.rowNumber,
+                        sku: row.normalized.sku,
+                        status: 'rejected',
+                        reason: 'Duplicate SKU for supplier'
+                    });
+                    continue;
+                }
+
+                if (error?.code === 'P2025') {
+                    results.push({
+                        rowNumber: row.rowNumber,
+                        sku: row.normalized.sku,
+                        status: 'rejected',
+                        reason: 'Catalog references could not be resolved'
+                    });
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+
+        const successCount = results.filter((item) => item.status === 'created').length;
+        return {
+            previewId,
+            successCount,
+            failedCount: results.length - successCount,
+            results
+        };
+    }
+
     async commitPreview(previewId: string, selectedRowNumbers?: number[]) {
         this.cleanupPreviewStore();
         const entry = this.previewStore.get(previewId);
@@ -427,8 +507,7 @@ export class ArticleImportService {
             };
         }
 
-        const selectableSet = selectedRowNumbers?.length ? new Set(selectedRowNumbers) : null;
-        const rowsToImport = entry.result.rows.filter((row) => row.importable && (!selectableSet || selectableSet.has(row.rowNumber)));
+        const rowsToImport = this.getImportableRows(entry, selectedRowNumbers);
 
         const createdRows: number[] = [];
         const skippedRows: Array<{ rowNumber: number; reason: string }> = [];
