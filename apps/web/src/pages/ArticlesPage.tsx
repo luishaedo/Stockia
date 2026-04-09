@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ApiError, api } from '../services/api';
-import { ArticleResponse, CloneArticlePayload, CreateArticlePayload } from '../services/articlesApi';
+import { ArticleResponse, CloneArticlePayload, CreateArticlePayload, UpdateArticlePayload } from '../services/articlesApi';
 import { BulkArticlesModal } from '../components/articles/BulkArticlesModal';
 import styles from './ArticlesPage.module.css';
 
@@ -59,6 +59,17 @@ const buildPayload = (form: CreateArticlePayload): CreateArticlePayload => ({
     sizeCurveId: form.sizeCurveId
 });
 
+const buildUpdatePayload = (form: UpdateArticlePayload): UpdateArticlePayload => ({
+    description: form.description.trim(),
+    supplierId: form.supplierId,
+    familyId: form.familyId,
+    materialId: form.materialId,
+    categoryId: form.categoryId,
+    classificationId: form.classificationId,
+    garmentTypeId: form.garmentTypeId,
+    sizeCurveId: form.sizeCurveId
+});
+
 export function ArticlesPage() {
     const navigate = useNavigate();
     const [catalogs, setCatalogs] = useState<CatalogMap>(emptyCatalogs);
@@ -66,9 +77,12 @@ export function ArticlesPage() {
     const [loadingArticles, setLoadingArticles] = useState(false);
     const [savingArticle, setSavingArticle] = useState(false);
     const [cloningArticleId, setCloningArticleId] = useState<string | null>(null);
+    const [updatingArticleId, setUpdatingArticleId] = useState<string | null>(null);
+    const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
 
     const [error, setError] = useState<string | null>(null);
     const [articles, setArticles] = useState<ArticleResponse[]>([]);
+    const [toast, setToast] = useState<string | null>(null);
 
     const [searchSupplierId, setSearchSupplierId] = useState('');
     const [query, setQuery] = useState('');
@@ -87,6 +101,17 @@ export function ArticlesPage() {
 
     const [cloneDrafts, setCloneDrafts] = useState<Record<string, CloneArticlePayload>>({});
     const [bulkModalOpen, setBulkModalOpen] = useState(false);
+    const [editingArticle, setEditingArticle] = useState<ArticleResponse | null>(null);
+    const [editForm, setEditForm] = useState<UpdateArticlePayload>({
+        description: '',
+        supplierId: '',
+        familyId: '',
+        materialId: '',
+        categoryId: '',
+        classificationId: '',
+        garmentTypeId: '',
+        sizeCurveId: ''
+    });
 
     const suppliers = catalogs.suppliers;
 
@@ -127,6 +152,15 @@ export function ArticlesPage() {
     useEffect(() => {
         void loadCatalogs();
     }, []);
+
+    useEffect(() => {
+        if (!toast) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => setToast(null), 3000);
+        return () => window.clearTimeout(timeoutId);
+    }, [toast]);
 
     const loadArticles = async (supplierId: string, q = '') => {
         if (!supplierId) {
@@ -196,6 +230,65 @@ export function ArticlesPage() {
             setError(formatError(err, 'No pudimos clonar el artículo'));
         } finally {
             setCloningArticleId(null);
+        }
+    };
+
+    const onStartEditArticle = (article: ArticleResponse) => {
+        setEditingArticle(article);
+        setEditForm({
+            description: article.description,
+            supplierId: article.supplierId,
+            familyId: article.familyId,
+            materialId: article.materialId,
+            categoryId: article.categoryId,
+            classificationId: article.classificationId,
+            garmentTypeId: article.garmentTypeId,
+            sizeCurveId: article.sizeCurveId
+        });
+        setError(null);
+    };
+
+    const onCloseEditModal = () => {
+        setEditingArticle(null);
+    };
+
+    const onSubmitEditArticle = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!editingArticle) return;
+
+        setUpdatingArticleId(editingArticle.id);
+        setError(null);
+
+        try {
+            const payload = buildUpdatePayload(editForm);
+            await api.updateArticle(editingArticle.id, payload);
+            setToast('Artículo actualizado correctamente.');
+            onCloseEditModal();
+            await loadArticles(searchSupplierId, query);
+        } catch (err) {
+            setError(formatError(err, 'No pudimos actualizar el artículo'));
+        } finally {
+            setUpdatingArticleId(null);
+        }
+    };
+
+    const onDeleteArticle = async (article: ArticleResponse) => {
+        const confirmed = window.confirm('¿Seguro que deseas eliminar?');
+        if (!confirmed) {
+            return;
+        }
+
+        setDeletingArticleId(article.id);
+        setError(null);
+
+        try {
+            await api.deleteArticle(article.id);
+            setToast('Artículo eliminado correctamente.');
+            await loadArticles(searchSupplierId, query);
+        } catch (err) {
+            setError(formatError(err, 'No pudimos eliminar el artículo'));
+        } finally {
+            setDeletingArticleId(null);
         }
     };
 
@@ -294,6 +387,11 @@ export function ArticlesPage() {
                 </form>
 
                 {error && <p className={styles.error}>{error}</p>}
+                {toast && (
+                    <div className={styles.toast} role="status" aria-live="polite">
+                        {toast}
+                    </div>
+                )}
 
                 <div className={styles.articleList}>
                     {articles.map((article) => {
@@ -304,6 +402,23 @@ export function ArticlesPage() {
                                     <div>
                                         <p className={styles.sku}>{article.sku} · {article.description}</p>
                                         <p className={styles.meta}>Curva: {article.sizeCurve.code} ({article.sizeCurve.values.join('-')})</p>
+                                    </div>
+                                    <div className={styles.actions}>
+                                        <button
+                                            type="button"
+                                            className={styles.secondaryButton}
+                                            onClick={() => onStartEditArticle(article)}
+                                        >
+                                            Editar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={styles.dangerButton}
+                                            onClick={() => void onDeleteArticle(article)}
+                                            disabled={deletingArticleId === article.id}
+                                        >
+                                            {deletingArticleId === article.id ? 'Eliminando...' : 'Borrar'}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -355,6 +470,65 @@ export function ArticlesPage() {
                     setForm((prev) => ({ ...prev, supplierId }));
                 }}
             />
+            {editingArticle && (
+                <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={`Editar artículo ${editingArticle.sku}`}>
+                    <form className={styles.modalCard} onSubmit={onSubmitEditArticle}>
+                        <h2>Editar artículo</h2>
+                        <p className={styles.muted}>SKU: {editingArticle.sku} (solo lectura)</p>
+                        <div className={styles.row}>
+                            <input
+                                className={styles.input}
+                                value={editForm.description}
+                                onChange={(event) => setEditForm((prev) => ({ ...prev, description: event.target.value }))}
+                                placeholder="Description"
+                                required
+                            />
+                            <select className={styles.select} value={editForm.supplierId} onChange={(event) => setEditForm((prev) => ({ ...prev, supplierId: event.target.value }))} required>
+                                <option value="">Proveedor</option>
+                                {catalogs.suppliers.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
+                            </select>
+                        </div>
+                        <div className={styles.row}>
+                            <select className={styles.select} value={editForm.familyId} onChange={(event) => setEditForm((prev) => ({ ...prev, familyId: event.target.value }))} required>
+                                <option value="">📁 Familia</option>
+                                {catalogs.families.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
+                            </select>
+                            <select className={styles.select} value={editForm.materialId} onChange={(event) => setEditForm((prev) => ({ ...prev, materialId: event.target.value }))} required>
+                                <option value="">🧵 Material</option>
+                                {catalogs.materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
+                            </select>
+                        </div>
+                        <div className={styles.row}>
+                            <select className={styles.select} value={editForm.categoryId} onChange={(event) => setEditForm((prev) => ({ ...prev, categoryId: event.target.value }))} required>
+                                <option value="">🏷️ Categoría</option>
+                                {catalogs.categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
+                            </select>
+                            <select className={styles.select} value={editForm.classificationId} onChange={(event) => setEditForm((prev) => ({ ...prev, classificationId: event.target.value }))} required>
+                                <option value="">📚 Clasificación</option>
+                                {catalogs.classifications.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
+                            </select>
+                        </div>
+                        <div className={styles.row}>
+                            <select className={styles.select} value={editForm.garmentTypeId} onChange={(event) => setEditForm((prev) => ({ ...prev, garmentTypeId: event.target.value }))} required>
+                                <option value="">👕 Tipo de prenda</option>
+                                {catalogs.garmentTypes.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
+                            </select>
+                            <select className={styles.select} value={editForm.sizeCurveId} onChange={(event) => setEditForm((prev) => ({ ...prev, sizeCurveId: event.target.value }))} required>
+                                <option value="">📏 Curva de talles</option>
+                                {catalogs.sizeCurves.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
+                            </select>
+                        </div>
+                        <div className={styles.modalActions}>
+                            <button type="button" className={styles.secondaryButton} onClick={onCloseEditModal}>
+                                Cancelar
+                            </button>
+                            <button type="submit" className={styles.primaryButton} disabled={updatingArticleId === editingArticle.id}>
+                                {updatingArticleId === editingArticle.id ? 'Guardando...' : 'Guardar cambios'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
         </section>
     );

@@ -69,6 +69,15 @@
 
 .searchButton, .primaryButton { background: #0d9488; }
 .secondaryButton { background: #334155; }
+.dangerButton {
+  min-height: var(--control-height);
+  border: 0;
+  border-radius: var(--radius-control);
+  color: #fff;
+  font-weight: 700;
+  margin-top: var(--space-1);
+  background: #b91c1c;
+}
 
 .cardHeader .secondaryButton {
   margin-top: 0;
@@ -102,11 +111,32 @@
   gap: var(--space-1-5);
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.actions .secondaryButton,
+.actions .dangerButton {
+  margin-top: 0;
+  min-width: 88px;
+}
+
 .sku { margin: 0; font-size: 1rem; color: #0f172a; }
 .meta { margin: 2px 0 0; color: #64748b; font-size: 0.8rem; }
 
 .error { color: #b91c1c; margin: 0; font-size: 0.85rem; }
 .muted { color: #64748b; margin: 0; font-size: 0.85rem; }
+.toast {
+  background: #0f766e;
+  border: 1px solid #14b8a6;
+  color: #ecfeff;
+  border-radius: var(--radius-control);
+  padding: var(--space-1) var(--space-1-5);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
 
 .cloneForm {
   display: grid;
@@ -115,6 +145,55 @@
   padding-top: var(--space-1-5);
 }
 
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  display: grid;
+  place-items: center;
+  padding: var(--space-2);
+  z-index: 60;
+}
+
+.modalCard {
+  width: min(820px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-card);
+  padding: var(--space-2);
+  display: grid;
+  gap: var(--space-1-5);
+}
+
+.modalCard h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.modalActions .secondaryButton,
+.modalActions .primaryButton {
+  margin-top: 0;
+  min-width: 132px;
+}
+
 @media (max-width: 720px) {
   .row { grid-template-columns: 1fr; }
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .actions .secondaryButton,
+  .actions .dangerButton {
+    min-width: 0;
+    width: auto;
+    padding: 0 var(--space-1-5);
+  }
 }

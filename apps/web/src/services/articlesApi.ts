@@ -42,6 +42,17 @@ export type CloneArticlePayload = Partial<Omit<CreateArticlePayload, 'sku' | 'de
     description: string;
 };
 
+export type UpdateArticlePayload = Omit<CreateArticlePayload, 'sku'>;
+
+type ArticleMutationResponse = {
+    success: boolean;
+    data: ArticleResponse;
+};
+
+type ArticleDeleteResponse = {
+    success: boolean;
+    data: { id: string };
+};
 
 export type ArticleImportPreviewRow = {
     rowNumber: number;
@@ -270,5 +281,34 @@ export class ArticlesApiService {
         const checkedResponse = await this.ensureArticlesRouteExists(response, `/articles/${articleId}/clone`);
         await this.client.assertOk(checkedResponse, 'No pudimos clonar el artículo');
         return checkedResponse.json() as Promise<ArticleResponse>;
+    }
+
+    async updateArticle(articleId: string, payload: UpdateArticlePayload) {
+        const path = `/articles/${articleId}`;
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+            method: 'PUT',
+            headers: {
+                ...(await this.client.getAuthHeaders())
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const checkedResponse = await this.ensureArticlesRouteExists(response, `/articles/${articleId}`);
+        await this.client.assertOk(checkedResponse, 'No pudimos actualizar el artículo');
+        return checkedResponse.json() as Promise<ArticleMutationResponse>;
+    }
+
+    async deleteArticle(articleId: string) {
+        const path = `/articles/${articleId}`;
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+            method: 'DELETE',
+            headers: {
+                ...(await this.client.getAuthHeaders())
+            }
+        });
+
+        const checkedResponse = await this.ensureArticlesRouteExists(response, `/articles/${articleId}`);
+        await this.client.assertOk(checkedResponse, 'No pudimos eliminar el artículo');
+        return checkedResponse.json() as Promise<ArticleDeleteResponse>;
     }
 }

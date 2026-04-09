@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { CloneArticleSchema, CreateArticleSchema, CreateSupplierSchema, ErrorCodes, ArticleSearchQuerySchema } from '@stockia/shared';
+import { CloneArticleSchema, CreateArticleSchema, CreateSupplierSchema, ErrorCodes, ArticleSearchQuerySchema, UpdateArticleSchema } from '@stockia/shared';
 import { RequestHandler, Router } from 'express';
 import { catalogVersionStore } from '../lib/catalogVersion.js';
 import { logger } from '../lib/logger.js';
@@ -223,6 +223,59 @@ export const createArticleRoutes = (
             }
             logger.error({ err: error, traceId: req.traceId, operation: 'cloneArticle' }, 'Failed to clone article');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to clone article', error, req.traceId);
+        }
+    });
+
+    router.put('/articles/:id', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const validation = UpdateArticleSchema.safeParse(req.body);
+        if (!validation.success) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
+        }
+
+        try {
+            await validateCatalogReferences(prisma, validation.data);
+            const updated = await prisma.article.update({
+                where: { id: req.params.id },
+                data: validation.data,
+                select: articleSelect
+            });
+
+            return res.json({ success: true, data: toArticleResponse(updated) });
+        } catch (error: any) {
+            if (error?.message === 'INVALID_CATALOG_REFERENCE') {
+                return sendError(res, 422, ErrorCodes.VALIDATION_FAILED, 'Invalid catalog references', undefined, req.traceId);
+            }
+            if (error?.code === 'P2025') {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Article not found', undefined, req.traceId);
+            }
+            logger.error({ err: error, traceId: req.traceId, operation: 'updateArticle' }, 'Failed to update article');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to update article', error, req.traceId);
+        }
+    });
+
+    router.delete('/articles/:id', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        try {
+            await prisma.article.delete({
+                where: { id: req.params.id }
+            });
+
+            return res.json({ success: true, data: { id: req.params.id } });
+        } catch (error: any) {
+            if (error?.code === 'P2025') {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Article not found', undefined, req.traceId);
+            }
+            if (error?.code === 'P2003') {
+                return sendError(
+                    res,
+                    409,
+                    ErrorCodes.VALIDATION_FAILED,
+                    'Article cannot be deleted because it is linked to existing invoices',
+                    undefined,
+                    req.traceId
+                );
+            }
+            logger.error({ err: error, traceId: req.traceId, operation: 'deleteArticle' }, 'Failed to delete article');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to delete article', error, req.traceId);
         }
     });
 
