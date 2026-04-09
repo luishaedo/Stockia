@@ -74,6 +74,48 @@
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
   z-index: 20;
   animation: fadeSlideUp 320ms ease-out;
+  transition: transform 260ms ease, opacity 220ms ease, visibility 220ms ease;
+}
+
+.bottomNavCollapsed {
+  transform: translate(-50%, calc(100% + 18px));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.navToggle {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+  transform: translate(-50%, 8px) scale(0.94);
+  width: 44px;
+  height: 44px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #4f46e5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 21;
+  transition: opacity 220ms ease, transform 220ms ease, visibility 220ms ease;
+}
+
+.navToggleVisible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.navToggle svg {
+  transform: rotate(90deg);
 }
 
 .navLink {
@@ -169,5 +211,17 @@
     margin: 12px auto 0;
     border-radius: 999px;
     border: 1px solid #e2e8f0;
+  }
+
+  .bottomNavCollapsed {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .navToggle,
+  .navToggleVisible {
+    display: none;
   }
 }
