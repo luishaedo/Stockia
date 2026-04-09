@@ -159,6 +159,7 @@ const ArticlePayloadSchema = z.object({
 });
 
 export const CreateArticleSchema = ArticlePayloadSchema;
+export const UpdateArticleSchema = ArticlePayloadSchema.omit({ sku: true });
 
 export const CloneArticleSchema = ArticlePayloadSchema.partial().extend({
     sku: z.string().min(1),
@@ -278,6 +279,7 @@ export type OperationCatalogEntry = z.infer<typeof OperationCatalogEntrySchema>;
 export type OperationCatalogsResponse = z.infer<typeof OperationCatalogsResponseSchema>;
 export type ArticleSearchQuery = z.infer<typeof ArticleSearchQuerySchema>;
 export type CreateArticleDTO = z.infer<typeof CreateArticleSchema>;
+export type UpdateArticleDTO = z.infer<typeof UpdateArticleSchema>;
 export type CloneArticleDTO = z.infer<typeof CloneArticleSchema>;
 export type CreateSupplierDTO = z.infer<typeof CreateSupplierSchema>;
 
