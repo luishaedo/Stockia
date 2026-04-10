@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Grid2x2, Home, KeyRound, LogOut, Plus, Shirt } from 'lucide-react';
+import { ChevronUp, FileText, Grid2x2, Home, KeyRound, LogOut, Plus, Shirt } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 import styles from './MainLayout.module.css';
@@ -12,10 +12,40 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
     const location = useLocation();
     const { isAuthenticated, logout } = useAuth();
+    const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+    const lastScrollYRef = useRef(0);
 
     const isLoginPage = location.pathname === '/login';
 
     const isHomeRoute = location.pathname === '/' || location.pathname.startsWith('/facturas');
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        lastScrollYRef.current = window.scrollY;
+
+        const onScroll = () => {
+            const currentScrollY = window.scrollY;
+            const delta = currentScrollY - lastScrollYRef.current;
+            const isPastCollapseOffset = currentScrollY > 72;
+
+            if (delta > 8 && isPastCollapseOffset) {
+                setIsNavCollapsed(true);
+            } else if (delta < -6) {
+                setIsNavCollapsed(false);
+            }
+
+            lastScrollYRef.current = currentScrollY;
+        };
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+
+        return () => {
+            window.removeEventListener('scroll', onScroll);
+        };
+    }, []);
 
     return (
         <div className={styles.appFrame}>
@@ -34,9 +64,15 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </div>
                 )}
                 <main className={styles.content}>{children}</main>
+            </div>
 
-                {!isLoginPage && (
-                    <nav className={styles.bottomNav} aria-label="Primary navigation">
+            {!isLoginPage && (
+                <>
+                    <nav
+                        className={clsx(styles.bottomNav, isNavCollapsed && styles.bottomNavCollapsed)}
+                        aria-label="Primary navigation"
+                        aria-hidden={isNavCollapsed}
+                    >
                         <Link to="/" className={clsx(styles.navLink, isHomeRoute && styles.navLinkActive)} aria-label="Inicio">
                             <Home size={18} />
                             <span>Inicio</span>
@@ -57,8 +93,18 @@ export function MainLayout({ children }: MainLayoutProps) {
                             <span>Artículos</span>
                         </Link>
                     </nav>
-                )}
-            </div>
+
+                    <button
+                        type="button"
+                        className={clsx(styles.navToggle, isNavCollapsed && styles.navToggleVisible)}
+                        onClick={() => setIsNavCollapsed(false)}
+                        aria-label="Mostrar navegación"
+                        aria-expanded={!isNavCollapsed}
+                    >
+                        <ChevronUp size={18} />
+                    </button>
+                </>
+            )}
         </div>
     );
 }
