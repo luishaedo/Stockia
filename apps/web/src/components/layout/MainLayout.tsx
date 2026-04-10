@@ -90,6 +90,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </div>
                 )}
                 <main className={styles.content}>{children}</main>
+            </div>
 
                 {!isLoginPage && (
                     <>
