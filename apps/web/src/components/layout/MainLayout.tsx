@@ -13,6 +13,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const location = useLocation();
     const { isAuthenticated, logout } = useAuth();
     const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
     const lastScrollYRef = useRef(0);
 
     const isLoginPage = location.pathname === '/login';
@@ -24,9 +25,34 @@ export function MainLayout({ children }: MainLayoutProps) {
             return;
         }
 
+        const mediaQuery = window.matchMedia('(max-width: 899px)');
+        const syncViewport = () => {
+            setIsMobileViewport(mediaQuery.matches);
+            if (!mediaQuery.matches) {
+                setIsNavCollapsed(false);
+            }
+        };
+
+        syncViewport();
+        mediaQuery.addEventListener('change', syncViewport);
+
+        return () => {
+            mediaQuery.removeEventListener('change', syncViewport);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
         lastScrollYRef.current = window.scrollY;
 
         const onScroll = () => {
+            if (!isMobileViewport) {
+                return;
+            }
+
             const currentScrollY = window.scrollY;
             const delta = currentScrollY - lastScrollYRef.current;
             const isPastCollapseOffset = currentScrollY > 72;
@@ -45,7 +71,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         return () => {
             window.removeEventListener('scroll', onScroll);
         };
-    }, []);
+    }, [isMobileViewport]);
 
     return (
         <div className={styles.appFrame}>
@@ -66,45 +92,46 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <main className={styles.content}>{children}</main>
             </div>
 
-            {!isLoginPage && (
-                <>
-                    <nav
-                        className={clsx(styles.bottomNav, isNavCollapsed && styles.bottomNavCollapsed)}
-                        aria-label="Primary navigation"
-                        aria-hidden={isNavCollapsed}
-                    >
-                        <Link to="/" className={clsx(styles.navLink, isHomeRoute && styles.navLinkActive)} aria-label="Inicio">
-                            <Home size={18} />
-                            <span>Inicio</span>
-                        </Link>
-                        <Link to="/buscar" className={clsx(styles.navLink, location.pathname === '/buscar' && styles.navLinkActive)} aria-label="Buscar">
-                            <FileText size={18} />
-                            <span>Buscar</span>
-                        </Link>
-                        <Link to="/facturas/new" className={styles.navCenter} aria-label="Nueva factura">
-                            <Plus size={24} />
-                        </Link>
-                        <Link to="/admin" className={clsx(styles.navLink, location.pathname === '/admin' && styles.navLinkActive)} aria-label="Catálogos">
-                            <Grid2x2 size={18} />
-                            <span>Catálogos</span>
-                        </Link>
-                        <Link to="/articulos" className={clsx(styles.navLink, location.pathname === '/articulos' && styles.navLinkActive)} aria-label="Artículos">
-                            <Shirt size={18} />
-                            <span>Artículos</span>
-                        </Link>
-                    </nav>
+                {!isLoginPage && (
+                    <>
+                        <nav
+                            className={clsx(styles.bottomNav, isNavCollapsed && styles.bottomNavCollapsed)}
+                            aria-label="Primary navigation"
+                            aria-hidden={isNavCollapsed}
+                        >
+                            <Link to="/" className={clsx(styles.navLink, isHomeRoute && styles.navLinkActive)} aria-label="Inicio">
+                                <Home size={18} />
+                                <span>Inicio</span>
+                            </Link>
+                            <Link to="/buscar" className={clsx(styles.navLink, location.pathname === '/buscar' && styles.navLinkActive)} aria-label="Buscar">
+                                <FileText size={18} />
+                                <span>Buscar</span>
+                            </Link>
+                            <Link to="/facturas/new" className={styles.navCenter} aria-label="Nueva factura">
+                                <Plus size={24} />
+                            </Link>
+                            <Link to="/admin" className={clsx(styles.navLink, location.pathname === '/admin' && styles.navLinkActive)} aria-label="Catálogos">
+                                <Grid2x2 size={18} />
+                                <span>Catálogos</span>
+                            </Link>
+                            <Link to="/articulos" className={clsx(styles.navLink, location.pathname === '/articulos' && styles.navLinkActive)} aria-label="Artículos">
+                                <Shirt size={18} />
+                                <span>Artículos</span>
+                            </Link>
+                        </nav>
 
-                    <button
-                        type="button"
-                        className={clsx(styles.navToggle, isNavCollapsed && styles.navToggleVisible)}
-                        onClick={() => setIsNavCollapsed(false)}
-                        aria-label="Mostrar navegación"
-                        aria-expanded={!isNavCollapsed}
-                    >
-                        <ChevronUp size={18} />
-                    </button>
-                </>
-            )}
+                        <button
+                            type="button"
+                            className={clsx(styles.navToggle, isNavCollapsed && styles.navToggleVisible)}
+                            onClick={() => setIsNavCollapsed(false)}
+                            aria-label="Mostrar navegación"
+                            aria-expanded={!isNavCollapsed}
+                        >
+                            <ChevronUp size={18} />
+                        </button>
+                    </>
+                )}
+            </div>
         </div>
     );
 }
