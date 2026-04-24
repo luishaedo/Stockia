@@ -5,6 +5,8 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Check, ArrowLeft } from 'lucide-react';
 import { QuickCurvesModal } from '../../components/quickCurves/QuickCurvesModal';
+import { api, ApiError, SupplierColorRecord } from '../../services/api';
+import { useEffect } from 'react';
 
 interface ColorStepProps {
     itemContext: {
@@ -12,6 +14,7 @@ interface ColorStepProps {
         descripcionArticulo: string;
         sizeCurveId: string;
         curvaTalles: string[];
+        supplierId: string;
     };
     addedColors: VarianteColor[];
     sizeCurveOptions: Array<{ id: string; code: string; description: string; values: string[] }>;
@@ -37,11 +40,37 @@ export function ColorStep({
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [error, setError] = useState('');
     const [quickCurveOpen, setQuickCurveOpen] = useState(false);
+    const [supplierColors, setSupplierColors] = useState<SupplierColorRecord[]>([]);
+    const [loadingSupplierColors, setLoadingSupplierColors] = useState(false);
+    const [creatingSupplierColor, setCreatingSupplierColor] = useState(false);
 
     const activeCurveOption = useMemo(
         () => sizeCurveOptions.find((option) => option.id === itemContext.sizeCurveId) ?? null,
         [itemContext.sizeCurveId, sizeCurveOptions]
     );
+
+    useEffect(() => {
+        let mounted = true;
+        const loadSupplierColors = async () => {
+            if (!itemContext.supplierId) return;
+            setLoadingSupplierColors(true);
+            try {
+                const colors = await api.getSupplierColors(itemContext.supplierId);
+                if (!mounted) return;
+                setSupplierColors(colors);
+            } catch {
+                if (!mounted) return;
+                setSupplierColors([]);
+            } finally {
+                if (mounted) setLoadingSupplierColors(false);
+            }
+        };
+
+        void loadSupplierColors();
+        return () => {
+            mounted = false;
+        };
+    }, [itemContext.supplierId]);
 
     const handleQtyChange = (size: string, val: string) => {
         const num = parseInt(val, 10) || 0;
@@ -88,6 +117,37 @@ export function ColorStep({
         setError('');
     };
 
+    const handleCreateSupplierColor = async () => {
+        if (!itemContext.supplierId) {
+            setError('No hay proveedor seleccionado para guardar el color.');
+            return;
+        }
+        if (!code.trim() || !name.trim()) {
+            setError('Código y nombre de color son obligatorios para guardarlo en catálogo.');
+            return;
+        }
+
+        setCreatingSupplierColor(true);
+        setError('');
+        try {
+            const created = await api.createSupplierColor(itemContext.supplierId, {
+                code: code.trim().toUpperCase(),
+                value: name.trim()
+            });
+            setSupplierColors((prev) => {
+                const filtered = prev.filter((entry) => entry.id !== created.id && entry.code !== created.code);
+                return [...filtered, created].sort((a, b) => a.code.localeCompare(b.code));
+            });
+            setCode(created.code);
+            setName(created.value);
+        } catch (err) {
+            const message = err instanceof ApiError ? err.message : 'No pudimos guardar el color en el proveedor.';
+            setError(message);
+        } finally {
+            setCreatingSupplierColor(false);
+        }
+    };
+
     return (
         <div className="flex flex-col gap-4 sm:gap-6 max-w-4xl mx-auto">
             <Card className="bg-slate-800 border-slate-700">
@@ -105,24 +165,61 @@ export function ColorStep({
                         <Input
                             label="Código de color"
                             value={code}
-                            onChange={(e) => setCode(e.target.value)}
+                            onChange={(e) => {
+                                const nextCode = e.target.value;
+                                setCode(nextCode);
+                                const matchingColor = supplierColors.find((entry) => entry.code.toLowerCase() === nextCode.trim().toLowerCase());
+                                if (matchingColor) {
+                                    setName(matchingColor.value);
+                                }
+                            }}
                             placeholder="Ej: 001"
                             disabled={readOnly}
+                            list="supplier-colors-codes"
                         />
                         <Input
                             label="Nombre de color"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e) => {
+                                const nextName = e.target.value;
+                                setName(nextName);
+                                const matchingColor = supplierColors.find((entry) => entry.value.toLowerCase() === nextName.trim().toLowerCase());
+                                if (matchingColor && !code.trim()) {
+                                    setCode(matchingColor.code);
+                                }
+                            }}
                             placeholder="Ej: Negro"
                             disabled={readOnly}
+                            list="supplier-colors-values"
                         />
                     </div>
+
+                    <datalist id="supplier-colors-codes">
+                        {supplierColors.map((color) => (
+                            <option key={`${color.id}-code`} value={color.code}>{color.value}</option>
+                        ))}
+                    </datalist>
+                    <datalist id="supplier-colors-values">
+                        {supplierColors.map((color) => (
+                            <option key={`${color.id}-value`} value={color.value}>{color.code}</option>
+                        ))}
+                    </datalist>
 
                     <div className="flex flex-col sm:flex-row gap-2">
                         <Button variant="secondary" onClick={() => setQuickCurveOpen(true)} disabled={readOnly}>
                             Curva rápida
                         </Button>
+                        <Button variant="ghost" onClick={() => void handleCreateSupplierColor()} disabled={readOnly || creatingSupplierColor || !code.trim() || !name.trim()}>
+                            {creatingSupplierColor ? 'Guardando color...' : 'Guardar color en proveedor'}
+                        </Button>
                     </div>
+                    <p className="text-xs text-slate-500">
+                        {loadingSupplierColors
+                            ? 'Cargando colores del proveedor...'
+                            : supplierColors.length > 0
+                                ? `Colores disponibles: ${supplierColors.length}`
+                                : 'No hay colores guardados para este proveedor todavía.'}
+                    </p>
 
                     <div className="mt-1">
                         <label className="text-sm font-medium text-slate-400 mb-2 block">Cantidades por talle</label>

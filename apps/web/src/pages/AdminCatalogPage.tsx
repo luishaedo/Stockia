@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
-import { api, ApiError } from '../services/api';
+import { Plus, Pencil, Trash2, ArrowLeft, Palette } from 'lucide-react';
+import { api, ApiError, SupplierColorRecord } from '../services/api';
 import styles from './AdminCatalogPage.module.css';
 import { FileUploadField } from '../components/ui/FileUploadField';
 import { AttributesModal } from '../components/attributes/AttributesModal';
@@ -62,6 +62,14 @@ export function AdminCatalogPage() {
     const [logoPublicId, setLogoPublicId] = useState('');
     const [attributesModalOpen, setAttributesModalOpen] = useState(false);
     const [quickCurvesOpen, setQuickCurvesOpen] = useState(false);
+    const [supplierForColors, setSupplierForColors] = useState<CatalogItem | null>(null);
+    const [supplierColors, setSupplierColors] = useState<SupplierColorRecord[]>([]);
+    const [loadingSupplierColors, setLoadingSupplierColors] = useState(false);
+    const [supplierColorsError, setSupplierColorsError] = useState<string | null>(null);
+    const [editingSupplierColorId, setEditingSupplierColorId] = useState<string | null>(null);
+    const [supplierColorCode, setSupplierColorCode] = useState('');
+    const [supplierColorValue, setSupplierColorValue] = useState('');
+    const [supplierColorIsDefault, setSupplierColorIsDefault] = useState(false);
 
     const isSupplier = selectedCatalog === 'suppliers';
     const isSizeCurveCatalog = selectedCatalog === 'size-curves';
@@ -82,6 +90,13 @@ export function AdminCatalogPage() {
         setLogoPublicId('');
     };
 
+    const resetSupplierColorForm = () => {
+        setEditingSupplierColorId(null);
+        setSupplierColorCode('');
+        setSupplierColorValue('');
+        setSupplierColorIsDefault(false);
+    };
+
     const loadItems = async (catalog: CatalogKey) => {
         setLoading(true);
         setError(null);
@@ -99,6 +114,10 @@ export function AdminCatalogPage() {
 
     useEffect(() => {
         resetForm();
+        resetSupplierColorForm();
+        setSupplierForColors(null);
+        setSupplierColors([]);
+        setSupplierColorsError(null);
         if (!selectedCatalog) {
             setItems([]);
             return;
@@ -108,6 +127,20 @@ export function AdminCatalogPage() {
         const nextCatalogs = catalogOptions.map((option) => option.key).filter((catalog) => catalog !== selectedCatalog);
         void api.preloadAdminCatalogsIncremental(nextCatalogs);
     }, [selectedCatalog]);
+
+    const loadSupplierColors = async (supplier: CatalogItem) => {
+        setLoadingSupplierColors(true);
+        setSupplierColorsError(null);
+        try {
+            const colors = await api.getSupplierColors(supplier.id);
+            setSupplierColors(colors);
+        } catch (err) {
+            const message = formatCatalogError(err, 'No pudimos cargar los colores del proveedor');
+            setSupplierColorsError(message);
+        } finally {
+            setLoadingSupplierColors(false);
+        }
+    };
 
     const handleEdit = (item: CatalogItem) => {
         setEditingId(item.id);
@@ -206,6 +239,68 @@ export function AdminCatalogPage() {
     const handleAttributesSaved = async () => {
         if (!selectedCatalog) return;
         await loadItems(selectedCatalog);
+    };
+
+    const openSupplierColors = (supplier: CatalogItem) => {
+        setSupplierForColors(supplier);
+        resetSupplierColorForm();
+        void loadSupplierColors(supplier);
+    };
+
+    const handleSupplierColorEdit = (color: SupplierColorRecord) => {
+        setEditingSupplierColorId(color.id);
+        setSupplierColorCode(color.code);
+        setSupplierColorValue(color.value);
+        setSupplierColorIsDefault(color.isDefault);
+    };
+
+    const handleSupplierColorSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!supplierForColors) return;
+
+        const codeTrimmed = supplierColorCode.trim().toUpperCase();
+        const valueTrimmed = supplierColorValue.trim();
+        if (!codeTrimmed || !valueTrimmed) {
+            setSupplierColorsError('Código y valor de color son obligatorios.');
+            return;
+        }
+
+        setSupplierColorsError(null);
+        try {
+            if (editingSupplierColorId) {
+                await api.updateSupplierColor(supplierForColors.id, editingSupplierColorId, {
+                    code: codeTrimmed,
+                    value: valueTrimmed,
+                    isDefault: supplierColorIsDefault
+                });
+            } else {
+                await api.createSupplierColor(supplierForColors.id, {
+                    code: codeTrimmed,
+                    value: valueTrimmed,
+                    isDefault: supplierColorIsDefault
+                });
+            }
+            resetSupplierColorForm();
+            await loadSupplierColors(supplierForColors);
+        } catch (err) {
+            const message = formatCatalogError(err, 'No pudimos guardar el color');
+            setSupplierColorsError(message);
+        }
+    };
+
+    const handleSupplierColorDelete = async (colorId: string) => {
+        if (!supplierForColors) return;
+        setSupplierColorsError(null);
+        try {
+            await api.deleteSupplierColor(supplierForColors.id, colorId);
+            if (editingSupplierColorId === colorId) {
+                resetSupplierColorForm();
+            }
+            await loadSupplierColors(supplierForColors);
+        } catch (err) {
+            const message = formatCatalogError(err, 'No pudimos eliminar el color');
+            setSupplierColorsError(message);
+        }
     };
 
     return (
@@ -310,10 +405,84 @@ export function AdminCatalogPage() {
                                 </div>
                                 <div className={styles.actions}>
                                     <button type="button" className={styles.iconButton} onClick={() => handleEdit(item)}><Pencil size={14} /></button>
+                                    {isSupplier && (
+                                        <button type="button" className={styles.iconButton} onClick={() => openSupplierColors(item)} title="Gestionar colores">
+                                            <Palette size={14} />
+                                        </button>
+                                    )}
                                     <button type="button" className={styles.iconButtonDanger} onClick={() => void handleDelete(item.id)}><Trash2 size={14} /></button>
                                 </div>
                             </article>
                         ))}
+                    </div>
+                )}
+
+                {isSupplier && supplierForColors && (
+                    <div className={styles.formCard}>
+                        <h2 className={styles.sectionTitle}>Colores de proveedor: {supplierForColors.name || supplierForColors.description || supplierForColors.code}</h2>
+                        <form onSubmit={handleSupplierColorSubmit} className={styles.formCard}>
+                            <input
+                                className={styles.input}
+                                placeholder="Código de color (ej: AZ)"
+                                value={supplierColorCode}
+                                onChange={(event) => setSupplierColorCode(event.target.value)}
+                                required
+                            />
+                            <input
+                                className={styles.input}
+                                placeholder="Valor de color (ej: Azul)"
+                                value={supplierColorValue}
+                                onChange={(event) => setSupplierColorValue(event.target.value)}
+                                required
+                            />
+                            <label className={styles.checkboxRow}>
+                                <input
+                                    type="checkbox"
+                                    checked={supplierColorIsDefault}
+                                    onChange={(event) => setSupplierColorIsDefault(event.target.checked)}
+                                />
+                                <span>Color default del proveedor</span>
+                            </label>
+                            <div className={styles.actions}>
+                                <button type="submit" className={styles.primaryButton}>
+                                    <Plus size={16} /> {editingSupplierColorId ? 'Actualizar color' : 'Agregar color'}
+                                </button>
+                                {editingSupplierColorId && (
+                                    <button type="button" className={styles.secondaryButtonInline} onClick={resetSupplierColorForm}>
+                                        Cancelar edición
+                                    </button>
+                                )}
+                            </div>
+                        </form>
+
+                        {supplierColorsError && <p className={styles.errorText}>{supplierColorsError}</p>}
+                        {loadingSupplierColors ? (
+                            <p className={styles.mutedText}>Cargando colores...</p>
+                        ) : supplierColors.length === 0 ? (
+                            <p className={styles.mutedText}>Este proveedor todavía no tiene colores.</p>
+                        ) : (
+                            <div className={styles.itemsList}>
+                                {supplierColors.map((color) => (
+                                    <article key={color.id} className={styles.itemCard}>
+                                        <div className={styles.itemMain}>
+                                            <span className={styles.itemCode}>{color.code}</span>
+                                            <div>
+                                                <p className={styles.itemTitle}>{color.value}</p>
+                                                <p className={styles.itemMeta}>{color.isDefault ? 'Default' : 'No default'}</p>
+                                            </div>
+                                        </div>
+                                        <div className={styles.actions}>
+                                            <button type="button" className={styles.iconButton} onClick={() => handleSupplierColorEdit(color)}>
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button type="button" className={styles.iconButtonDanger} onClick={() => void handleSupplierColorDelete(color.id)}>
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

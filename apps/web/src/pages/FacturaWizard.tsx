@@ -277,7 +277,8 @@ export function FacturaWizard() {
                         codigoArticulo: selectedArticle.sku,
                         descripcionArticulo: selectedArticle.description,
                         sizeCurveId: selectedArticle.sizeCurve.id,
-                        curvaTalles: selectedArticle.sizeCurve.values
+                        curvaTalles: selectedArticle.sizeCurve.values,
+                        supplierId: selectedArticle.supplier.id
                     }}
                     addedColors={draftColors}
                     onAddColor={(color) => !isFinal && setDraftColors((prev) => [...prev, color])}
