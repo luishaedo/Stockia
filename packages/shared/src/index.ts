@@ -173,6 +173,32 @@ export const CreateSupplierSchema = z.object({
     logoPublicId: z.string().min(1).optional()
 });
 
+export const SupplierColorSchema = z.object({
+    id: z.string().min(1),
+    supplierId: z.string().min(1),
+    code: z.string().min(1),
+    value: z.string().min(1),
+    isDefault: z.boolean()
+});
+
+export const SupplierColorListResponseSchema = z.object({
+    items: z.array(SupplierColorSchema)
+});
+
+export const CreateSupplierColorSchema = z.object({
+    code: z.string().min(1),
+    value: z.string().min(1),
+    isDefault: z.boolean().optional()
+});
+
+export const UpdateSupplierColorSchema = z.object({
+    code: z.string().min(1).optional(),
+    value: z.string().min(1).optional(),
+    isDefault: z.boolean().optional()
+}).refine((payload) => payload.code !== undefined || payload.value !== undefined || payload.isDefault !== undefined, {
+    message: 'At least one field (code, value, isDefault) must be provided'
+});
+
 export const AdminInvoicesQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
@@ -282,6 +308,10 @@ export type CreateArticleDTO = z.infer<typeof CreateArticleSchema>;
 export type UpdateArticleDTO = z.infer<typeof UpdateArticleSchema>;
 export type CloneArticleDTO = z.infer<typeof CloneArticleSchema>;
 export type CreateSupplierDTO = z.infer<typeof CreateSupplierSchema>;
+export type SupplierColorDTO = z.infer<typeof SupplierColorSchema>;
+export type SupplierColorListResponse = z.infer<typeof SupplierColorListResponseSchema>;
+export type CreateSupplierColorDTO = z.infer<typeof CreateSupplierColorSchema>;
+export type UpdateSupplierColorDTO = z.infer<typeof UpdateSupplierColorSchema>;
 
 export interface Factura {
     id: string;
@@ -343,6 +373,10 @@ export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'PATCH', path: '/facturas/:id/draft', requiresAdminToken: true },
     { method: 'PATCH', path: '/facturas/:id/finalize', requiresAdminToken: true },
     { method: 'GET', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
+    { method: 'GET', path: '/admin/catalogs/quick-curves', requiresAdminToken: true },
+    { method: 'POST', path: '/admin/catalogs/quick-curves', requiresAdminToken: true },
+    { method: 'PUT', path: '/admin/catalogs/quick-curves/:id', requiresAdminToken: true },
+    { method: 'DELETE', path: '/admin/catalogs/quick-curves/:id', requiresAdminToken: true },
     { method: 'POST', path: '/admin/catalogs/:catalog', requiresAdminToken: true },
     { method: 'PUT', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/catalogs/:catalog/:id', requiresAdminToken: true },
@@ -352,10 +386,17 @@ export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: false },
     { method: 'POST', path: '/articles', requiresAdminToken: true },
     { method: 'GET', path: '/articles/search', requiresAdminToken: false },
+    { method: 'PUT', path: '/articles/:id', requiresAdminToken: true },
+    { method: 'DELETE', path: '/articles/:id', requiresAdminToken: true },
     { method: 'POST', path: '/suppliers', requiresAdminToken: true },
+    { method: 'GET', path: '/suppliers/:supplierId/colors', requiresAdminToken: false },
+    { method: 'POST', path: '/suppliers/:supplierId/colors', requiresAdminToken: true },
+    { method: 'PATCH', path: '/suppliers/:supplierId/colors/:colorId', requiresAdminToken: true },
+    { method: 'DELETE', path: '/suppliers/:supplierId/colors/:colorId', requiresAdminToken: true },
     { method: 'POST', path: '/articles/:id/clone', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/preview', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true },
+    { method: 'POST', path: '/admin/articles/import/batch', requiresAdminToken: true },
     { method: 'GET', path: '/admin/articles/import/template', requiresAdminToken: true }
 ];
 
