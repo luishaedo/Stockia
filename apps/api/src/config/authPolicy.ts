@@ -19,6 +19,10 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'PATCH /facturas/:id/draft': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'PATCH /facturas/:id/finalize': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /admin/catalogs/:catalog': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /admin/catalogs/quick-curves': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'POST /admin/catalogs/quick-curves': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'PUT /admin/catalogs/quick-curves/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'DELETE /admin/catalogs/quick-curves/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/catalogs/:catalog': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'PUT /admin/catalogs/:catalog/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'DELETE /admin/catalogs/:catalog/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
@@ -28,10 +32,17 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /operations/catalogs/version': { requiresAdminToken: false },
     'POST /articles': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /articles/search': { requiresAdminToken: false },
+    'PUT /articles/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'DELETE /articles/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /suppliers': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /suppliers/:supplierId/colors': { requiresAdminToken: false },
+    'POST /suppliers/:supplierId/colors': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'PATCH /suppliers/:supplierId/colors/:colorId': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'DELETE /suppliers/:supplierId/colors/:colorId': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /articles/:id/clone': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/articles/import/preview': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/articles/import/commit': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'POST /admin/articles/import/batch': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'GET /admin/articles/import/template': { requiresAdminToken: true, requiredHeader: 'authorization' }
 };
 

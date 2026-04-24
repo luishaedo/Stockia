@@ -23,6 +23,8 @@ export type RouteDefinition = {
         | '/articles/search'
         | '/articles/:id'
         | '/suppliers'
+        | '/suppliers/:supplierId/colors'
+        | '/suppliers/:supplierId/colors/:colorId'
         | '/articles/:id/clone'
         | '/admin/articles/import/preview'
         | '/admin/articles/import/commit'
@@ -61,6 +63,10 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     { method: 'PUT', path: '/articles/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/articles/:id', requiresAdminToken: true },
     { method: 'POST', path: '/suppliers', requiresAdminToken: true },
+    { method: 'GET', path: '/suppliers/:supplierId/colors', requiresAdminToken: false },
+    { method: 'POST', path: '/suppliers/:supplierId/colors', requiresAdminToken: true },
+    { method: 'PATCH', path: '/suppliers/:supplierId/colors/:colorId', requiresAdminToken: true },
+    { method: 'DELETE', path: '/suppliers/:supplierId/colors/:colorId', requiresAdminToken: true },
     { method: 'POST', path: '/articles/:id/clone', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/preview', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true },
