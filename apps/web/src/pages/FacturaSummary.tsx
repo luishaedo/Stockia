@@ -559,16 +559,18 @@ export function FacturaSummary() {
                                     )}
                                 </div>
 
-                                <div className={styles.colorList}>
-                                    {item.colores.map((color) => (
-                                        <div key={`${color.codigoColor}-${color.nombreColor}`} className={styles.colorRow}>
-                                            <span className={styles.colorName}>{color.nombreColor} ({color.codigoColor})</span>
-                                            <span className={styles.sizes}>
-                                                {item.curvaTalles.map((size) => `${size}: ${formatNumber(Number(color.cantidadesPorTalle[size] ?? 0))}`).join(' · ')}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
+                                {item.colores.length > 0 && (
+                                    <div className={styles.colorList}>
+                                        {item.colores.map((color) => (
+                                            <div key={`${color.codigoColor}-${color.nombreColor}`} className={styles.colorRow}>
+                                                <span className={styles.colorName}>{color.nombreColor} ({color.codigoColor})</span>
+                                                <span className={styles.sizes}>
+                                                    {item.curvaTalles.map((size) => `${size}: ${formatNumber(Number(color.cantidadesPorTalle[size] ?? 0))}`).join(' · ')}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <div className={styles.itemFooter}>
                                     <span className={styles.units}>Unidades: {formatNumber(getItemUnits(item))}</span>
@@ -585,15 +587,17 @@ export function FacturaSummary() {
                                                     Resolver artículo
                                                 </Button>
                                             )}
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                size="sm"
-                                                onClick={() => openEditModal(idx)}
-                                                icon={<PencilLine size={16} />}
-                                            >
-                                                Editar cantidades
-                                            </Button>
+                                            {item.colores.length > 0 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() => openEditModal(idx)}
+                                                    icon={<PencilLine size={16} />}
+                                                >
+                                                    Editar cantidades
+                                                </Button>
+                                            )}
                                             <Button
                                                 type="button"
                                                 variant="danger"

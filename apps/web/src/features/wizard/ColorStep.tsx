@@ -99,7 +99,7 @@ export function ColorStep({
                 </div>
             </Card>
 
-            <Card title="Agrega el color">
+            <Card title="Agrega el color (opcional)">
                 <div className="flex flex-col gap-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <Input
@@ -154,7 +154,7 @@ export function ColorStep({
             <Card title={`Variantes agregadas (${addedColors.length})`}>
                 <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto">
                     {addedColors.length === 0 && (
-                        <p className="text-slate-500 text-center py-8">Todavía no agregaste colores.</p>
+                        <p className="text-slate-500 text-center py-8">Este ítem no tiene variantes de color cargadas.</p>
                     )}
 
                     {addedColors.map((color, idx) => (
@@ -185,12 +185,12 @@ export function ColorStep({
                     <Button variant="ghost" onClick={onBack} className="w-full sm:w-auto" icon={<ArrowLeft className="h-4 w-4" />}>Volver a factura</Button>
                     <Button
                         onClick={onFinishItem}
-                        disabled={addedColors.length === 0 || readOnly}
+                        disabled={readOnly}
                         variant="primary"
                         icon={<Check className="h-4 w-4" />}
                         className="w-full sm:w-auto"
                     >
-                        Guardar ítem
+                        {addedColors.length === 0 ? 'Guardar ítem sin color' : 'Guardar ítem'}
                     </Button>
                 </div>
             </Card>
