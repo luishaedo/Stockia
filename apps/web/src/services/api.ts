@@ -4,7 +4,7 @@ import { AdminApiService } from './adminApi';
 import { CatalogsApiService } from './catalogsApi';
 import { ArticlesApiService } from './articlesApi';
 import { ApiError, authTokenStore, HttpClient } from './httpClient';
-export type { QuickCurveRecord } from './catalogsApi';
+export type { QuickCurveRecord, SupplierColorRecord } from './catalogsApi';
 
 export { ApiError, authTokenStore };
 export type { AdminCatalogKey } from './types';
@@ -39,6 +39,10 @@ class ApiFacade {
     getAdminCatalog = this.catalogsApi.getAdminCatalog.bind(this.catalogsApi);
     getAdminCatalogCached = this.catalogsApi.getAdminCatalogCached.bind(this.catalogsApi);
     createSupplier = this.catalogsApi.createSupplier.bind(this.catalogsApi);
+    getSupplierColors = this.catalogsApi.getSupplierColors.bind(this.catalogsApi);
+    createSupplierColor = this.catalogsApi.createSupplierColor.bind(this.catalogsApi);
+    updateSupplierColor = this.catalogsApi.updateSupplierColor.bind(this.catalogsApi);
+    deleteSupplierColor = this.catalogsApi.deleteSupplierColor.bind(this.catalogsApi);
     invalidateCatalogCache = this.catalogsApi.invalidateCatalogCache.bind(this.catalogsApi);
     createAdminCatalog = this.catalogsApi.createAdminCatalog.bind(this.catalogsApi);
     updateAdminCatalog = this.catalogsApi.updateAdminCatalog.bind(this.catalogsApi);

@@ -1,5 +1,14 @@
 import { PrismaClient } from '@prisma/client';
-import { CloneArticleSchema, CreateArticleSchema, CreateSupplierSchema, ErrorCodes, ArticleSearchQuerySchema, UpdateArticleSchema } from '@stockia/shared';
+import {
+    ArticleSearchQuerySchema,
+    CloneArticleSchema,
+    CreateArticleSchema,
+    CreateSupplierColorSchema,
+    CreateSupplierSchema,
+    ErrorCodes,
+    UpdateArticleSchema,
+    UpdateSupplierColorSchema
+} from '@stockia/shared';
 import { RequestHandler, Router } from 'express';
 import { catalogVersionStore } from '../lib/catalogVersion.js';
 import { logger } from '../lib/logger.js';
@@ -150,6 +159,175 @@ export const createArticleRoutes = (
             }
             logger.error({ err: error, traceId: req.traceId, operation: 'createSupplier' }, 'Failed to create supplier');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to create supplier', error, req.traceId);
+        }
+    });
+
+    router.get('/suppliers/:supplierId/colors', readRateLimitMiddleware, async (req, res) => {
+        const supplierId = req.params.supplierId?.trim();
+        if (!supplierId) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'supplierId is required', undefined, req.traceId);
+        }
+
+        try {
+            const supplier = await prisma.supplier.findUnique({ where: { id: supplierId }, select: { id: true } });
+            if (!supplier) {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Supplier not found', undefined, req.traceId);
+            }
+
+            const items = await prisma.supplierColor.findMany({
+                where: { supplierId },
+                orderBy: [{ code: 'asc' }]
+            });
+
+            return res.json({ items });
+        } catch (error) {
+            logger.error({ err: error, traceId: req.traceId, operation: 'listSupplierColors' }, 'Failed to list supplier colors');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to list supplier colors', error, req.traceId);
+        }
+    });
+
+    router.post('/suppliers/:supplierId/colors', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const supplierId = req.params.supplierId?.trim();
+        if (!supplierId) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'supplierId is required', undefined, req.traceId);
+        }
+
+        const validation = CreateSupplierColorSchema.safeParse(req.body);
+        if (!validation.success) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
+        }
+
+        const normalizedCode = validation.data.code.trim().toUpperCase();
+        const normalizedValue = validation.data.value.trim();
+        const isDefault = validation.data.isDefault ?? false;
+
+        try {
+            const supplier = await prisma.supplier.findUnique({ where: { id: supplierId }, select: { id: true } });
+            if (!supplier) {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Supplier not found', undefined, req.traceId);
+            }
+
+            const created = await prisma.$transaction(async (tx) => {
+                if (isDefault) {
+                    await tx.supplierColor.updateMany({
+                        where: { supplierId, isDefault: true },
+                        data: { isDefault: false }
+                    });
+                }
+
+                return tx.supplierColor.create({
+                    data: {
+                        supplierId,
+                        code: normalizedCode,
+                        value: normalizedValue,
+                        isDefault
+                    }
+                });
+            });
+
+            catalogVersionStore.bumpOperationsCatalogVersion();
+
+            return res.status(201).json(created);
+        } catch (error: any) {
+            if (error?.code === 'P2002') {
+                return sendError(
+                    res,
+                    409,
+                    ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION,
+                    'Color code already exists for this supplier',
+                    undefined,
+                    req.traceId
+                );
+            }
+
+            logger.error({ err: error, traceId: req.traceId, operation: 'createSupplierColor' }, 'Failed to create supplier color');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to create supplier color', error, req.traceId);
+        }
+    });
+
+    router.patch('/suppliers/:supplierId/colors/:colorId', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const supplierId = req.params.supplierId?.trim();
+        const colorId = req.params.colorId?.trim();
+        if (!supplierId || !colorId) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'supplierId and colorId are required', undefined, req.traceId);
+        }
+
+        const validation = UpdateSupplierColorSchema.safeParse(req.body);
+        if (!validation.success) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
+        }
+
+        const dataToUpdate: { code?: string; value?: string; isDefault?: boolean } = {};
+        if (validation.data.code !== undefined) {
+            dataToUpdate.code = validation.data.code.trim().toUpperCase();
+        }
+        if (validation.data.value !== undefined) {
+            dataToUpdate.value = validation.data.value.trim();
+        }
+        if (validation.data.isDefault !== undefined) {
+            dataToUpdate.isDefault = validation.data.isDefault;
+        }
+
+        try {
+            const existing = await prisma.supplierColor.findUnique({ where: { id: colorId }, select: { id: true, supplierId: true } });
+            if (!existing || existing.supplierId !== supplierId) {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Supplier color not found', undefined, req.traceId);
+            }
+
+            const updated = await prisma.$transaction(async (tx) => {
+                if (dataToUpdate.isDefault === true) {
+                    await tx.supplierColor.updateMany({
+                        where: { supplierId, isDefault: true, id: { not: colorId } },
+                        data: { isDefault: false }
+                    });
+                }
+
+                return tx.supplierColor.update({
+                    where: { id: colorId },
+                    data: dataToUpdate
+                });
+            });
+
+            catalogVersionStore.bumpOperationsCatalogVersion();
+
+            return res.json(updated);
+        } catch (error: any) {
+            if (error?.code === 'P2002') {
+                return sendError(
+                    res,
+                    409,
+                    ErrorCodes.UNIQUE_CONSTRAINT_VIOLATION,
+                    'Color code already exists for this supplier',
+                    undefined,
+                    req.traceId
+                );
+            }
+
+            logger.error({ err: error, traceId: req.traceId, operation: 'updateSupplierColor' }, 'Failed to update supplier color');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to update supplier color', error, req.traceId);
+        }
+    });
+
+    router.delete('/suppliers/:supplierId/colors/:colorId', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        const supplierId = req.params.supplierId?.trim();
+        const colorId = req.params.colorId?.trim();
+        if (!supplierId || !colorId) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'supplierId and colorId are required', undefined, req.traceId);
+        }
+
+        try {
+            const existing = await prisma.supplierColor.findUnique({ where: { id: colorId }, select: { id: true, supplierId: true } });
+            if (!existing || existing.supplierId !== supplierId) {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Supplier color not found', undefined, req.traceId);
+            }
+
+            await prisma.supplierColor.delete({ where: { id: colorId } });
+            catalogVersionStore.bumpOperationsCatalogVersion();
+
+            return res.status(204).send();
+        } catch (error) {
+            logger.error({ err: error, traceId: req.traceId, operation: 'deleteSupplierColor' }, 'Failed to delete supplier color');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to delete supplier color', error, req.traceId);
         }
     });
 

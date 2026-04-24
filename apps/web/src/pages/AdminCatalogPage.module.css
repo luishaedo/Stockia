@@ -58,6 +58,13 @@
 .itemTitle { margin:0; color:#0f172a; font-weight:600; }
 .itemMeta,.mutedText { margin:2px 0 0; color:#64748b; font-size:.82rem; }
 .actions { display:flex; gap:var(--space-1); }
+.checkboxRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: #334155;
+  font-size: .9rem;
+}
 .iconButton,.iconButtonDanger { width:var(--control-height);height:var(--control-height);border-radius:var(--radius-control);border:0;display:grid;place-items:center; }
 .iconButton svg,.iconButtonDanger svg { width: var(--icon-size-md); height: var(--icon-size-md); }
 .iconButton { background:#eef2ff;color:#334155; }

@@ -12,6 +12,14 @@ export type QuickCurveRecord = {
     values: Record<string, number>;
 };
 
+export type SupplierColorRecord = {
+    id: string;
+    supplierId: string;
+    code: string;
+    value: string;
+    isDefault: boolean;
+};
+
 export class CatalogsApiService {
     constructor(private client: HttpClient) {}
 
@@ -143,6 +151,73 @@ export class CatalogsApiService {
             return response.json() as Promise<{ id: string; code: string; name: string; logoUrl?: string | null }>;
         } catch (error) {
             return this.logAndThrowRequestError('createSupplier', path, error);
+        }
+    }
+
+    async getSupplierColors(supplierId: string): Promise<SupplierColorRecord[]> {
+        const path = `/suppliers/${encodeURIComponent(supplierId)}/colors`;
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                headers: this.client.getOptionalAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos cargar colores del proveedor');
+            const data = await response.json() as { items: SupplierColorRecord[] };
+            return data.items;
+        } catch (error) {
+            return this.logAndThrowRequestError('getSupplierColors', path, error);
+        }
+    }
+
+    async createSupplierColor(
+        supplierId: string,
+        payload: { code: string; value: string; isDefault?: boolean }
+    ): Promise<SupplierColorRecord> {
+        const path = `/suppliers/${encodeURIComponent(supplierId)}/colors`;
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                method: 'POST',
+                headers: await this.client.getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            await this.client.assertOk(response, 'No pudimos crear color del proveedor');
+            this.invalidateCatalogCache('suppliers');
+            return response.json() as Promise<SupplierColorRecord>;
+        } catch (error) {
+            return this.logAndThrowRequestError('createSupplierColor', path, error);
+        }
+    }
+
+    async updateSupplierColor(
+        supplierId: string,
+        colorId: string,
+        payload: { code?: string; value?: string; isDefault?: boolean }
+    ): Promise<SupplierColorRecord> {
+        const path = `/suppliers/${encodeURIComponent(supplierId)}/colors/${encodeURIComponent(colorId)}`;
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                method: 'PATCH',
+                headers: await this.client.getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            await this.client.assertOk(response, 'No pudimos actualizar color del proveedor');
+            this.invalidateCatalogCache('suppliers');
+            return response.json() as Promise<SupplierColorRecord>;
+        } catch (error) {
+            return this.logAndThrowRequestError('updateSupplierColor', path, error);
+        }
+    }
+
+    async deleteSupplierColor(supplierId: string, colorId: string): Promise<void> {
+        const path = `/suppliers/${encodeURIComponent(supplierId)}/colors/${encodeURIComponent(colorId)}`;
+        try {
+            const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+                method: 'DELETE',
+                headers: this.client.getAccessTokenHeader()
+            });
+            await this.client.assertOk(response, 'No pudimos eliminar color del proveedor');
+            this.invalidateCatalogCache('suppliers');
+        } catch (error) {
+            return this.logAndThrowRequestError('deleteSupplierColor', path, error);
         }
     }
 

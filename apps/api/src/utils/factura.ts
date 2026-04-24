@@ -75,7 +75,7 @@ export const validateFacturaIntegrity = (factura: any): string | null => {
 
     for (const item of factura.items) {
         if (!item.colores || item.colores.length === 0) {
-            return `Item ${item.codigoArticulo} must have at least one color`;
+            continue;
         }
 
         for (const color of item.colores) {
