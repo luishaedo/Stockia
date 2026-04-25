@@ -146,22 +146,33 @@ export const ArticleSearchQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(50).default(20)
 });
 
-const ArticlePayloadSchema = z.object({
+const OptionalArticleCatalogFieldsSchema = z.object({
+    familyId: z.string().min(1).optional(),
+    materialId: z.string().min(1).optional(),
+    categoryId: z.string().min(1).optional(),
+    classificationId: z.string().min(1).optional(),
+    garmentTypeId: z.string().min(1).optional()
+});
+
+const CreateArticlePayloadSchema = OptionalArticleCatalogFieldsSchema.extend({
     sku: z.string().min(1),
     description: z.string().min(1),
     supplierId: z.string().min(1),
+    sizeCurveId: z.string().min(1)
+});
+
+const FullArticlePayloadSchema = CreateArticlePayloadSchema.extend({
     familyId: z.string().min(1),
     materialId: z.string().min(1),
     categoryId: z.string().min(1),
     classificationId: z.string().min(1),
-    garmentTypeId: z.string().min(1),
-    sizeCurveId: z.string().min(1)
+    garmentTypeId: z.string().min(1)
 });
 
-export const CreateArticleSchema = ArticlePayloadSchema;
-export const UpdateArticleSchema = ArticlePayloadSchema.omit({ sku: true });
+export const CreateArticleSchema = CreateArticlePayloadSchema;
+export const UpdateArticleSchema = FullArticlePayloadSchema.omit({ sku: true });
 
-export const CloneArticleSchema = ArticlePayloadSchema.partial().extend({
+export const CloneArticleSchema = FullArticlePayloadSchema.partial().extend({
     sku: z.string().min(1),
     description: z.string().min(1)
 });

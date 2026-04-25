@@ -6,11 +6,6 @@ const REQUIRED_COLUMNS = [
     'sku',
     'description',
     'supplier_code',
-    'family_code',
-    'material_code',
-    'category_code',
-    'classification_code',
-    'garment_type_code',
     'size_curve_code'
 ] as const;
 
@@ -110,6 +105,14 @@ type PreviewStoreEntry = {
     commitResult?: CommitPreviewResponse;
 };
 
+const OPTIONAL_IMPORT_CATALOG_KEYS: Array<Exclude<ImportCatalogKey, 'supplier' | 'sizeCurve'>> = [
+    'family',
+    'material',
+    'category',
+    'classification',
+    'garmentType'
+];
+
 const DESCRIPTION_COLUMNS: Record<ImportCatalogKey, string> = {
     supplier: 'supplier_description',
     family: 'family_description',
@@ -147,13 +150,13 @@ const sameLabel = (a: string, b: string) => a.trim().toLowerCase() === b.trim().
 
 const buildCatalogMaps = async (prisma: PrismaClient) => {
     const [suppliers, families, materials, categories, classifications, garmentTypes, sizeCurves] = await Promise.all([
-        prisma.supplier.findMany({ select: { id: true, code: true, name: true } }),
-        prisma.family.findMany({ select: { id: true, code: true, description: true } }),
-        prisma.material.findMany({ select: { id: true, code: true, description: true } }),
-        prisma.category.findMany({ select: { id: true, code: true, description: true } }),
-        prisma.classification.findMany({ select: { id: true, code: true, description: true } }),
-        prisma.garmentType.findMany({ select: { id: true, code: true, description: true } }),
-        prisma.sizeCurve.findMany({ select: { id: true, code: true, description: true } })
+        prisma.supplier.findMany({ orderBy: { code: 'asc' }, select: { id: true, code: true, name: true } }),
+        prisma.family.findMany({ orderBy: { code: 'asc' }, select: { id: true, code: true, description: true } }),
+        prisma.material.findMany({ orderBy: { code: 'asc' }, select: { id: true, code: true, description: true } }),
+        prisma.category.findMany({ orderBy: { code: 'asc' }, select: { id: true, code: true, description: true } }),
+        prisma.classification.findMany({ orderBy: { code: 'asc' }, select: { id: true, code: true, description: true } }),
+        prisma.garmentType.findMany({ orderBy: { code: 'asc' }, select: { id: true, code: true, description: true } }),
+        prisma.sizeCurve.findMany({ orderBy: { code: 'asc' }, select: { id: true, code: true, description: true } })
     ]);
 
     const toMap = <T extends { code: string }>(items: T[]) => new Map(items.map((item) => [item.code.trim(), item]));
@@ -193,6 +196,46 @@ const resolveCatalog = (
     const matched = map.get(normalizedCode);
     if (!matched) {
         return { code: normalizedCode, resolved: false, catalogId: null, error: `No se encontró el código de ${catalog} '${normalizedCode}'` };
+    }
+
+    if (inputLabel && inputLabel.trim() && !sameLabel(inputLabel, matched.label)) {
+        return {
+            code: normalizedCode,
+            resolved: true,
+            catalogId: matched.id,
+            warning: `La descripción de ${catalog} no coincide para el código '${normalizedCode}': archivo='${inputLabel.trim()}', catálogo='${matched.label}'`
+        };
+    }
+
+    return { code: normalizedCode, resolved: true, catalogId: matched.id };
+};
+
+const resolveOptionalCatalog = (
+    catalog: Exclude<ImportCatalogKey, 'supplier' | 'sizeCurve'>,
+    code: string,
+    inputLabel: string | undefined,
+    map: Map<string, CatalogMatch>,
+    defaultCatalogId: string
+): CatalogResolution => {
+    const normalizedCode = code.trim();
+
+    if (!normalizedCode) {
+        return {
+            code: normalizedCode,
+            resolved: true,
+            catalogId: defaultCatalogId,
+            warning: `Sin código de ${catalog}; se usará valor por defecto.`
+        };
+    }
+
+    const matched = map.get(normalizedCode);
+    if (!matched) {
+        return {
+            code: normalizedCode,
+            resolved: true,
+            catalogId: defaultCatalogId,
+            warning: `No se encontró el código de ${catalog} '${normalizedCode}'; se usará valor por defecto.`
+        };
     }
 
     if (inputLabel && inputLabel.trim() && !sameLabel(inputLabel, matched.label)) {
@@ -249,6 +292,28 @@ export class ArticleImportService {
     private readonly previewTtlMs = 15 * 60 * 1000;
 
     constructor(private readonly prisma: PrismaClient) {}
+
+    private async resolveOptionalCatalogDefaults() {
+        const [family, material, category, classification, garmentType] = await Promise.all([
+            this.prisma.family.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
+            this.prisma.material.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
+            this.prisma.category.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
+            this.prisma.classification.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
+            this.prisma.garmentType.findFirst({ orderBy: { code: 'asc' }, select: { id: true } })
+        ]);
+
+        if (!family || !material || !category || !classification || !garmentType) {
+            throw new Error('MISSING_OPTIONAL_CATALOG_DEFAULTS');
+        }
+
+        return {
+            familyId: family.id,
+            materialId: material.id,
+            categoryId: category.id,
+            classificationId: classification.id,
+            garmentTypeId: garmentType.id
+        };
+    }
 
     buildImportTemplateWorkbook() {
         const templateHeaders = [
@@ -346,6 +411,14 @@ export class ArticleImportService {
                 : Promise.resolve([])
         ]);
 
+        const defaultCatalogIds = {
+            family: Array.from(catalogs.family.values())[0]?.id ?? null,
+            material: Array.from(catalogs.material.values())[0]?.id ?? null,
+            category: Array.from(catalogs.category.values())[0]?.id ?? null,
+            classification: Array.from(catalogs.classification.values())[0]?.id ?? null,
+            garmentType: Array.from(catalogs.garmentType.values())[0]?.id ?? null
+        };
+
         const existingDbKeys = new Set(existingArticles.map((article) => `${article.supplier.code}::${article.sku}`));
         const rows: PreviewRowResult[] = normalizedRows.map((row) => {
             const warnings: string[] = [];
@@ -353,11 +426,11 @@ export class ArticleImportService {
 
             const resolutions: Record<ImportCatalogKey, CatalogResolution> = {
                 supplier: resolveCatalog('supplier', row.supplierCode, row.supplierDescription, catalogs.supplier),
-                family: resolveCatalog('family', row.familyCode, row.familyDescription, catalogs.family),
-                material: resolveCatalog('material', row.materialCode, row.materialDescription, catalogs.material),
-                category: resolveCatalog('category', row.categoryCode, row.categoryDescription, catalogs.category),
-                classification: resolveCatalog('classification', row.classificationCode, row.classificationDescription, catalogs.classification),
-                garmentType: resolveCatalog('garmentType', row.garmentTypeCode, row.garmentTypeDescription, catalogs.garmentType),
+                family: resolveOptionalCatalog('family', row.familyCode, row.familyDescription, catalogs.family, defaultCatalogIds.family ?? ''),
+                material: resolveOptionalCatalog('material', row.materialCode, row.materialDescription, catalogs.material, defaultCatalogIds.material ?? ''),
+                category: resolveOptionalCatalog('category', row.categoryCode, row.categoryDescription, catalogs.category, defaultCatalogIds.category ?? ''),
+                classification: resolveOptionalCatalog('classification', row.classificationCode, row.classificationDescription, catalogs.classification, defaultCatalogIds.classification ?? ''),
+                garmentType: resolveOptionalCatalog('garmentType', row.garmentTypeCode, row.garmentTypeDescription, catalogs.garmentType, defaultCatalogIds.garmentType ?? ''),
                 sizeCurve: resolveCatalog('sizeCurve', row.sizeCurveCode, row.sizeCurveDescription, catalogs.sizeCurve)
             };
 
@@ -365,6 +438,12 @@ export class ArticleImportService {
                 if (resolution.warning) warnings.push(resolution.warning);
                 if (resolution.error) errors.push(resolution.error);
             });
+
+            for (const optionalCatalogKey of OPTIONAL_IMPORT_CATALOG_KEYS) {
+                if (!defaultCatalogIds[optionalCatalogKey]) {
+                    errors.push(`No hay catálogo por defecto disponible para ${optionalCatalogKey}`);
+                }
+            }
 
             const duplicateInFile = (duplicatePairMap.get(`${row.supplierCode}::${row.sku}`) ?? []).length > 1;
             const duplicateInDatabase = existingDbKeys.has(`${row.supplierCode}::${row.sku}`);
@@ -380,11 +459,11 @@ export class ArticleImportService {
                 sku: row.sku,
                 description: row.description,
                 supplierId: resolutions.supplier.catalogId ?? '',
-                familyId: resolutions.family.catalogId ?? '',
-                materialId: resolutions.material.catalogId ?? '',
-                categoryId: resolutions.category.catalogId ?? '',
-                classificationId: resolutions.classification.catalogId ?? '',
-                garmentTypeId: resolutions.garmentType.catalogId ?? '',
+                familyId: resolutions.family.catalogId ?? undefined,
+                materialId: resolutions.material.catalogId ?? undefined,
+                categoryId: resolutions.category.catalogId ?? undefined,
+                classificationId: resolutions.classification.catalogId ?? undefined,
+                garmentTypeId: resolutions.garmentType.catalogId ?? undefined,
                 sizeCurveId: resolutions.sizeCurve.catalogId ?? ''
             });
 
@@ -441,6 +520,7 @@ export class ArticleImportService {
         }
 
         const rowsToImport = this.getImportableRows(entry, selectedRowNumbers);
+        const defaults = await this.resolveOptionalCatalogDefaults();
         const results: BatchCommitItemResult[] = [];
 
         for (const row of rowsToImport) {
@@ -448,11 +528,11 @@ export class ArticleImportService {
                 sku: row.normalized.sku,
                 description: row.normalized.description,
                 supplierId: row.resolutions.supplier.catalogId!,
-                familyId: row.resolutions.family.catalogId!,
-                materialId: row.resolutions.material.catalogId!,
-                categoryId: row.resolutions.category.catalogId!,
-                classificationId: row.resolutions.classification.catalogId!,
-                garmentTypeId: row.resolutions.garmentType.catalogId!,
+                familyId: row.resolutions.family.catalogId ?? defaults.familyId,
+                materialId: row.resolutions.material.catalogId ?? defaults.materialId,
+                categoryId: row.resolutions.category.catalogId ?? defaults.categoryId,
+                classificationId: row.resolutions.classification.catalogId ?? defaults.classificationId,
+                garmentTypeId: row.resolutions.garmentType.catalogId ?? defaults.garmentTypeId,
                 sizeCurveId: row.resolutions.sizeCurve.catalogId!
             };
 
@@ -508,6 +588,7 @@ export class ArticleImportService {
         }
 
         const rowsToImport = this.getImportableRows(entry, selectedRowNumbers);
+        const defaults = await this.resolveOptionalCatalogDefaults();
 
         const createdRows: number[] = [];
         const skippedRows: Array<{ rowNumber: number; reason: string }> = [];
@@ -517,11 +598,11 @@ export class ArticleImportService {
                 sku: row.normalized.sku,
                 description: row.normalized.description,
                 supplierId: row.resolutions.supplier.catalogId!,
-                familyId: row.resolutions.family.catalogId!,
-                materialId: row.resolutions.material.catalogId!,
-                categoryId: row.resolutions.category.catalogId!,
-                classificationId: row.resolutions.classification.catalogId!,
-                garmentTypeId: row.resolutions.garmentType.catalogId!,
+                familyId: row.resolutions.family.catalogId ?? defaults.familyId,
+                materialId: row.resolutions.material.catalogId ?? defaults.materialId,
+                categoryId: row.resolutions.category.catalogId ?? defaults.categoryId,
+                classificationId: row.resolutions.classification.catalogId ?? defaults.classificationId,
+                garmentTypeId: row.resolutions.garmentType.catalogId ?? defaults.garmentTypeId,
                 sizeCurveId: row.resolutions.sizeCurve.catalogId!
             };
 
