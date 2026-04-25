@@ -1,5 +1,4 @@
 import { Prisma, PrismaClient } from '@prisma/client';
-import { CreateArticleSchema } from '@stockia/shared';
 import XLSX from 'xlsx';
 
 const REQUIRED_COLUMNS = [
@@ -10,6 +9,7 @@ const REQUIRED_COLUMNS = [
 ] as const;
 
 type RequiredColumn = (typeof REQUIRED_COLUMNS)[number];
+type OptionalCodeColumn = 'family_code' | 'material_code' | 'category_code' | 'classification_code' | 'garment_type_code';
 
 type ImportCatalogKey = 'supplier' | 'family' | 'material' | 'category' | 'classification' | 'garmentType' | 'sizeCurve';
 
@@ -123,7 +123,7 @@ const DESCRIPTION_COLUMNS: Record<ImportCatalogKey, string> = {
     sizeCurve: 'size_curve_description'
 };
 
-const COL_ALIASES: Record<RequiredColumn | (typeof DESCRIPTION_COLUMNS)[ImportCatalogKey], string[]> = {
+const COL_ALIASES: Record<RequiredColumn | OptionalCodeColumn | (typeof DESCRIPTION_COLUMNS)[ImportCatalogKey], string[]> = {
     sku: ['sku', 'codigo_articulo', 'codigoarticulo'],
     description: ['description', 'descripcion', 'descripcion_sku', 'descriptionsku'],
     supplier_code: ['supplier_code', 'proveedor_code', 'codigo_proveedor', 'proveedor', 'supplier'],
@@ -377,12 +377,16 @@ export class ArticleImportService {
             REQUIRED_COLUMNS.map((column) => [column, resolveColumnName(headers, column)])
         ) as Record<RequiredColumn, string | null>;
 
+        const optionalCodeMap = Object.fromEntries(
+            OPTIONAL_CODE_COLUMNS.map((column) => [column, resolveColumnName(headers, column)])
+        ) as Record<OptionalCodeColumn, string | null>;
+
         const descriptionMap = Object.fromEntries(
             Object.values(DESCRIPTION_COLUMNS).map((column) => [column, resolveColumnName(headers, column)])
         ) as Record<(typeof DESCRIPTION_COLUMNS)[ImportCatalogKey], string | null>;
 
         const missingRequiredColumns = REQUIRED_COLUMNS.filter((column) => !requiredMap[column]);
-        const resolvedHeaders = { ...requiredMap, ...descriptionMap };
+        const resolvedHeaders = { ...requiredMap, ...optionalCodeMap, ...descriptionMap };
 
         const normalizedRows = rawRows.map((row, index) => normalizeRow(row, index + 2, resolvedHeaders));
 
@@ -467,7 +471,7 @@ export class ArticleImportService {
                 sizeCurveId: resolutions.sizeCurve.catalogId ?? ''
             });
 
-            if (!payloadValidation.success) {
+            if (!minimalPayloadIsValid) {
                 errors.push('El payload no cumple las reglas de validación para crear artículos');
             }
 

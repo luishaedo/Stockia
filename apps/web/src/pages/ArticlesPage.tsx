@@ -188,6 +188,14 @@ export function ArticlesPage() {
 
     const onCreateArticle = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (!form.supplierId) {
+            setError('El alta manual requiere proveedor.');
+            return;
+        }
+        if (!form.sizeCurveId) {
+            setError('El alta manual requiere curva de talles.');
+            return;
+        }
         setSavingArticle(true);
         setError(null);
 
@@ -347,6 +355,22 @@ export function ArticlesPage() {
 
                 <form onSubmit={onCreateArticle} className={styles.card}>
                     <p className={styles.label}>Alta manual</p>
+                    <div className={styles.row}>
+                        <select
+                            className={styles.select}
+                            value={form.supplierId}
+                            onChange={(event) => setForm((prev) => ({ ...prev, supplierId: event.target.value }))}
+                            required
+                            disabled={loadingCatalogs}
+                        >
+                            <option value="">🏭 Proveedor</option>
+                            {suppliers.map((supplier) => (
+                                <option key={supplier.id} value={supplier.id}>
+                                    {supplier.code} - {getCatalogLabel(supplier)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     <div className={styles.row}>
                         <input className={styles.input} value={form.sku} onChange={(event) => setForm((prev) => ({ ...prev, sku: event.target.value }))} placeholder="SKU" required />
                         <input className={styles.input} value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} placeholder="Description" required />

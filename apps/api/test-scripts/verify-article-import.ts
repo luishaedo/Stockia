@@ -73,6 +73,14 @@ const run = async () => {
     const okPreview = await service.buildPreview(okBuffer, 'ok.xlsx');
     assert.equal(okPreview.result.rows[0].importable, true);
 
+    // dry-run successful preview with minimum required columns only
+    const minimalBuffer = buildWorkbookBuffer([
+        { sku: '0003', description: 'Desc minimal', supplier_code: '0001', size_curve_code: '50' }
+    ]);
+    const minimalPreview = await service.buildPreview(minimalBuffer, 'minimal.xlsx');
+    assert.equal(minimalPreview.result.rows[0].importable, true);
+    assert.equal(minimalPreview.result.rows[0].errors.length, 0);
+
     // successful import commit
     const commit = await service.commitPreview(okPreview.previewId!, [okPreview.result.rows[0].rowNumber]);
     assert.equal(commit.summary.importedRows, 1);
