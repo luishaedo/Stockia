@@ -113,8 +113,6 @@ const OPTIONAL_IMPORT_CATALOG_KEYS: Array<Exclude<ImportCatalogKey, 'supplier' |
     'garmentType'
 ];
 
-const OPTIONAL_CODE_COLUMNS: OptionalCodeColumn[] = ['family_code', 'material_code', 'category_code', 'classification_code', 'garment_type_code'];
-
 const DESCRIPTION_COLUMNS: Record<ImportCatalogKey, string> = {
     supplier: 'supplier_description',
     family: 'family_description',
@@ -461,12 +459,17 @@ export class ArticleImportService {
                 errors.push('El artículo ya existe en base de datos para supplier_code + sku');
             }
 
-            const minimalPayloadIsValid = Boolean(
-                row.sku &&
-                row.description &&
-                resolutions.supplier.catalogId &&
-                resolutions.sizeCurve.catalogId
-            );
+            const payloadValidation = CreateArticleSchema.safeParse({
+                sku: row.sku,
+                description: row.description,
+                supplierId: resolutions.supplier.catalogId ?? '',
+                familyId: resolutions.family.catalogId ?? undefined,
+                materialId: resolutions.material.catalogId ?? undefined,
+                categoryId: resolutions.category.catalogId ?? undefined,
+                classificationId: resolutions.classification.catalogId ?? undefined,
+                garmentTypeId: resolutions.garmentType.catalogId ?? undefined,
+                sizeCurveId: resolutions.sizeCurve.catalogId ?? ''
+            });
 
             if (!minimalPayloadIsValid) {
                 errors.push('El payload no cumple las reglas de validación para crear artículos');
