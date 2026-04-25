@@ -146,7 +146,7 @@ export function FacturaWizard() {
         setArticleDraft(mapArticleToDraft(article));
     };
 
-    const handleFinishItem = () => {
+    const handleFinishItem = (colorsToPersist: VarianteColor[]) => {
         if (isFinal || !state.currentFactura || !selectedArticle) return;
 
         const selectedGarmentType = garmentTypeOptions.find((option) => option.id === selectedArticle.garmentTypeId);
@@ -182,7 +182,7 @@ export function FacturaWizard() {
             sizeCurveSnapshot: selectedCurve
                 ? { id: selectedCurve.id, code: selectedCurve.code, label: selectedCurve.label, values: curveValues }
                 : undefined,
-            colores: draftColors
+            colores: colorsToPersist
         };
 
         const updatedItems = [...(state.currentFactura.items || []), newItem];

@@ -78,7 +78,8 @@ function exportToTXT(factura: Factura) {
 
     factura.items.forEach(item => {
         item.colores.forEach(color => {
-            const skuAndColor = `${item.codigoArticulo}${color.codigoColor}`;
+            const isNoColorVariant = color.codigoColor === '$' && color.nombreColor?.trim().toUpperCase() === 'SIN COLOR';
+            const skuAndColor = isNoColorVariant ? item.codigoArticulo : `${item.codigoArticulo}${color.codigoColor}`;
 
             Object.entries(color.cantidadesPorTalle).forEach(([size, quantity]) => {
                 const numericQuantity = Number(quantity);

@@ -20,7 +20,7 @@ interface ColorStepProps {
     sizeCurveOptions: Array<{ id: string; code: string; description: string; values: string[] }>;
     onAddColor: (color: VarianteColor) => void;
     onRemoveColor: (index: number) => void;
-    onFinishItem: () => void;
+    onFinishItem: (colorsToPersist: VarianteColor[]) => void;
     onBack: () => void;
     readOnly?: boolean;
 }
@@ -35,6 +35,8 @@ export function ColorStep({
     onBack,
     readOnly = false
 }: ColorStepProps) {
+    const NO_COLOR_CODE = '$';
+    const NO_COLOR_NAME = 'SIN COLOR';
     const [code, setCode] = useState('');
     const [name, setName] = useState('');
     const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -146,6 +148,40 @@ export function ColorStep({
         } finally {
             setCreatingSupplierColor(false);
         }
+    };
+
+    const buildNoColorVariant = (): VarianteColor | null => {
+        const normalizedQuantities = Object.fromEntries(
+            itemContext.curvaTalles.map((sizeKey) => [sizeKey, Number(quantities[sizeKey] ?? 0)])
+        );
+
+        const hasQuantity = Object.values(normalizedQuantities).some((qty) => qty > 0);
+        if (!hasQuantity) {
+            return null;
+        }
+
+        return {
+            codigoColor: NO_COLOR_CODE,
+            nombreColor: NO_COLOR_NAME,
+            cantidadesPorTalle: normalizedQuantities
+        };
+    };
+
+    const handleFinish = () => {
+        if (readOnly) return;
+
+        if (addedColors.length > 0) {
+            onFinishItem(addedColors);
+            return;
+        }
+
+        const noColorVariant = buildNoColorVariant();
+        if (!noColorVariant) {
+            setError('Cargá al menos una cantidad por talle o agregá una variante de color antes de guardar.');
+            return;
+        }
+
+        onFinishItem([noColorVariant]);
     };
 
     return (
@@ -281,7 +317,7 @@ export function ColorStep({
                 <div className="mt-6 pt-4 border-t border-slate-700 flex flex-col sm:flex-row gap-2 sm:justify-between">
                     <Button variant="ghost" onClick={onBack} className="w-full sm:w-auto" icon={<ArrowLeft className="h-4 w-4" />}>Volver a factura</Button>
                     <Button
-                        onClick={onFinishItem}
+                        onClick={handleFinish}
                         disabled={readOnly}
                         variant="primary"
                         icon={<Check className="h-4 w-4" />}
