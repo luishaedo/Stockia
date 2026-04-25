@@ -51,11 +51,11 @@ const buildPayload = (form: CreateArticlePayload): CreateArticlePayload => ({
     sku: form.sku.trim(),
     description: form.description.trim(),
     supplierId: form.supplierId,
-    familyId: form.familyId,
-    materialId: form.materialId,
-    categoryId: form.categoryId,
-    classificationId: form.classificationId,
-    garmentTypeId: form.garmentTypeId,
+    familyId: form.familyId?.trim() || undefined,
+    materialId: form.materialId?.trim() || undefined,
+    categoryId: form.categoryId?.trim() || undefined,
+    classificationId: form.classificationId?.trim() || undefined,
+    garmentTypeId: form.garmentTypeId?.trim() || undefined,
     sizeCurveId: form.sizeCurveId
 });
 
@@ -352,27 +352,27 @@ export function ArticlesPage() {
                         <input className={styles.input} value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} placeholder="Description" required />
                     </div>
                     <div className={styles.row}>
-                        <select className={styles.select} value={form.familyId} onChange={(event) => setForm((prev) => ({ ...prev, familyId: event.target.value }))} required>
+                        <select className={styles.select} value={form.familyId} onChange={(event) => setForm((prev) => ({ ...prev, familyId: event.target.value }))}>
                             <option value="">📁 Familia</option>
                             {catalogs.families.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
-                        <select className={styles.select} value={form.materialId} onChange={(event) => setForm((prev) => ({ ...prev, materialId: event.target.value }))} required>
+                        <select className={styles.select} value={form.materialId} onChange={(event) => setForm((prev) => ({ ...prev, materialId: event.target.value }))}>
                             <option value="">🧵 Material</option>
                             {catalogs.materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>
                     <div className={styles.row}>
-                        <select className={styles.select} value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))} required>
+                        <select className={styles.select} value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))}>
                             <option value="">🏷️ Categoría</option>
                             {catalogs.categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
-                        <select className={styles.select} value={form.classificationId} onChange={(event) => setForm((prev) => ({ ...prev, classificationId: event.target.value }))} required>
+                        <select className={styles.select} value={form.classificationId} onChange={(event) => setForm((prev) => ({ ...prev, classificationId: event.target.value }))}>
                             <option value="">📚 Clasificación</option>
                             {catalogs.classifications.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>
                     <div className={styles.row}>
-                        <select className={styles.select} value={form.garmentTypeId} onChange={(event) => setForm((prev) => ({ ...prev, garmentTypeId: event.target.value }))} required>
+                        <select className={styles.select} value={form.garmentTypeId} onChange={(event) => setForm((prev) => ({ ...prev, garmentTypeId: event.target.value }))}>
                             <option value="">👕 Tipo de prenda</option>
                             {catalogs.garmentTypes.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>

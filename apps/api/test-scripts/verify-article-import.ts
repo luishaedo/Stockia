@@ -11,11 +11,26 @@ const buildWorkbookBuffer = (rows: Array<Record<string, string>>) => {
 
 const mockPrisma = {
     supplier: { findMany: async () => [{ id: 'sup-1', code: '0001', name: 'Supplier A' }] },
-    family: { findMany: async () => [{ id: 'fam-1', code: '01', description: 'Family A' }] },
-    material: { findMany: async () => [{ id: 'mat-1', code: '10', description: 'Cotton' }] },
-    category: { findMany: async () => [{ id: 'cat-1', code: '20', description: 'Category A' }] },
-    classification: { findMany: async () => [{ id: 'cls-1', code: '30', description: 'Class A' }] },
-    garmentType: { findMany: async () => [{ id: 'gar-1', code: '40', description: 'T-Shirt' }] },
+    family: {
+        findMany: async () => [{ id: 'fam-1', code: '01', description: 'Family A' }],
+        findFirst: async () => ({ id: 'fam-1' })
+    },
+    material: {
+        findMany: async () => [{ id: 'mat-1', code: '10', description: 'Cotton' }],
+        findFirst: async () => ({ id: 'mat-1' })
+    },
+    category: {
+        findMany: async () => [{ id: 'cat-1', code: '20', description: 'Category A' }],
+        findFirst: async () => ({ id: 'cat-1' })
+    },
+    classification: {
+        findMany: async () => [{ id: 'cls-1', code: '30', description: 'Class A' }],
+        findFirst: async () => ({ id: 'cls-1' })
+    },
+    garmentType: {
+        findMany: async () => [{ id: 'gar-1', code: '40', description: 'T-Shirt' }],
+        findFirst: async () => ({ id: 'gar-1' })
+    },
     sizeCurve: { findMany: async () => [{ id: 'siz-1', code: '50', description: 'Curve A' }] },
     article: {
         findMany: async () => [],
