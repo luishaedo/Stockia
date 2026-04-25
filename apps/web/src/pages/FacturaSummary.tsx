@@ -144,6 +144,8 @@ const mapItemToDraft = (item: FacturaItem): ArticleDraftForm => ({
     sizeCurveId: item.sizeCurveId || item.sizeCurveSnapshot?.id || ''
 });
 
+const buildItemFingerprint = (item: FacturaItem) => JSON.stringify(item);
+
 export function FacturaSummary() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -402,7 +404,15 @@ export function FacturaSummary() {
         if (!id || !state.currentFactura || deletingIndex === null) return;
         setDeletingItem(true);
         resetFeedback();
+        const selectedItem = state.currentFactura.items[deletingIndex];
+        if (!selectedItem) {
+            setFeedback({ type: 'error', message: 'No encontramos el ítem seleccionado para eliminar.' });
+            setDeletingItem(false);
+            setDeletingIndex(null);
+            return;
+        }
 
+        const selectedItemFingerprint = buildItemFingerprint(selectedItem);
         const nextItems = state.currentFactura.items.filter((_, index) => index !== deletingIndex);
 
         try {
@@ -414,6 +424,44 @@ export function FacturaSummary() {
             setFeedback({ type: 'success', message: 'Ítem eliminado correctamente.' });
             setDeletingIndex(null);
         } catch (error: unknown) {
+            if (error instanceof ApiError && error.code === 'OPTIMISTIC_LOCK_CONFLICT') {
+                try {
+                    const latestFactura = await api.getFactura(id);
+                    const latestDeleteIndex = latestFactura.items.findIndex((item) => (
+                        buildItemFingerprint(item) === selectedItemFingerprint
+                    ));
+
+                    if (latestDeleteIndex < 0) {
+                        await loadFactura(id);
+                        setDeletingIndex(null);
+                        setFeedback({
+                            type: 'error',
+                            message: 'La factura cambió mientras intentábamos eliminar el ítem. Recargamos los datos para que lo intentes nuevamente.'
+                        });
+                    } else {
+                        const latestNextItems = latestFactura.items.filter((_, index) => index !== latestDeleteIndex);
+                        await api.updateFacturaDraft(id, {
+                            items: latestNextItems,
+                            expectedUpdatedAt: latestFactura.updatedAt as string
+                        });
+                        await loadFactura(id);
+                        setFeedback({ type: 'success', message: 'Ítem eliminado correctamente.' });
+                        setDeletingIndex(null);
+                    }
+                } catch (retryError: unknown) {
+                    if (retryError instanceof ApiError) {
+                        const trace = retryError.traceId ? ` | traceId: ${retryError.traceId}` : '';
+                        setFeedback({ type: 'error', message: `No se pudo eliminar el ítem: ${retryError.message} [${retryError.code} - ${retryError.status}]${trace}` });
+                    } else if (retryError instanceof Error) {
+                        setFeedback({ type: 'error', message: `No se pudo eliminar el ítem: ${retryError.message}` });
+                    } else {
+                        setFeedback({ type: 'error', message: 'No se pudo eliminar el ítem: Error desconocido' });
+                    }
+                }
+                setDeletingItem(false);
+                return;
+            }
+
             if (error instanceof ApiError) {
                 const trace = error.traceId ? ` | traceId: ${error.traceId}` : '';
                 setFeedback({ type: 'error', message: `No se pudo eliminar el ítem: ${error.message} [${error.code} - ${error.status}]${trace}` });
