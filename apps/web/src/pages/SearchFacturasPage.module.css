@@ -20,3 +20,6 @@
 .badgeDraft,.badgeFinal { border-radius:999px; padding:3px 10px; font-size:.72rem; }
 .badgeDraft { background:#fef3c7; color:#b45309; }
 .badgeFinal { background:#dcfce7; color:#15803d; }
+.error { margin: 0; color: #b91c1c; font-size: .85rem; }
+.articleLine { border-top: 1px dashed #d7deea; margin-top: 8px; padding-top: 8px; display: grid; gap: 4px; }
+.articleLine span { color: #334155; font-size: .85rem; }

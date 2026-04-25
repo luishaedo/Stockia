@@ -553,8 +553,13 @@ export function FacturaSummary() {
                         {factura.items.map((item, idx) => (
                             <article key={`${item.codigoArticulo}-${idx}`} className={styles.itemCard}>
                                 <div className={styles.itemHeader}>
-                                    <h3 className={styles.itemTitle}>{item.supplierLabel || item.marca || '-'} - {item.tipoPrenda}</h3>
-                                    <span className={styles.itemMeta}>{item.codigoArticulo} • Curva: {item.curvaTalles.join(', ')}</span>
+                                    <h3 className={styles.itemTitle}>SKU: {item.codigoArticulo}</h3>
+                                    {item.curvaTalles.length > 0 && item.colores.length > 0 && (
+                                        <span className={styles.itemMeta}>
+                                            Color: {item.colores.map((color) => `${color.nombreColor} (${color.codigoColor})`).join(' · ')}
+                                        </span>
+                                    )}
+                                    <span className={styles.itemMeta}>Descripción: {item.articleSnapshot?.description || '-'}</span>
                                     {!item.articleId && (
                                         <span className={styles.pendingBadge}>Artículo maestro pendiente</span>
                                     )}

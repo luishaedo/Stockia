@@ -298,6 +298,30 @@ export const FacturaListQuerySchema = z.object({
     }
 );
 
+export const InvoicesByArticleResponseSchema = z.object({
+    article: z.object({
+        id: z.string().min(1),
+        sku: z.string().min(1),
+        description: z.string().min(1)
+    }),
+    invoices: z.array(z.object({
+        invoiceId: z.string().min(1),
+        invoiceNumber: z.string().min(1),
+        date: z.union([z.string().datetime(), z.date()]),
+        lines: z.array(z.object({
+            itemId: z.string().min(1),
+            codigoArticulo: z.string().min(1),
+            description: z.string().min(1),
+            curvaTalles: z.array(z.string().min(1)),
+            variants: z.array(z.object({
+                codigoColor: z.string().min(1),
+                nombreColor: z.string().min(1),
+                cantidadesPorTalle: z.record(z.string(), z.number().min(0))
+            }))
+        }))
+    }))
+});
+
 // Derived Types
 export type VarianteColor = z.infer<typeof VarianteColorSchema>;
 export type FacturaItem = z.infer<typeof FacturaItemSchema>;
@@ -306,6 +330,7 @@ export type UpdateFacturaDraftDTO = z.infer<typeof UpdateFacturaDraftSchema>;
 export type FinalizeFacturaDTO = z.infer<typeof FinalizeFacturaSchema>;
 export type DeleteFacturaDTO = z.infer<typeof DeleteFacturaSchema>;
 export type FacturaListQuery = z.infer<typeof FacturaListQuerySchema>;
+export type InvoicesByArticleResponse = z.infer<typeof InvoicesByArticleResponseSchema>;
 export type AdminInvoicesQuery = z.infer<typeof AdminInvoicesQuerySchema>;
 export type AdminInvoiceUserQuery = z.infer<typeof AdminInvoiceUserQuerySchema>;
 export type AdminInvoice = z.infer<typeof AdminInvoiceSchema>;
@@ -372,6 +397,7 @@ export type SharedRouteContract = {
 
 export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'GET', path: '/facturas', requiresAdminToken: false },
+    { method: 'GET', path: '/invoices/by-article/:articleId', requiresAdminToken: false },
     { method: 'DELETE', path: '/facturas/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/invoices/:id', requiresAdminToken: true },
     { method: 'PATCH', path: '/admin/invoices/:id/export', requiresAdminToken: true },

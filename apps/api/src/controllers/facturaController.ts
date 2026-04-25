@@ -34,6 +34,15 @@ export class FacturaController {
         }
     };
 
+    listByArticle = async (req: Request, res: Response) => {
+        try {
+            const response = await this.service.listInvoicesByArticle(req.params.articleId);
+            res.json(response);
+        } catch (error) {
+            this.handleError(error, req, res);
+        }
+    };
+
     listAdminInvoices = async (req: Request, res: Response) => {
         try {
             const validation = AdminInvoicesQuerySchema.safeParse(req.query);

@@ -3,7 +3,7 @@ import { VarianteColor } from '@stockia/shared';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Check, ArrowLeft } from 'lucide-react';
+import { Check, ArrowLeft, PencilLine, X } from 'lucide-react';
 import { QuickCurvesModal } from '../../components/quickCurves/QuickCurvesModal';
 import { api, ApiError, SupplierColorRecord } from '../../services/api';
 import { useEffect } from 'react';
@@ -19,6 +19,7 @@ interface ColorStepProps {
     addedColors: VarianteColor[];
     sizeCurveOptions: Array<{ id: string; code: string; description: string; values: string[] }>;
     onAddColor: (color: VarianteColor) => void;
+    onUpdateColor: (index: number, color: VarianteColor) => void;
     onRemoveColor: (index: number) => void;
     onFinishItem: (colorsToPersist: VarianteColor[]) => void;
     onBack: () => void;
@@ -30,6 +31,7 @@ export function ColorStep({
     addedColors,
     sizeCurveOptions,
     onAddColor,
+    onUpdateColor,
     onRemoveColor,
     onFinishItem,
     onBack,
@@ -45,10 +47,16 @@ export function ColorStep({
     const [supplierColors, setSupplierColors] = useState<SupplierColorRecord[]>([]);
     const [loadingSupplierColors, setLoadingSupplierColors] = useState(false);
     const [creatingSupplierColor, setCreatingSupplierColor] = useState(false);
+    const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
+    const [editingVariantQuantities, setEditingVariantQuantities] = useState<Record<string, number>>({});
 
     const activeCurveOption = useMemo(
         () => sizeCurveOptions.find((option) => option.id === itemContext.sizeCurveId) ?? null,
         [itemContext.sizeCurveId, sizeCurveOptions]
+    );
+    const subtotal = useMemo(
+        () => itemContext.curvaTalles.reduce((acc, size) => acc + Number(quantities[size] ?? 0), 0),
+        [itemContext.curvaTalles, quantities]
     );
 
     useEffect(() => {
@@ -148,6 +156,41 @@ export function ColorStep({
         } finally {
             setCreatingSupplierColor(false);
         }
+    };
+
+    const openEditVariantModal = (index: number) => {
+        const variant = addedColors[index];
+        if (!variant) return;
+        const normalized = Object.fromEntries(
+            itemContext.curvaTalles.map((size) => [size, Number(variant.cantidadesPorTalle[size] ?? 0)])
+        );
+        setEditingVariantIndex(index);
+        setEditingVariantQuantities(normalized);
+    };
+
+    const closeEditVariantModal = () => {
+        setEditingVariantIndex(null);
+        setEditingVariantQuantities({});
+    };
+
+    const handleEditVariantQuantityChange = (size: string, value: string) => {
+        const parsed = Number.parseInt(value, 10);
+        const sanitized = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+        setEditingVariantQuantities((prev) => ({ ...prev, [size]: sanitized }));
+    };
+
+    const handleSaveVariantEdition = () => {
+        if (editingVariantIndex === null || !addedColors[editingVariantIndex]) return;
+
+        const updatedVariant: VarianteColor = {
+            ...addedColors[editingVariantIndex],
+            cantidadesPorTalle: Object.fromEntries(
+                itemContext.curvaTalles.map((size) => [size, Number(editingVariantQuantities[size] ?? 0)])
+            )
+        };
+
+        onUpdateColor(editingVariantIndex, updatedVariant);
+        closeEditVariantModal();
     };
 
     const buildNoColorVariant = (): VarianteColor | null => {
@@ -278,6 +321,10 @@ export function ColorStep({
 
                     {error && <p className="text-red-500 text-sm">{error}</p>}
 
+                    <div className="rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-2 text-sm text-slate-200">
+                        Subtotal de curva: <strong>{subtotal}</strong>
+                    </div>
+
                     <Button onClick={handleAddColor} variant="secondary" className="mt-2 w-full sm:w-auto" disabled={readOnly}>
                         Agregar variante
                     </Button>
@@ -301,6 +348,16 @@ export function ColorStep({
                                         .join(', ')}
                                 </div>
                             </div>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-slate-200 hover:text-white"
+                                onClick={() => openEditVariantModal(idx)}
+                                disabled={readOnly}
+                                icon={<PencilLine className="h-4 w-4" />}
+                            >
+                                Editar
+                            </Button>
                             <Button
                                 size="sm"
                                 variant="ghost"
@@ -336,6 +393,39 @@ export function ColorStep({
                 sizeCurveOptions={sizeCurveOptions}
                 onApply={handleQuickCurveApply}
             />
+
+            {editingVariantIndex !== null && addedColors[editingVariantIndex] && (
+                <div className="fixed inset-0 z-50 bg-black/70 p-4 flex items-center justify-center" role="presentation" onClick={closeEditVariantModal}>
+                    <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-4" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="text-base font-semibold text-white">
+                                Editar {addedColors[editingVariantIndex].nombreColor} ({addedColors[editingVariantIndex].codigoColor})
+                            </h3>
+                            <button type="button" className="rounded-md p-1 text-slate-300 hover:bg-slate-800 hover:text-white" onClick={closeEditVariantModal}>
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                            {itemContext.curvaTalles.map((size) => (
+                                <div key={`edit-${size}`} className="flex flex-col">
+                                    <span className="mb-1 text-center text-xs text-slate-400">{size}</span>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        className="text-center"
+                                        value={editingVariantQuantities[size] ?? 0}
+                                        onChange={(event) => handleEditVariantQuantityChange(size, event.target.value)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4 flex justify-end gap-2">
+                            <Button type="button" variant="ghost" onClick={closeEditVariantModal}>Cancelar</Button>
+                            <Button type="button" variant="primary" onClick={handleSaveVariantEdition}>Guardar cambios</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

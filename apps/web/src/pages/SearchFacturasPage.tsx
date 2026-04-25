@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FacturaEstado, FacturaFilters, FacturaListResponse } from '@stockia/shared';
+import { FacturaEstado, FacturaFilters, FacturaListResponse, InvoicesByArticleResponse } from '@stockia/shared';
 import { ArrowLeft, Search } from 'lucide-react';
 import { api } from '../services/api';
 import styles from './SearchFacturasPage.module.css';
@@ -8,6 +8,9 @@ import styles from './SearchFacturasPage.module.css';
 export function SearchFacturasPage() {
     const navigate = useNavigate();
     const [data, setData] = useState<FacturaListResponse | null>(null);
+    const [articleSearch, setArticleSearch] = useState<InvoicesByArticleResponse | null>(null);
+    const [articleId, setArticleId] = useState('');
+    const [articleError, setArticleError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [filters, setFilters] = useState<FacturaFilters>({ page: 1, pageSize: 10, sortBy: 'fecha', sortDir: 'desc' });
 
@@ -22,6 +25,27 @@ export function SearchFacturasPage() {
     };
 
     useEffect(() => { void runSearch(); }, []);
+
+    const runArticleSearch = async () => {
+        const normalizedArticleId = articleId.trim();
+        if (!normalizedArticleId) {
+            setArticleError('Ingresá un ID de artículo para buscar facturas asociadas.');
+            setArticleSearch(null);
+            return;
+        }
+
+        setLoading(true);
+        setArticleError(null);
+        try {
+            const result = await api.getInvoicesByArticle(normalizedArticleId);
+            setArticleSearch(result);
+        } catch (error) {
+            setArticleSearch(null);
+            setArticleError(error instanceof Error ? error.message : 'No pudimos buscar facturas por artículo.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <section>
@@ -56,6 +80,20 @@ export function SearchFacturasPage() {
                 <button className={styles.searchButton} onClick={() => void runSearch()}>Buscar</button>
             </div>
 
+            <div className={styles.formCard}>
+                <label>ID de artículo</label>
+                <div className={styles.searchInput}>
+                    <Search size={16} />
+                    <input
+                        placeholder="Pegar ID de artículo..."
+                        value={articleId}
+                        onChange={(event) => setArticleId(event.target.value)}
+                    />
+                </div>
+                <button className={styles.searchButton} onClick={() => void runArticleSearch()}>Buscar artículo en facturas</button>
+                {articleError && <p className={styles.error}>{articleError}</p>}
+            </div>
+
             <h2 className={styles.resultsTitle}>Resultados ({data?.items?.length || 0})</h2>
             <div className={styles.resultsList}>
                 {loading && <p>Cargando...</p>}
@@ -67,6 +105,35 @@ export function SearchFacturasPage() {
                     </button>
                 ))}
             </div>
+
+            {articleSearch && (
+                <>
+                    <h2 className={styles.resultsTitle}>
+                        Artículo {articleSearch.article.sku} ({articleSearch.invoices.length} factura/s)
+                    </h2>
+                    <div className={styles.resultsList}>
+                        {articleSearch.invoices.map((invoice) => (
+                            <article key={invoice.invoiceId} className={styles.resultCard}>
+                                <div className={styles.resultTop}>
+                                    <span>{new Intl.DateTimeFormat('es-AR').format(new Date(invoice.date))}</span>
+                                    <span>{invoice.invoiceNumber}</span>
+                                </div>
+                                {invoice.lines.map((line) => (
+                                    <div key={line.itemId} className={styles.articleLine}>
+                                        <strong>{line.codigoArticulo}</strong>
+                                        <span>Curva: {line.curvaTalles.join(', ')}</span>
+                                        {line.variants.map((variant) => (
+                                            <p key={`${line.itemId}-${variant.codigoColor}`}>
+                                                {variant.nombreColor} ({variant.codigoColor}) · {Object.entries(variant.cantidadesPorTalle).map(([size, qty]) => `${size}: ${qty}`).join(' · ')}
+                                            </p>
+                                        ))}
+                                    </div>
+                                ))}
+                            </article>
+                        ))}
+                    </div>
+                </>
+            )}
         </section>
     );
 }
