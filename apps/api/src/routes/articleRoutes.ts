@@ -90,6 +90,28 @@ const validateCatalogReferences = async (prisma: PrismaClient, payload: {
     }
 };
 
+const resolveCreateCatalogDefaults = async (prisma: PrismaClient) => {
+    const [family, material, category, classification, garmentType] = await Promise.all([
+        prisma.family.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
+        prisma.material.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
+        prisma.category.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
+        prisma.classification.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
+        prisma.garmentType.findFirst({ orderBy: { code: 'asc' }, select: { id: true } })
+    ]);
+
+    if (!family || !material || !category || !classification || !garmentType) {
+        throw new Error('MISSING_OPTIONAL_CATALOG_DEFAULTS');
+    }
+
+    return {
+        familyId: family.id,
+        materialId: material.id,
+        categoryId: category.id,
+        classificationId: classification.id,
+        garmentTypeId: garmentType.id
+    };
+};
+
 export const createArticleRoutes = (
     prisma: PrismaClient,
     requireAuth: RequestHandler,
@@ -338,14 +360,34 @@ export const createArticleRoutes = (
         }
 
         try {
-            await validateCatalogReferences(prisma, validation.data);
+            const defaults = await resolveCreateCatalogDefaults(prisma);
+            const createPayload = {
+                ...validation.data,
+                familyId: validation.data.familyId ?? defaults.familyId,
+                materialId: validation.data.materialId ?? defaults.materialId,
+                categoryId: validation.data.categoryId ?? defaults.categoryId,
+                classificationId: validation.data.classificationId ?? defaults.classificationId,
+                garmentTypeId: validation.data.garmentTypeId ?? defaults.garmentTypeId
+            };
+
+            await validateCatalogReferences(prisma, createPayload);
             const created = await prisma.article.create({
-                data: validation.data,
+                data: createPayload,
                 select: articleSelect
             });
 
             return res.status(201).json(toArticleResponse(created));
         } catch (error: any) {
+            if (error?.message === 'MISSING_OPTIONAL_CATALOG_DEFAULTS') {
+                return sendError(
+                    res,
+                    422,
+                    ErrorCodes.VALIDATION_FAILED,
+                    'Missing default catalogs. Ensure family, material, category, classification and garment type catalogs have at least one entry.',
+                    undefined,
+                    req.traceId
+                );
+            }
             if (error?.message === 'INVALID_CATALOG_REFERENCE') {
                 return sendError(res, 422, ErrorCodes.VALIDATION_FAILED, 'Invalid catalog references', undefined, req.traceId);
             }

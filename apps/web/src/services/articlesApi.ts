@@ -29,11 +29,11 @@ export type CreateArticlePayload = {
     sku: string;
     description: string;
     supplierId: string;
-    familyId: string;
-    materialId: string;
-    categoryId: string;
-    classificationId: string;
-    garmentTypeId: string;
+    familyId?: string;
+    materialId?: string;
+    categoryId?: string;
+    classificationId?: string;
+    garmentTypeId?: string;
     sizeCurveId: string;
 };
 
@@ -42,7 +42,16 @@ export type CloneArticlePayload = Partial<Omit<CreateArticlePayload, 'sku' | 'de
     description: string;
 };
 
-export type UpdateArticlePayload = Omit<CreateArticlePayload, 'sku'>;
+export type UpdateArticlePayload = {
+    description: string;
+    supplierId: string;
+    familyId: string;
+    materialId: string;
+    categoryId: string;
+    classificationId: string;
+    garmentTypeId: string;
+    sizeCurveId: string;
+};
 
 type ArticleMutationResponse = {
     success: boolean;

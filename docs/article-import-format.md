@@ -9,11 +9,6 @@ La importación requiere estos campos canónicos:
 - `sku`
 - `description`
 - `supplier_code`
-- `family_code`
-- `material_code`
-- `category_code`
-- `classification_code`
-- `garment_type_code`
 - `size_curve_code`
 
 Si falta cualquier columna obligatoria en la fila de encabezados, el preview devuelve:
@@ -66,13 +61,14 @@ El importador resuelve columnas por nombre de encabezado normalizado/alias, no p
 Cada fila es importable únicamente si pasa todos estos controles:
 
 1. Cada campo de código obligatorio está completo:
-   - `supplier_code`, `family_code`, `material_code`, `category_code`, `classification_code`, `garment_type_code`, `size_curve_code` no vacíos.
-2. Cada código existe en su tabla catálogo (supplier/family/material/category/classification/garmentType/sizeCurve).
-3. El par `supplier_code + sku` es único dentro del archivo subido.
-4. El par `supplier_code + sku` no existe previamente en base de datos.
-5. La validación del payload de artículo pasa:
+   - `supplier_code` y `size_curve_code` no vacíos.
+2. Cada código obligatorio existe en su tabla catálogo (supplier/sizeCurve).
+3. Los códigos opcionales (`family_code`, `material_code`, `category_code`, `classification_code`, `garment_type_code`) se usan si existen; si faltan o no coinciden, el sistema usa valores por defecto y agrega `warnings`.
+4. El par `supplier_code + sku` es único dentro del archivo subido.
+5. El par `supplier_code + sku` no existe previamente en base de datos.
+6. La validación del payload de artículo pasa:
    - `sku` y `description` deben ser strings no vacíos.
-   - todos los IDs de catálogo resueltos deben ser no vacíos.
+   - `supplierId` y `sizeCurveId` deben estar resueltos.
 
 ## 5) Significado de errores comunes en preview
 
@@ -88,7 +84,7 @@ Cada fila es importable únicamente si pasa todos estos controles:
 Usá esta fila de encabezado (nomenclatura canónica recomendada):
 
 ```csv
-sku,description,supplier_code,family_code,material_code,category_code,classification_code,garment_type_code,size_curve_code,supplier_description,family_description,material_description,category_description,classification_description,garment_type_description,size_curve_description
+sku,description,supplier_code,size_curve_code,supplier_description,family_code,family_description,material_code,material_description,category_code,category_description,classification_code,classification_description,garment_type_code,garment_type_description,size_curve_description
 ```
 
 Ejemplo mínimo de fila válida (las columnas descriptivas opcionales se pueden omitir):

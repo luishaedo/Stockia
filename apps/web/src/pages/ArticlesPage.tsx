@@ -51,11 +51,11 @@ const buildPayload = (form: CreateArticlePayload): CreateArticlePayload => ({
     sku: form.sku.trim(),
     description: form.description.trim(),
     supplierId: form.supplierId,
-    familyId: form.familyId,
-    materialId: form.materialId,
-    categoryId: form.categoryId,
-    classificationId: form.classificationId,
-    garmentTypeId: form.garmentTypeId,
+    familyId: form.familyId?.trim() || undefined,
+    materialId: form.materialId?.trim() || undefined,
+    categoryId: form.categoryId?.trim() || undefined,
+    classificationId: form.classificationId?.trim() || undefined,
+    garmentTypeId: form.garmentTypeId?.trim() || undefined,
     sizeCurveId: form.sizeCurveId
 });
 
@@ -188,6 +188,14 @@ export function ArticlesPage() {
 
     const onCreateArticle = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (!form.supplierId) {
+            setError('El alta manual requiere proveedor.');
+            return;
+        }
+        if (!form.sizeCurveId) {
+            setError('El alta manual requiere curva de talles.');
+            return;
+        }
         setSavingArticle(true);
         setError(null);
 
@@ -348,31 +356,47 @@ export function ArticlesPage() {
                 <form onSubmit={onCreateArticle} className={styles.card}>
                     <p className={styles.label}>Alta manual</p>
                     <div className={styles.row}>
+                        <select
+                            className={styles.select}
+                            value={form.supplierId}
+                            onChange={(event) => setForm((prev) => ({ ...prev, supplierId: event.target.value }))}
+                            required
+                            disabled={loadingCatalogs}
+                        >
+                            <option value="">🏭 Proveedor</option>
+                            {suppliers.map((supplier) => (
+                                <option key={supplier.id} value={supplier.id}>
+                                    {supplier.code} - {getCatalogLabel(supplier)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className={styles.row}>
                         <input className={styles.input} value={form.sku} onChange={(event) => setForm((prev) => ({ ...prev, sku: event.target.value }))} placeholder="SKU" required />
                         <input className={styles.input} value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} placeholder="Description" required />
                     </div>
                     <div className={styles.row}>
-                        <select className={styles.select} value={form.familyId} onChange={(event) => setForm((prev) => ({ ...prev, familyId: event.target.value }))} required>
+                        <select className={styles.select} value={form.familyId} onChange={(event) => setForm((prev) => ({ ...prev, familyId: event.target.value }))}>
                             <option value="">📁 Familia</option>
                             {catalogs.families.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
-                        <select className={styles.select} value={form.materialId} onChange={(event) => setForm((prev) => ({ ...prev, materialId: event.target.value }))} required>
+                        <select className={styles.select} value={form.materialId} onChange={(event) => setForm((prev) => ({ ...prev, materialId: event.target.value }))}>
                             <option value="">🧵 Material</option>
                             {catalogs.materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>
                     <div className={styles.row}>
-                        <select className={styles.select} value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))} required>
+                        <select className={styles.select} value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))}>
                             <option value="">🏷️ Categoría</option>
                             {catalogs.categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
-                        <select className={styles.select} value={form.classificationId} onChange={(event) => setForm((prev) => ({ ...prev, classificationId: event.target.value }))} required>
+                        <select className={styles.select} value={form.classificationId} onChange={(event) => setForm((prev) => ({ ...prev, classificationId: event.target.value }))}>
                             <option value="">📚 Clasificación</option>
                             {catalogs.classifications.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>
                     <div className={styles.row}>
-                        <select className={styles.select} value={form.garmentTypeId} onChange={(event) => setForm((prev) => ({ ...prev, garmentTypeId: event.target.value }))} required>
+                        <select className={styles.select} value={form.garmentTypeId} onChange={(event) => setForm((prev) => ({ ...prev, garmentTypeId: event.target.value }))}>
                             <option value="">👕 Tipo de prenda</option>
                             {catalogs.garmentTypes.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
