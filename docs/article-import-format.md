@@ -2,6 +2,19 @@
 
 Esta guía explica cómo preparar archivos XLSX/CSV para `POST /admin/articles/import/preview` para que las filas sean importables y no disparen errores de validación.
 
+
+## 0) Defaults globales para atributos opcionales
+
+Cuando `family_code`, `material_code`, `category_code`, `classification_code` o `garment_type_code` no vienen informados (o son inválidos), el backend aplica defaults globales por código:
+
+- `family` -> `06`
+- `material` -> `99`
+- `category` -> `99`
+- `classification` -> `99`
+- `garmentType` -> `99`
+
+Si alguno de esos códigos no existe en catálogo, el sistema rechaza la operación con error accionable y puede verificarse por `GET /admin/articles/import/readiness`.
+
 ## 1) Columnas obligatorias
 
 La importación requiere estos campos canónicos:

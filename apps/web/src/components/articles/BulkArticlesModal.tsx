@@ -297,7 +297,7 @@ export function BulkArticlesModal({ isOpen, onClose, supplierOptions, selectedSu
                         selectedFileName={selectedFile?.name ?? 'Ningún archivo seleccionado'}
                         accept=".csv,.xls,.xlsx"
                         onFileSelect={handleFileSelect}
-                        helperText="Soportado: CSV/XLS/XLSX."
+                        helperText="Mínimo requerido: supplier_code, sku, description y size_curve_code. Los demás atributos son opcionales y usarán defaults si faltan. Soportado: CSV/XLS/XLSX."
                     />
                     <div className={styles.actionRow}>
                         <button type="button" className={styles.secondaryButton} onClick={() => void onDownloadTemplate()} disabled={downloadingTemplate || committing}>

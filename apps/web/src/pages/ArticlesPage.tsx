@@ -355,6 +355,7 @@ export function ArticlesPage() {
 
                 <form onSubmit={onCreateArticle} className={styles.card}>
                     <p className={styles.label}>Alta manual</p>
+                    <p className={styles.muted}>Obligatorio: Proveedor, SKU, Descripción y Curva de talles. El resto de atributos son opcionales y usarán defaults si no se informan.</p>
                     <div className={styles.row}>
                         <select
                             className={styles.select}
@@ -377,27 +378,27 @@ export function ArticlesPage() {
                     </div>
                     <div className={styles.row}>
                         <select className={styles.select} value={form.familyId} onChange={(event) => setForm((prev) => ({ ...prev, familyId: event.target.value }))}>
-                            <option value="">📁 Familia</option>
+                            <option value="">📁 Familia (Opcional)</option>
                             {catalogs.families.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                         <select className={styles.select} value={form.materialId} onChange={(event) => setForm((prev) => ({ ...prev, materialId: event.target.value }))}>
-                            <option value="">🧵 Material</option>
+                            <option value="">🧵 Material (Opcional)</option>
                             {catalogs.materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>
                     <div className={styles.row}>
                         <select className={styles.select} value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))}>
-                            <option value="">🏷️ Categoría</option>
+                            <option value="">🏷️ Categoría (Opcional)</option>
                             {catalogs.categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                         <select className={styles.select} value={form.classificationId} onChange={(event) => setForm((prev) => ({ ...prev, classificationId: event.target.value }))}>
-                            <option value="">📚 Clasificación</option>
+                            <option value="">📚 Clasificación (Opcional)</option>
                             {catalogs.classifications.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                     </div>
                     <div className={styles.row}>
                         <select className={styles.select} value={form.garmentTypeId} onChange={(event) => setForm((prev) => ({ ...prev, garmentTypeId: event.target.value }))}>
-                            <option value="">👕 Tipo de prenda</option>
+                            <option value="">👕 Tipo de prenda (Opcional)</option>
                             {catalogs.garmentTypes.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                         </select>
                         <select className={styles.select} value={form.sizeCurveId} onChange={(event) => setForm((prev) => ({ ...prev, sizeCurveId: event.target.value }))} required>
@@ -514,27 +515,27 @@ export function ArticlesPage() {
                         </div>
                         <div className={styles.row}>
                             <select className={styles.select} value={editForm.familyId} onChange={(event) => setEditForm((prev) => ({ ...prev, familyId: event.target.value }))} required>
-                                <option value="">📁 Familia</option>
+                                <option value="">📁 Familia (Opcional)</option>
                                 {catalogs.families.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                             </select>
                             <select className={styles.select} value={editForm.materialId} onChange={(event) => setEditForm((prev) => ({ ...prev, materialId: event.target.value }))} required>
-                                <option value="">🧵 Material</option>
+                                <option value="">🧵 Material (Opcional)</option>
                                 {catalogs.materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                             </select>
                         </div>
                         <div className={styles.row}>
                             <select className={styles.select} value={editForm.categoryId} onChange={(event) => setEditForm((prev) => ({ ...prev, categoryId: event.target.value }))} required>
-                                <option value="">🏷️ Categoría</option>
+                                <option value="">🏷️ Categoría (Opcional)</option>
                                 {catalogs.categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                             </select>
                             <select className={styles.select} value={editForm.classificationId} onChange={(event) => setEditForm((prev) => ({ ...prev, classificationId: event.target.value }))} required>
-                                <option value="">📚 Clasificación</option>
+                                <option value="">📚 Clasificación (Opcional)</option>
                                 {catalogs.classifications.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                             </select>
                         </div>
                         <div className={styles.row}>
                             <select className={styles.select} value={editForm.garmentTypeId} onChange={(event) => setEditForm((prev) => ({ ...prev, garmentTypeId: event.target.value }))} required>
-                                <option value="">👕 Tipo de prenda</option>
+                                <option value="">👕 Tipo de prenda (Opcional)</option>
                                 {catalogs.garmentTypes.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                             </select>
                             <select className={styles.select} value={editForm.sizeCurveId} onChange={(event) => setEditForm((prev) => ({ ...prev, sizeCurveId: event.target.value }))} required>

@@ -13,6 +13,7 @@ import { RequestHandler, Router } from 'express';
 import { catalogVersionStore } from '../lib/catalogVersion.js';
 import { logger } from '../lib/logger.js';
 import { sendError } from '../middlewares/error.js';
+import { MissingOptionalCatalogDefaultsError, resolveOptionalCatalogDefaults } from '../services/articleCatalogDefaults.js';
 
 const articleSelect = {
     id: true,
@@ -90,27 +91,6 @@ const validateCatalogReferences = async (prisma: PrismaClient, payload: {
     }
 };
 
-const resolveCreateCatalogDefaults = async (prisma: PrismaClient) => {
-    const [family, material, category, classification, garmentType] = await Promise.all([
-        prisma.family.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
-        prisma.material.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
-        prisma.category.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
-        prisma.classification.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
-        prisma.garmentType.findFirst({ orderBy: { code: 'asc' }, select: { id: true } })
-    ]);
-
-    if (!family || !material || !category || !classification || !garmentType) {
-        throw new Error('MISSING_OPTIONAL_CATALOG_DEFAULTS');
-    }
-
-    return {
-        familyId: family.id,
-        materialId: material.id,
-        categoryId: category.id,
-        classificationId: classification.id,
-        garmentTypeId: garmentType.id
-    };
-};
 
 export const createArticleRoutes = (
     prisma: PrismaClient,
@@ -360,7 +340,7 @@ export const createArticleRoutes = (
         }
 
         try {
-            const defaults = await resolveCreateCatalogDefaults(prisma);
+            const defaults = await resolveOptionalCatalogDefaults(prisma);
             const createPayload = {
                 ...validation.data,
                 familyId: validation.data.familyId ?? defaults.familyId,
@@ -378,13 +358,13 @@ export const createArticleRoutes = (
 
             return res.status(201).json(toArticleResponse(created));
         } catch (error: any) {
-            if (error?.message === 'MISSING_OPTIONAL_CATALOG_DEFAULTS') {
+            if (error instanceof MissingOptionalCatalogDefaultsError) {
                 return sendError(
                     res,
                     422,
                     ErrorCodes.VALIDATION_FAILED,
-                    'Missing default catalogs. Ensure family, material, category, classification and garment type catalogs have at least one entry.',
-                    undefined,
+                    `Missing configured optional defaults (${error.missingCatalogs.join(', ')}). Create these catalog records to continue.`,
+                    { configuredDefaults: ['family=06', 'material=99', 'category=99', 'classification=99', 'garmentType=99'] },
                     req.traceId
                 );
             }

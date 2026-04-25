@@ -4,6 +4,7 @@ import { logger } from '../lib/logger.js';
 import { sendError } from '../middlewares/error.js';
 import { MultipartValidationError, runSingleFileUpload } from '../middlewares/upload.js';
 import { ArticleImportService } from '../services/articleImportService.js';
+import { MissingOptionalCatalogDefaultsError } from '../services/articleCatalogDefaults.js';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(['.csv', '.xls', '.xlsx']);
@@ -25,6 +26,17 @@ export const createArticleImportRoutes = (
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'downloadArticleImportTemplate' }, 'Failed to generate article import template');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo generar el template de importación', error, req.traceId);
+        }
+    });
+
+
+    router.get('/admin/articles/import/readiness', writeRateLimitMiddleware, requireAuth, async (req, res) => {
+        try {
+            const readiness = await service.getImportReadiness();
+            return res.json(readiness);
+        } catch (error) {
+            logger.error({ err: error, traceId: req.traceId, operation: 'getArticleImportReadiness' }, 'Failed to evaluate article import readiness');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo evaluar readiness de importación', error, req.traceId);
         }
     });
 
@@ -55,6 +67,17 @@ export const createArticleImportRoutes = (
                 return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'La extensión del archivo debe ser .csv, .xls o .xlsx', undefined, req.traceId);
             }
 
+            if (error instanceof MissingOptionalCatalogDefaultsError) {
+                return sendError(
+                    res,
+                    422,
+                    ErrorCodes.VALIDATION_FAILED,
+                    `Faltan catálogos default configurados (${error.missingCatalogs.join(', ')}). Crear registros base para continuar.`,
+                    { configuredDefaults: ['family=06', 'material=99', 'category=99', 'classification=99', 'garmentType=99'] },
+                    req.traceId
+                );
+            }
+
             logger.error({ err: error, traceId: req.traceId, operation: 'previewArticleImport' }, 'Failed to preview article import');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo generar el preview del archivo de importación', error, req.traceId);
         }
@@ -77,6 +100,16 @@ export const createArticleImportRoutes = (
             if (error?.message === 'PREVIEW_NOT_FOUND') {
                 return sendError(res, 404, ErrorCodes.NOT_FOUND, 'La sesión de preview no se encontró o expiró', undefined, req.traceId);
             }
+            if (error instanceof MissingOptionalCatalogDefaultsError) {
+                return sendError(
+                    res,
+                    422,
+                    ErrorCodes.VALIDATION_FAILED,
+                    `Faltan catálogos default configurados (${error.missingCatalogs.join(', ')}). Crear registros base para continuar.`,
+                    { configuredDefaults: ['family=06', 'material=99', 'category=99', 'classification=99', 'garmentType=99'] },
+                    req.traceId
+                );
+            }
             logger.error({ err: error, traceId: req.traceId, operation: 'commitArticleImportBatch' }, 'Failed to import article batch');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo procesar el lote de importación', error, req.traceId);
         }
@@ -98,6 +131,16 @@ export const createArticleImportRoutes = (
         } catch (error: any) {
             if (error?.message === 'PREVIEW_NOT_FOUND') {
                 return sendError(res, 404, ErrorCodes.NOT_FOUND, 'La sesión de preview no se encontró o expiró', undefined, req.traceId);
+            }
+            if (error instanceof MissingOptionalCatalogDefaultsError) {
+                return sendError(
+                    res,
+                    422,
+                    ErrorCodes.VALIDATION_FAILED,
+                    `Faltan catálogos default configurados (${error.missingCatalogs.join(', ')}). Crear registros base para continuar.`,
+                    { configuredDefaults: ['family=06', 'material=99', 'category=99', 'classification=99', 'garmentType=99'] },
+                    req.traceId
+                );
             }
             logger.error({ err: error, traceId: req.traceId, operation: 'commitArticleImport' }, 'Failed to commit article import');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'No se pudo confirmar la importación del archivo', error, req.traceId);
