@@ -1,5 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import XLSX from 'xlsx';
+import { CreateArticleSchema } from '@stockia/shared';
+import { getOptionalCatalogDefaultReadiness, resolveOptionalCatalogDefaults } from './articleCatalogDefaults.js';
 
 const REQUIRED_COLUMNS = [
     'sku',
@@ -10,6 +12,8 @@ const REQUIRED_COLUMNS = [
 
 type RequiredColumn = (typeof REQUIRED_COLUMNS)[number];
 type OptionalCodeColumn = 'family_code' | 'material_code' | 'category_code' | 'classification_code' | 'garment_type_code';
+
+const OPTIONAL_CODE_COLUMNS: OptionalCodeColumn[] = ['family_code', 'material_code', 'category_code', 'classification_code', 'garment_type_code'];
 
 type ImportCatalogKey = 'supplier' | 'family' | 'material' | 'category' | 'classification' | 'garmentType' | 'sizeCurve';
 
@@ -104,14 +108,6 @@ type PreviewStoreEntry = {
     consumedAt?: number;
     commitResult?: CommitPreviewResponse;
 };
-
-const OPTIONAL_IMPORT_CATALOG_KEYS: Array<Exclude<ImportCatalogKey, 'supplier' | 'sizeCurve'>> = [
-    'family',
-    'material',
-    'category',
-    'classification',
-    'garmentType'
-];
 
 const DESCRIPTION_COLUMNS: Record<ImportCatalogKey, string> = {
     supplier: 'supplier_description',
@@ -293,26 +289,8 @@ export class ArticleImportService {
 
     constructor(private readonly prisma: PrismaClient) {}
 
-    private async resolveOptionalCatalogDefaults() {
-        const [family, material, category, classification, garmentType] = await Promise.all([
-            this.prisma.family.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
-            this.prisma.material.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
-            this.prisma.category.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
-            this.prisma.classification.findFirst({ orderBy: { code: 'asc' }, select: { id: true } }),
-            this.prisma.garmentType.findFirst({ orderBy: { code: 'asc' }, select: { id: true } })
-        ]);
-
-        if (!family || !material || !category || !classification || !garmentType) {
-            throw new Error('MISSING_OPTIONAL_CATALOG_DEFAULTS');
-        }
-
-        return {
-            familyId: family.id,
-            materialId: material.id,
-            categoryId: category.id,
-            classificationId: classification.id,
-            garmentTypeId: garmentType.id
-        };
+    async getImportReadiness() {
+        return getOptionalCatalogDefaultReadiness(this.prisma);
     }
 
     buildImportTemplateWorkbook() {
@@ -415,12 +393,13 @@ export class ArticleImportService {
                 : Promise.resolve([])
         ]);
 
+        const defaults = await resolveOptionalCatalogDefaults(this.prisma);
         const defaultCatalogIds = {
-            family: Array.from(catalogs.family.values())[0]?.id ?? null,
-            material: Array.from(catalogs.material.values())[0]?.id ?? null,
-            category: Array.from(catalogs.category.values())[0]?.id ?? null,
-            classification: Array.from(catalogs.classification.values())[0]?.id ?? null,
-            garmentType: Array.from(catalogs.garmentType.values())[0]?.id ?? null
+            family: defaults.familyId,
+            material: defaults.materialId,
+            category: defaults.categoryId,
+            classification: defaults.classificationId,
+            garmentType: defaults.garmentTypeId
         };
 
         const existingDbKeys = new Set(existingArticles.map((article) => `${article.supplier.code}::${article.sku}`));
@@ -442,12 +421,6 @@ export class ArticleImportService {
                 if (resolution.warning) warnings.push(resolution.warning);
                 if (resolution.error) errors.push(resolution.error);
             });
-
-            for (const optionalCatalogKey of OPTIONAL_IMPORT_CATALOG_KEYS) {
-                if (!defaultCatalogIds[optionalCatalogKey]) {
-                    errors.push(`No hay catálogo por defecto disponible para ${optionalCatalogKey}`);
-                }
-            }
 
             const duplicateInFile = (duplicatePairMap.get(`${row.supplierCode}::${row.sku}`) ?? []).length > 1;
             const duplicateInDatabase = existingDbKeys.has(`${row.supplierCode}::${row.sku}`);
@@ -471,7 +444,7 @@ export class ArticleImportService {
                 sizeCurveId: resolutions.sizeCurve.catalogId ?? ''
             });
 
-            if (!minimalPayloadIsValid) {
+            if (!payloadValidation.success) {
                 errors.push('El payload no cumple las reglas de validación para crear artículos');
             }
 
@@ -524,7 +497,7 @@ export class ArticleImportService {
         }
 
         const rowsToImport = this.getImportableRows(entry, selectedRowNumbers);
-        const defaults = await this.resolveOptionalCatalogDefaults();
+        const defaults = await resolveOptionalCatalogDefaults(this.prisma);
         const results: BatchCommitItemResult[] = [];
 
         for (const row of rowsToImport) {
@@ -592,7 +565,7 @@ export class ArticleImportService {
         }
 
         const rowsToImport = this.getImportableRows(entry, selectedRowNumbers);
-        const defaults = await this.resolveOptionalCatalogDefaults();
+        const defaults = await resolveOptionalCatalogDefaults(this.prisma);
 
         const createdRows: number[] = [];
         const skippedRows: Array<{ rowNumber: number; reason: string }> = [];
