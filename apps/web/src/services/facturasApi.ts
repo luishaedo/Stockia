@@ -1,4 +1,4 @@
-import { CreateFacturaDTO, Factura, FacturaFilters, FacturaListResponse, UpdateFacturaDraftDTO } from '@stockia/shared';
+import { CreateFacturaDTO, Factura, FacturaFilters, FacturaListResponse, InvoicesByArticleResponse, UpdateFacturaDraftDTO } from '@stockia/shared';
 import { HttpClient } from './httpClient';
 
 export class FacturasApiService {
@@ -55,6 +55,14 @@ export class FacturasApiService {
             headers: this.client.getOptionalAccessTokenHeader()
         });
         await this.client.assertOk(response, 'No pudimos cargar las facturas');
+        return response.json();
+    }
+
+    async getInvoicesByArticle(articleId: string): Promise<InvoicesByArticleResponse> {
+        const response = await fetch(`${this.client.getBaseURL()}/invoices/by-article/${articleId}`, {
+            headers: this.client.getOptionalAccessTokenHeader()
+        });
+        await this.client.assertOk(response, 'No pudimos buscar facturas para el artículo seleccionado');
         return response.json();
     }
 

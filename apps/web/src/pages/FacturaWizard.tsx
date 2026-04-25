@@ -282,6 +282,7 @@ export function FacturaWizard() {
                     }}
                     addedColors={draftColors}
                     onAddColor={(color) => !isFinal && setDraftColors((prev) => [...prev, color])}
+                    onUpdateColor={(index, color) => !isFinal && setDraftColors((prev) => prev.map((entry, entryIndex) => (entryIndex === index ? color : entry)))}
                     onRemoveColor={(index) => !isFinal && setDraftColors((prev) => prev.filter((_, i) => i !== index))}
                     onFinishItem={handleFinishItem}
                     onBack={() => setStep('ARTICLE')}

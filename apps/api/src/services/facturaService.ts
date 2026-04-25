@@ -10,6 +10,7 @@ import {
     FacturaEstado,
     FacturaFilters,
     FacturaItem,
+    InvoicesByArticleResponse,
     FacturaListResponse,
     UpdateFacturaDraftDTO,
 } from '@stockia/shared';
@@ -124,6 +125,60 @@ export class FacturaService {
             throw new DomainError(ErrorCodes.NOT_FOUND, 'Factura not found', 404);
         }
         return normalizeFacturaItems(factura);
+    }
+
+    async listInvoicesByArticle(articleId: string): Promise<InvoicesByArticleResponse> {
+        const article = await this.repository.findArticleWithInvoices(articleId);
+        if (!article) {
+            throw new DomainError(ErrorCodes.NOT_FOUND, 'Article not found', 404);
+        }
+
+        const invoicesById = new Map<string, InvoicesByArticleResponse['invoices'][number]>();
+
+        for (const item of article.facturaItems) {
+            const invoiceId = item.factura.id;
+            const existingInvoice = invoicesById.get(invoiceId);
+            const variants = item.colores.map((color) => ({
+                codigoColor: color.codigoColor,
+                nombreColor: color.nombreColor,
+                cantidadesPorTalle: (color.cantidadesPorTalle as Record<string, unknown>)
+            })).map((color) => ({
+                ...color,
+                cantidadesPorTalle: Object.fromEntries(
+                    Object.entries(color.cantidadesPorTalle)
+                        .map(([size, value]) => [size, Number(value) || 0])
+                )
+            }));
+
+            const line = {
+                itemId: item.id,
+                codigoArticulo: item.codigoArticulo,
+                description: article.description,
+                curvaTalles: item.curvaTalles,
+                variants
+            };
+
+            if (!existingInvoice) {
+                invoicesById.set(invoiceId, {
+                    invoiceId,
+                    invoiceNumber: item.factura.nroFactura,
+                    date: item.factura.fecha,
+                    lines: [line]
+                });
+                continue;
+            }
+
+            existingInvoice.lines.push(line);
+        }
+
+        return {
+            article: {
+                id: article.id,
+                sku: article.sku,
+                description: article.description
+            },
+            invoices: Array.from(invoicesById.values())
+        };
     }
 
     private async validateCatalogSelections(payload: { supplierId?: string; proveedor?: string }, items: FacturaItem[]): Promise<CatalogValidationResult> {

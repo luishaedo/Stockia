@@ -39,6 +39,43 @@ export class FacturaRepository {
         });
     }
 
+    findArticleWithInvoices(articleId: string) {
+        return this.prisma.article.findUnique({
+            where: { id: articleId },
+            select: {
+                id: true,
+                sku: true,
+                description: true,
+                facturaItems: {
+                    select: {
+                        id: true,
+                        codigoArticulo: true,
+                        curvaTalles: true,
+                        factura: {
+                            select: {
+                                id: true,
+                                nroFactura: true,
+                                fecha: true
+                            }
+                        },
+                        colores: {
+                            select: {
+                                codigoColor: true,
+                                nombreColor: true,
+                                cantidadesPorTalle: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        factura: {
+                            fecha: 'desc'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     findSupplierById(id: string) {
         return this.prisma.supplier.findUnique({ where: { id } });
     }

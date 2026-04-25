@@ -24,6 +24,7 @@ class ApiFacade {
     createFactura = this.facturasApi.createFactura.bind(this.facturasApi);
     updateFacturaDraft = this.facturasApi.updateFacturaDraft.bind(this.facturasApi);
     getFacturas = this.facturasApi.getFacturas.bind(this.facturasApi);
+    getInvoicesByArticle = this.facturasApi.getInvoicesByArticle.bind(this.facturasApi);
     finalizeFactura = this.facturasApi.finalizeFactura.bind(this.facturasApi);
     deleteFactura = this.facturasApi.deleteFactura.bind(this.facturasApi);
 
