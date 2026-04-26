@@ -59,11 +59,23 @@ export class FacturasApiService {
     }
 
     async getInvoicesByArticle(articleQuery: string): Promise<InvoicesByArticleResponse> {
-        const response = await fetch(`${this.client.getBaseURL()}/invoices/by-article/${encodeURIComponent(articleQuery)}`, {
-            headers: this.client.getOptionalAccessTokenHeader()
+        const headers = this.client.getOptionalAccessTokenHeader();
+        const normalizedQuery = encodeURIComponent(articleQuery);
+
+        const primaryResponse = await fetch(`${this.client.getBaseURL()}/invoices/by-article/${normalizedQuery}`, {
+            headers
         });
-        await this.client.assertOk(response, 'No pudimos buscar facturas para el SKU ingresado');
-        return response.json();
+
+        if (primaryResponse.status === 404) {
+            const legacyResponse = await fetch(`${this.client.getBaseURL()}/facturas/by-article/${normalizedQuery}`, {
+                headers
+            });
+            await this.client.assertOk(legacyResponse, 'No pudimos buscar facturas para el SKU ingresado');
+            return legacyResponse.json();
+        }
+
+        await this.client.assertOk(primaryResponse, 'No pudimos buscar facturas para el SKU ingresado');
+        return primaryResponse.json();
     }
 
 

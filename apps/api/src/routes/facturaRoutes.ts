@@ -11,6 +11,7 @@ export const createFacturaRoutes = (
 
     router.get('/facturas', readRateLimitMiddleware, controller.list);
     router.get('/invoices/by-article/:articleQuery', readRateLimitMiddleware, controller.listByArticle);
+    router.get('/facturas/by-article/:articleQuery', readRateLimitMiddleware, controller.listByArticle);
     router.delete('/facturas/:id', writeRateLimitMiddleware, requireAdminToken, controller.deleteInvoice);
     router.delete('/admin/invoices/:id', writeRateLimitMiddleware, requireAdminToken, controller.deleteAdminInvoice);
     router.patch('/admin/invoices/:id/export', writeRateLimitMiddleware, requireAdminToken, controller.exportAdminInvoice);

@@ -397,6 +397,7 @@ export type SharedRouteContract = {
 export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'GET', path: '/facturas', requiresAdminToken: false },
     { method: 'GET', path: '/invoices/by-article/:articleQuery', requiresAdminToken: false },
+    { method: 'GET', path: '/facturas/by-article/:articleQuery', requiresAdminToken: false },
     { method: 'DELETE', path: '/facturas/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/invoices/:id', requiresAdminToken: true },
     { method: 'PATCH', path: '/admin/invoices/:id/export', requiresAdminToken: true },
@@ -433,7 +434,8 @@ export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'POST', path: '/admin/articles/import/preview', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/batch', requiresAdminToken: true },
-    { method: 'GET', path: '/admin/articles/import/template', requiresAdminToken: true }
+    { method: 'GET', path: '/admin/articles/import/template', requiresAdminToken: true },
+    { method: 'GET', path: '/admin/articles/import/readiness', requiresAdminToken: true }
 ];
 
 export type FacturaListResponse = PaginatedResponse<Factura>;
