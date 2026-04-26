@@ -1,40 +1,69 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FacturaEstado, FacturaFilters, FacturaListResponse, InvoicesByArticleResponse } from '@stockia/shared';
 import { ArrowLeft, Search } from 'lucide-react';
 import { api } from '../services/api';
 import styles from './SearchFacturasPage.module.css';
 
+type InvoiceLine = InvoicesByArticleResponse['invoices'][number]['lines'][number];
+type InvoiceLineVariant = InvoiceLine['variants'][number];
+
+const hasAnyQuantity = (variant: InvoiceLineVariant) => Object.values(variant.cantidadesPorTalle).some((qty) => Number(qty) > 0);
+
+const formatVariantQuantities = (variant: InvoiceLineVariant) => Object.entries(variant.cantidadesPorTalle)
+    .filter(([, qty]) => Number(qty) > 0)
+    .map(([size, qty]) => ({ size, qty }));
+
+const getVisibleCurveSizes = (line: InvoiceLine) => {
+    const sizesWithQty = new Set<string>();
+
+    line.variants.forEach((variant) => {
+        Object.entries(variant.cantidadesPorTalle).forEach(([size, qty]) => {
+            if (Number(qty) > 0) {
+                sizesWithQty.add(size);
+            }
+        });
+    });
+
+    return line.curvaTalles.filter((size) => sizesWithQty.has(size));
+};
+
 export function SearchFacturasPage() {
     const navigate = useNavigate();
     const [data, setData] = useState<FacturaListResponse | null>(null);
+    const [hasFacturaSearch, setHasFacturaSearch] = useState(false);
+    const [facturaLoading, setFacturaLoading] = useState(false);
+
     const [articleSearch, setArticleSearch] = useState<InvoicesByArticleResponse | null>(null);
     const [articleQuery, setArticleQuery] = useState('');
     const [articleError, setArticleError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [hasArticleSearch, setHasArticleSearch] = useState(false);
+    const [articleLoading, setArticleLoading] = useState(false);
+
     const [filters, setFilters] = useState<FacturaFilters>({ page: 1, pageSize: 10, sortBy: 'fecha', sortDir: 'desc' });
 
     const runSearch = async () => {
-        setLoading(true);
+        setFacturaLoading(true);
+        setHasFacturaSearch(true);
         try {
             const result = await api.getFacturas(filters);
             setData(result);
         } finally {
-            setLoading(false);
+            setFacturaLoading(false);
         }
     };
-
-    useEffect(() => { void runSearch(); }, []);
 
     const runArticleSearch = async () => {
         const normalizedArticleQuery = articleQuery.trim();
         if (!normalizedArticleQuery) {
+            setHasArticleSearch(true);
             setArticleError('Ingresá un SKU (o parte del SKU) para buscar facturas asociadas.');
             setArticleSearch(null);
             return;
         }
 
-        setLoading(true);
+        setArticleLoading(true);
+        setHasArticleSearch(true);
         setArticleError(null);
         try {
             const result = await api.getInvoicesByArticle(normalizedArticleQuery);
@@ -43,30 +72,21 @@ export function SearchFacturasPage() {
             setArticleSearch(null);
             setArticleError(error instanceof Error ? error.message : 'No pudimos buscar facturas por artículo.');
         } finally {
-            setLoading(false);
+            setArticleLoading(false);
         }
     };
 
-    const getSizesAboveOneFromVariants = (variants: InvoicesByArticleResponse['invoices'][number]['lines'][number]['variants']) => {
-        const sizesWithQtyAboveOne = new Set<string>();
+    const invoiceResultsCount = data?.items.length ?? 0;
+    const articleResultsCount = articleSearch?.invoices.length ?? 0;
 
-        for (const variant of variants) {
-            for (const [size, qty] of Object.entries(variant.cantidadesPorTalle)) {
-                if (Number(qty) > 1) {
-                    sizesWithQtyAboveOne.add(size);
-                }
-            }
-        }
-
-        return sizesWithQtyAboveOne;
-    };
+    const articleResults = useMemo(() => articleSearch?.invoices ?? [], [articleSearch]);
 
     return (
         <section>
             <header className={styles.hero}>
                 <button type="button" className={styles.backButton} onClick={() => navigate(-1)}><ArrowLeft size={18} /></button>
                 <h1>Buscar facturas</h1>
-                <p>Filtros avanzados de búsqueda</p>
+                <p>Encontrá facturas por filtros o por SKU de artículo.</p>
             </header>
 
             <div className={styles.formCard}>
@@ -91,7 +111,7 @@ export function SearchFacturasPage() {
                     </div>
                 </div>
                 <button className={styles.cleanButton} onClick={() => setFilters({ page: 1, pageSize: 10, sortBy: 'fecha', sortDir: 'desc' })}>Limpiar filtros</button>
-                <button className={styles.searchButton} onClick={() => void runSearch()}>Buscar</button>
+                <button className={styles.searchButton} onClick={() => void runSearch()}>Buscar facturas</button>
             </div>
 
             <div className={styles.formCard}>
@@ -108,65 +128,96 @@ export function SearchFacturasPage() {
                 {articleError && <p className={styles.error}>{articleError}</p>}
             </div>
 
-            <h2 className={styles.resultsTitle}>Resultados ({data?.items?.length || 0})</h2>
-            <div className={styles.resultsList}>
-                {loading && <p>Cargando...</p>}
-                {data?.items.map((factura) => (
-                    <button key={factura.id} type="button" className={styles.resultCard} onClick={() => navigate(factura.estado === FacturaEstado.DRAFT ? `/facturas/${factura.id}/wizard` : `/facturas/${factura.id}/summary`)}>
-                        <div className={styles.resultTop}><span>{new Intl.DateTimeFormat('es-AR').format(new Date(factura.fecha))}</span><span className={factura.estado === FacturaEstado.DRAFT ? styles.badgeDraft : styles.badgeFinal}>{factura.estado === FacturaEstado.DRAFT ? 'Borrador' : 'Final'}</span></div>
-                        <strong>{factura.nroFactura}</strong>
-                        <p>{factura.proveedor || 'Sin proveedor'}</p>
-                    </button>
-                ))}
-            </div>
-
-            {articleSearch && (
-                <>
-                    <h2 className={styles.resultsTitle}>
-                        SKU "{articleSearch.query.term}" ({articleSearch.invoices.length} factura/s)
-                    </h2>
+            <section className={styles.resultsSection}>
+                <h2 className={styles.resultsTitle}>Resultados de facturas {hasFacturaSearch ? `(${invoiceResultsCount})` : ''}</h2>
+                {!hasFacturaSearch && <p className={styles.emptyState}>Todavía no hiciste una búsqueda de facturas.</p>}
+                {hasFacturaSearch && facturaLoading && <p className={styles.emptyState}>Cargando facturas...</p>}
+                {hasFacturaSearch && !facturaLoading && invoiceResultsCount === 0 && <p className={styles.emptyState}>No encontramos facturas con esos filtros.</p>}
+                {hasFacturaSearch && !facturaLoading && invoiceResultsCount > 0 && (
                     <div className={styles.resultsList}>
-                        {articleSearch.invoices.map((invoice) => (
-                            <article key={invoice.invoiceId} className={styles.resultCard}>
-                                <div className={styles.resultTop}>
-                                    <span>{new Intl.DateTimeFormat('es-AR').format(new Date(invoice.date))}</span>
-                                    <span>{invoice.invoiceNumber}</span>
-                                    <span className={invoice.status === FacturaEstado.DRAFT ? styles.badgeDraft : styles.badgeFinal}>
-                                        {invoice.status === FacturaEstado.DRAFT ? 'Borrador' : 'Final'}
-                                    </span>
-                                </div>
-                                {invoice.lines.map((line) => (
-                                    <div key={line.itemId} className={styles.articleLine}>
-                                        {(() => {
-                                            const sizesAboveOne = getSizesAboveOneFromVariants(line.variants);
-                                            const filteredCurveSizes = line.curvaTalles.filter((size) => sizesAboveOne.has(size));
+                        {data?.items.map((factura) => (
+                            <button key={factura.id} type="button" className={styles.resultCard} onClick={() => navigate(factura.estado === FacturaEstado.DRAFT ? `/facturas/${factura.id}/wizard` : `/facturas/${factura.id}/summary`)}>
+                                <div className={styles.resultTop}><span>{new Intl.DateTimeFormat('es-AR').format(new Date(factura.fecha))}</span><span className={factura.estado === FacturaEstado.DRAFT ? styles.badgeDraft : styles.badgeFinal}>{factura.estado === FacturaEstado.DRAFT ? 'Borrador' : 'Final'}</span></div>
+                                <strong>{factura.nroFactura}</strong>
+                                <p>{factura.proveedor || 'Sin proveedor'}</p>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </section>
 
-                                            return (
-                                                <>
-                                                    <strong>{line.codigoArticulo}</strong>
-                                                    <span>
-                                                        Curva: {filteredCurveSizes.length > 0 ? filteredCurveSizes.join(', ') : 'Sin talles con cantidad mayor a 1'}
-                                                    </span>
-                                                    {line.variants.map((variant) => {
-                                                        const filteredQuantities = Object.entries(variant.cantidadesPorTalle).filter(([, qty]) => Number(qty) > 1);
-                                                        if (filteredQuantities.length === 0) return null;
+            <section className={styles.resultsSection}>
+                <h2 className={styles.resultsTitle}>Resultados de SKU {hasArticleSearch ? `(${articleResultsCount} factura/s)` : ''}</h2>
+                {!hasArticleSearch && <p className={styles.emptyState}>Buscá un SKU para ver en qué facturas aparece.</p>}
+                {hasArticleSearch && articleLoading && <p className={styles.emptyState}>Buscando SKU en facturas...</p>}
+                {hasArticleSearch && !articleLoading && !articleError && articleResultsCount === 0 && (
+                    <p className={styles.emptyState}>No encontramos resultados para este SKU.</p>
+                )}
 
-                                                        return (
-                                                            <p key={`${line.itemId}-${variant.codigoColor}`}>
-                                                                {variant.nombreColor} ({variant.codigoColor}) · {filteredQuantities.map(([size, qty]) => `${size}: ${qty}`).join(' · ')}
-                                                            </p>
-                                                        );
-                                                    })}
-                                                </>
-                                            );
-                                        })()}
+                {hasArticleSearch && !articleLoading && articleResultsCount > 0 && (
+                    <div className={styles.invoiceCardsList}>
+                        {articleResults.map((invoice) => (
+                            <article key={invoice.invoiceId} className={styles.invoiceCard}>
+                                <header className={styles.invoiceHeader}>
+                                    <div>
+                                        <p className={styles.invoiceLabel}>Factura</p>
+                                        <strong className={styles.invoiceNumber}>{invoice.invoiceNumber}</strong>
                                     </div>
-                                ))}
+                                    <div className={styles.invoiceHeaderMeta}>
+                                        <span>{new Intl.DateTimeFormat('es-AR').format(new Date(invoice.date))}</span>
+                                        <span className={invoice.status === FacturaEstado.DRAFT ? styles.badgeDraft : styles.badgeFinal}>
+                                            {invoice.status === FacturaEstado.DRAFT ? 'Borrador' : 'Final'}
+                                        </span>
+                                    </div>
+                                </header>
+
+                                <div className={styles.lineList}>
+                                    {invoice.lines.map((line) => {
+                                        const visibleCurveSizes = getVisibleCurveSizes(line);
+
+                                        return (
+                                            <article key={line.itemId} className={styles.lineCard}>
+                                                <div className={styles.lineHeader}>
+                                                    <strong>{line.codigoArticulo}</strong>
+                                                    <span>{line.description}</span>
+                                                </div>
+
+                                                <div className={styles.curveBlock}>
+                                                    <p className={styles.curveLabel}>Curva cargada</p>
+                                                    {visibleCurveSizes.length === 0 ? (
+                                                        <p className={styles.emptyCurveText}>Sin talles con cantidad cargada.</p>
+                                                    ) : (
+                                                        <div className={styles.chipsWrap}>
+                                                            {visibleCurveSizes.map((size) => (
+                                                                <span key={`${line.itemId}-${size}`} className={styles.sizeChip}>{size}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className={styles.variantList}>
+                                                    {line.variants.filter(hasAnyQuantity).map((variant) => (
+                                                        <div key={`${line.itemId}-${variant.codigoColor}`} className={styles.variantCard}>
+                                                            <p className={styles.variantTitle}>{variant.nombreColor} ({variant.codigoColor})</p>
+                                                            <div className={styles.chipsWrap}>
+                                                                {formatVariantQuantities(variant).map(({ size, qty }) => (
+                                                                    <span key={`${line.itemId}-${variant.codigoColor}-${size}`} className={styles.quantityChip}>
+                                                                        {size} · {qty}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </article>
+                                        );
+                                    })}
+                                </div>
                             </article>
                         ))}
                     </div>
-                </>
-            )}
+                )}
+            </section>
         </section>
     );
 }

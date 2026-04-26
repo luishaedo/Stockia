@@ -11,15 +11,44 @@
 .dateGrid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-1-5); }
 .cleanButton { border:0; background:transparent; color:#7c3aed; font-weight:600; min-height:var(--control-height); }
 .searchButton { min-height:var(--control-height); border:0; border-radius:var(--radius-control); background:linear-gradient(155deg,#6d28d9,#a21caf); color:#fff; font-weight:700; }
-.resultsTitle { margin:0 var(--space-2) var(--space-1-5); font-size:var(--font-size-h2); color:#0f172a; line-height:1.2; }
-.resultsList { margin:0 var(--space-2); display:grid; gap:var(--space-2); }
+
+.resultsSection { margin: 0 var(--space-2) var(--space-2); }
+.resultsTitle { margin: 0 0 var(--space-1-5); font-size:var(--font-size-h2); color:#0f172a; line-height:1.2; }
+.emptyState { margin: 0; padding: 14px 16px; border: 1px dashed #cbd5e1; border-radius: 14px; background: #f8fafc; color: #475569; font-size: .9rem; }
+.resultsList { display:grid; gap:var(--space-2); }
 .resultCard { border:1px solid #d8dee9; border-radius:var(--radius-card); background:#fff; padding:var(--space-2); text-align:left; display:grid; gap:var(--space-1); }
 .resultTop { display:flex; justify-content:space-between; margin-bottom:0; font-size:.82rem; color:#64748b; }
 .resultCard strong { font-size:var(--font-size-h2); line-height:1.1; color:#0f172a; }
 .resultCard p { margin:0; color:#4f46e5; }
+
+.invoiceCardsList { display: grid; gap: var(--space-2); }
+.invoiceCard { border: 1px solid #d8dee9; border-radius: 18px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding: 14px; display: grid; gap: 12px; }
+.invoiceHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+.invoiceLabel { margin: 0; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: #6366f1; font-weight: 700; }
+.invoiceNumber { font-size: 1.1rem; color: #0f172a; }
+.invoiceHeaderMeta { display: grid; gap: 6px; justify-items: end; color: #64748b; font-size: .8rem; }
+
+.lineList { display: grid; gap: 10px; }
+.lineCard { border: 1px solid #e2e8f0; border-radius: 14px; background: #ffffff; padding: 12px; display: grid; gap: 10px; }
+.lineHeader { display: grid; gap: 2px; }
+.lineHeader strong { color: #0f172a; }
+.lineHeader span { color: #64748b; font-size: .85rem; }
+
+.curveBlock { display: grid; gap: 8px; }
+.curveLabel { margin: 0; font-size: .8rem; color: #6366f1; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.emptyCurveText { margin: 0; color: #64748b; font-size: .85rem; }
+
+.variantList { display: grid; gap: 8px; }
+.variantCard { border: 1px dashed #d1d5db; border-radius: 12px; padding: 10px; background: #f8fafc; display: grid; gap: 8px; }
+.variantTitle { margin: 0; color: #334155; font-size: .86rem; font-weight: 600; }
+
+.chipsWrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.sizeChip,
+.quantityChip { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: .8rem; font-weight: 600; }
+.sizeChip { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+.quantityChip { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+
 .badgeDraft,.badgeFinal { border-radius:999px; padding:3px 10px; font-size:.72rem; }
 .badgeDraft { background:#fef3c7; color:#b45309; }
 .badgeFinal { background:#dcfce7; color:#15803d; }
 .error { margin: 0; color: #b91c1c; font-size: .85rem; }
-.articleLine { border-top: 1px dashed #d7deea; margin-top: 8px; padding-top: 8px; display: grid; gap: 4px; }
-.articleLine span { color: #334155; font-size: .85rem; }
