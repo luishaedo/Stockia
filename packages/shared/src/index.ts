@@ -299,14 +299,13 @@ export const FacturaListQuerySchema = z.object({
 );
 
 export const InvoicesByArticleResponseSchema = z.object({
-    article: z.object({
-        id: z.string().min(1),
-        sku: z.string().min(1),
-        description: z.string().min(1)
+    query: z.object({
+        term: z.string().min(1)
     }),
     invoices: z.array(z.object({
         invoiceId: z.string().min(1),
         invoiceNumber: z.string().min(1),
+        status: z.nativeEnum(FacturaEstado),
         date: z.union([z.string().datetime(), z.date()]),
         lines: z.array(z.object({
             itemId: z.string().min(1),
@@ -397,7 +396,7 @@ export type SharedRouteContract = {
 
 export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'GET', path: '/facturas', requiresAdminToken: false },
-    { method: 'GET', path: '/invoices/by-article/:articleId', requiresAdminToken: false },
+    { method: 'GET', path: '/invoices/by-article/:articleQuery', requiresAdminToken: false },
     { method: 'DELETE', path: '/facturas/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/admin/invoices/:id', requiresAdminToken: true },
     { method: 'PATCH', path: '/admin/invoices/:id/export', requiresAdminToken: true },

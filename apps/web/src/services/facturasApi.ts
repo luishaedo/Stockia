@@ -58,11 +58,11 @@ export class FacturasApiService {
         return response.json();
     }
 
-    async getInvoicesByArticle(articleId: string): Promise<InvoicesByArticleResponse> {
-        const response = await fetch(`${this.client.getBaseURL()}/invoices/by-article/${articleId}`, {
+    async getInvoicesByArticle(articleQuery: string): Promise<InvoicesByArticleResponse> {
+        const response = await fetch(`${this.client.getBaseURL()}/invoices/by-article/${encodeURIComponent(articleQuery)}`, {
             headers: this.client.getOptionalAccessTokenHeader()
         });
-        await this.client.assertOk(response, 'No pudimos buscar facturas para el artículo seleccionado');
+        await this.client.assertOk(response, 'No pudimos buscar facturas para el SKU ingresado');
         return response.json();
     }
 
