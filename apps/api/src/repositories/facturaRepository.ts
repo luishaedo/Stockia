@@ -39,38 +39,43 @@ export class FacturaRepository {
         });
     }
 
-    findArticleWithInvoices(articleId: string) {
-        return this.prisma.article.findUnique({
-            where: { id: articleId },
+    findInvoiceItemsByArticleSkuQuery(articleQuery: string) {
+        return this.prisma.facturaItem.findMany({
+            where: {
+                codigoArticulo: {
+                    contains: articleQuery,
+                    mode: 'insensitive'
+                }
+            },
             select: {
                 id: true,
-                sku: true,
-                description: true,
-                facturaItems: {
+                codigoArticulo: true,
+                curvaTalles: true,
+                article: {
+                    select: {
+                        description: true
+                    }
+                },
+                articleSnapshot: true,
+                factura: {
                     select: {
                         id: true,
-                        codigoArticulo: true,
-                        curvaTalles: true,
-                        factura: {
-                            select: {
-                                id: true,
-                                nroFactura: true,
-                                fecha: true
-                            }
-                        },
-                        colores: {
-                            select: {
-                                codigoColor: true,
-                                nombreColor: true,
-                                cantidadesPorTalle: true
-                            }
-                        }
-                    },
-                    orderBy: {
-                        factura: {
-                            fecha: 'desc'
-                        }
+                        nroFactura: true,
+                        fecha: true,
+                        estado: true
                     }
+                },
+                colores: {
+                    select: {
+                        codigoColor: true,
+                        nombreColor: true,
+                        cantidadesPorTalle: true
+                    }
+                }
+            },
+            orderBy: {
+                factura: {
+                    fecha: 'desc'
                 }
             }
         });

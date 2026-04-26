@@ -127,15 +127,16 @@ export class FacturaService {
         return normalizeFacturaItems(factura);
     }
 
-    async listInvoicesByArticle(articleId: string): Promise<InvoicesByArticleResponse> {
-        const article = await this.repository.findArticleWithInvoices(articleId);
-        if (!article) {
-            throw new DomainError(ErrorCodes.NOT_FOUND, 'Article not found', 404);
+    async listInvoicesByArticle(articleQuery: string): Promise<InvoicesByArticleResponse> {
+        const normalizedArticleQuery = articleQuery.trim();
+        if (!normalizedArticleQuery) {
+            throw new DomainError(ErrorCodes.VALIDATION_FAILED, 'Article query is required', 400);
         }
 
+        const items = await this.repository.findInvoiceItemsByArticleSkuQuery(normalizedArticleQuery);
         const invoicesById = new Map<string, InvoicesByArticleResponse['invoices'][number]>();
 
-        for (const item of article.facturaItems) {
+        for (const item of items) {
             const invoiceId = item.factura.id;
             const existingInvoice = invoicesById.get(invoiceId);
             const variants = item.colores.map((color) => ({
@@ -153,7 +154,9 @@ export class FacturaService {
             const line = {
                 itemId: item.id,
                 codigoArticulo: item.codigoArticulo,
-                description: article.description,
+                description: item.article?.description
+                    || ((item.articleSnapshot as Record<string, unknown> | null)?.description as string | undefined)
+                    || item.codigoArticulo,
                 curvaTalles: item.curvaTalles,
                 variants
             };
@@ -162,6 +165,7 @@ export class FacturaService {
                 invoicesById.set(invoiceId, {
                     invoiceId,
                     invoiceNumber: item.factura.nroFactura,
+                    status: item.factura.estado as FacturaEstado,
                     date: item.factura.fecha,
                     lines: [line]
                 });
@@ -172,10 +176,8 @@ export class FacturaService {
         }
 
         return {
-            article: {
-                id: article.id,
-                sku: article.sku,
-                description: article.description
+            query: {
+                term: normalizedArticleQuery
             },
             invoices: Array.from(invoicesById.values())
         };

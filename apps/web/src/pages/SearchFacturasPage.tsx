@@ -9,7 +9,7 @@ export function SearchFacturasPage() {
     const navigate = useNavigate();
     const [data, setData] = useState<FacturaListResponse | null>(null);
     const [articleSearch, setArticleSearch] = useState<InvoicesByArticleResponse | null>(null);
-    const [articleId, setArticleId] = useState('');
+    const [articleQuery, setArticleQuery] = useState('');
     const [articleError, setArticleError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [filters, setFilters] = useState<FacturaFilters>({ page: 1, pageSize: 10, sortBy: 'fecha', sortDir: 'desc' });
@@ -27,9 +27,9 @@ export function SearchFacturasPage() {
     useEffect(() => { void runSearch(); }, []);
 
     const runArticleSearch = async () => {
-        const normalizedArticleId = articleId.trim();
-        if (!normalizedArticleId) {
-            setArticleError('Ingresá un ID de artículo para buscar facturas asociadas.');
+        const normalizedArticleQuery = articleQuery.trim();
+        if (!normalizedArticleQuery) {
+            setArticleError('Ingresá un SKU (o parte del SKU) para buscar facturas asociadas.');
             setArticleSearch(null);
             return;
         }
@@ -37,7 +37,7 @@ export function SearchFacturasPage() {
         setLoading(true);
         setArticleError(null);
         try {
-            const result = await api.getInvoicesByArticle(normalizedArticleId);
+            const result = await api.getInvoicesByArticle(normalizedArticleQuery);
             setArticleSearch(result);
         } catch (error) {
             setArticleSearch(null);
@@ -95,16 +95,16 @@ export function SearchFacturasPage() {
             </div>
 
             <div className={styles.formCard}>
-                <label>ID de artículo</label>
+                <label>SKU de artículo</label>
                 <div className={styles.searchInput}>
                     <Search size={16} />
                     <input
-                        placeholder="Pegar ID de artículo..."
-                        value={articleId}
-                        onChange={(event) => setArticleId(event.target.value)}
+                        placeholder="Ej: 101 o 10146"
+                        value={articleQuery}
+                        onChange={(event) => setArticleQuery(event.target.value)}
                     />
                 </div>
-                <button className={styles.searchButton} onClick={() => void runArticleSearch()}>Buscar artículo en facturas</button>
+                <button className={styles.searchButton} onClick={() => void runArticleSearch()}>Buscar SKU en facturas</button>
                 {articleError && <p className={styles.error}>{articleError}</p>}
             </div>
 
@@ -123,7 +123,7 @@ export function SearchFacturasPage() {
             {articleSearch && (
                 <>
                     <h2 className={styles.resultsTitle}>
-                        Artículo {articleSearch.article.sku} ({articleSearch.invoices.length} factura/s)
+                        SKU "{articleSearch.query.term}" ({articleSearch.invoices.length} factura/s)
                     </h2>
                     <div className={styles.resultsList}>
                         {articleSearch.invoices.map((invoice) => (
@@ -131,6 +131,9 @@ export function SearchFacturasPage() {
                                 <div className={styles.resultTop}>
                                     <span>{new Intl.DateTimeFormat('es-AR').format(new Date(invoice.date))}</span>
                                     <span>{invoice.invoiceNumber}</span>
+                                    <span className={invoice.status === FacturaEstado.DRAFT ? styles.badgeDraft : styles.badgeFinal}>
+                                        {invoice.status === FacturaEstado.DRAFT ? 'Borrador' : 'Final'}
+                                    </span>
                                 </div>
                                 {invoice.lines.map((line) => (
                                     <div key={line.itemId} className={styles.articleLine}>
