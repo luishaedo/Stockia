@@ -47,6 +47,20 @@ export function SearchFacturasPage() {
         }
     };
 
+    const getSizesAboveOneFromVariants = (variants: InvoicesByArticleResponse['invoices'][number]['lines'][number]['variants']) => {
+        const sizesWithQtyAboveOne = new Set<string>();
+
+        for (const variant of variants) {
+            for (const [size, qty] of Object.entries(variant.cantidadesPorTalle)) {
+                if (Number(qty) > 1) {
+                    sizesWithQtyAboveOne.add(size);
+                }
+            }
+        }
+
+        return sizesWithQtyAboveOne;
+    };
+
     return (
         <section>
             <header className={styles.hero}>
@@ -120,13 +134,29 @@ export function SearchFacturasPage() {
                                 </div>
                                 {invoice.lines.map((line) => (
                                     <div key={line.itemId} className={styles.articleLine}>
-                                        <strong>{line.codigoArticulo}</strong>
-                                        <span>Curva: {line.curvaTalles.join(', ')}</span>
-                                        {line.variants.map((variant) => (
-                                            <p key={`${line.itemId}-${variant.codigoColor}`}>
-                                                {variant.nombreColor} ({variant.codigoColor}) · {Object.entries(variant.cantidadesPorTalle).map(([size, qty]) => `${size}: ${qty}`).join(' · ')}
-                                            </p>
-                                        ))}
+                                        {(() => {
+                                            const sizesAboveOne = getSizesAboveOneFromVariants(line.variants);
+                                            const filteredCurveSizes = line.curvaTalles.filter((size) => sizesAboveOne.has(size));
+
+                                            return (
+                                                <>
+                                                    <strong>{line.codigoArticulo}</strong>
+                                                    <span>
+                                                        Curva: {filteredCurveSizes.length > 0 ? filteredCurveSizes.join(', ') : 'Sin talles con cantidad mayor a 1'}
+                                                    </span>
+                                                    {line.variants.map((variant) => {
+                                                        const filteredQuantities = Object.entries(variant.cantidadesPorTalle).filter(([, qty]) => Number(qty) > 1);
+                                                        if (filteredQuantities.length === 0) return null;
+
+                                                        return (
+                                                            <p key={`${line.itemId}-${variant.codigoColor}`}>
+                                                                {variant.nombreColor} ({variant.codigoColor}) · {filteredQuantities.map(([size, qty]) => `${size}: ${qty}`).join(' · ')}
+                                                            </p>
+                                                        );
+                                                    })}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 ))}
                             </article>
