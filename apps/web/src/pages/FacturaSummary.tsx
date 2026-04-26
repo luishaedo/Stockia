@@ -159,6 +159,7 @@ export function FacturaSummary() {
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+    const [deletingVariantTarget, setDeletingVariantTarget] = useState<{ itemIndex: number; colorIndex: number } | null>(null);
     const [draftItem, setDraftItem] = useState<FacturaItem | null>(null);
     const [resolvingIndex, setResolvingIndex] = useState<number | null>(null);
     const [resolverDraft, setResolverDraft] = useState<ArticleDraftForm>(INITIAL_ARTICLE_DRAFT);
@@ -475,6 +476,107 @@ export function FacturaSummary() {
         setDeletingItem(false);
     };
 
+    const handleDeleteVariant = async (itemIndex: number, colorIndex: number) => {
+        if (!id || !state.currentFactura) return;
+
+        const selectedItem = state.currentFactura.items[itemIndex];
+        const selectedColor = selectedItem?.colores[colorIndex];
+        if (!selectedItem || !selectedColor) {
+            setFeedback({ type: 'error', message: 'No encontramos la variante seleccionada para eliminar.' });
+            return;
+        }
+
+        const confirmed = window.confirm(`¿Seguro que querés eliminar la variante ${selectedColor.nombreColor} (${selectedColor.codigoColor})?`);
+        if (!confirmed) return;
+
+        setDeletingVariantTarget({ itemIndex, colorIndex });
+        setDeletingItem(true);
+        resetFeedback();
+
+        const selectedItemFingerprint = buildItemFingerprint(selectedItem);
+        const selectedColorFingerprint = JSON.stringify(selectedColor);
+        const nextItems = cloneItems(state.currentFactura.items);
+        nextItems[itemIndex].colores.splice(colorIndex, 1);
+        if (nextItems[itemIndex].colores.length === 0) {
+            nextItems.splice(itemIndex, 1);
+        }
+
+        try {
+            await api.updateFacturaDraft(id, {
+                items: nextItems,
+                expectedUpdatedAt: state.currentFactura.updatedAt as string
+            });
+            await loadFactura(id);
+            setFeedback({ type: 'success', message: 'Variante eliminada correctamente.' });
+        } catch (error: unknown) {
+            if (error instanceof ApiError && error.code === 'OPTIMISTIC_LOCK_CONFLICT') {
+                try {
+                    const latestFactura = await api.getFactura(id);
+                    const latestItemIndex = latestFactura.items.findIndex((item) => (
+                        buildItemFingerprint(item) === selectedItemFingerprint
+                    ));
+
+                    if (latestItemIndex < 0) {
+                        await loadFactura(id);
+                        setFeedback({
+                            type: 'error',
+                            message: 'La factura cambió mientras intentábamos eliminar la variante. Recargamos los datos para que lo intentes nuevamente.'
+                        });
+                    } else {
+                        const latestNextItems = cloneItems(latestFactura.items);
+                        const latestColorIndex = latestNextItems[latestItemIndex].colores.findIndex((color) => (
+                            JSON.stringify(color) === selectedColorFingerprint
+                        ));
+
+                        if (latestColorIndex < 0) {
+                            await loadFactura(id);
+                            setFeedback({
+                                type: 'error',
+                                message: 'La variante ya no existe en la versión más reciente de la factura. Recargamos los datos.'
+                            });
+                        } else {
+                            latestNextItems[latestItemIndex].colores.splice(latestColorIndex, 1);
+                            if (latestNextItems[latestItemIndex].colores.length === 0) {
+                                latestNextItems.splice(latestItemIndex, 1);
+                            }
+
+                            await api.updateFacturaDraft(id, {
+                                items: latestNextItems,
+                                expectedUpdatedAt: latestFactura.updatedAt as string
+                            });
+                            await loadFactura(id);
+                            setFeedback({ type: 'success', message: 'Variante eliminada correctamente.' });
+                        }
+                    }
+                } catch (retryError: unknown) {
+                    if (retryError instanceof ApiError) {
+                        const trace = retryError.traceId ? ` | traceId: ${retryError.traceId}` : '';
+                        setFeedback({ type: 'error', message: `No se pudo eliminar la variante: ${retryError.message} [${retryError.code} - ${retryError.status}]${trace}` });
+                    } else if (retryError instanceof Error) {
+                        setFeedback({ type: 'error', message: `No se pudo eliminar la variante: ${retryError.message}` });
+                    } else {
+                        setFeedback({ type: 'error', message: 'No se pudo eliminar la variante: Error desconocido' });
+                    }
+                }
+                setDeletingVariantTarget(null);
+                setDeletingItem(false);
+                return;
+            }
+
+            if (error instanceof ApiError) {
+                const trace = error.traceId ? ` | traceId: ${error.traceId}` : '';
+                setFeedback({ type: 'error', message: `No se pudo eliminar la variante: ${error.message} [${error.code} - ${error.status}]${trace}` });
+            } else if (error instanceof Error) {
+                setFeedback({ type: 'error', message: `No se pudo eliminar la variante: ${error.message}` });
+            } else {
+                setFeedback({ type: 'error', message: 'No se pudo eliminar la variante: Error desconocido' });
+            }
+        }
+
+        setDeletingVariantTarget(null);
+        setDeletingItem(false);
+    };
+
     const handleDeleteInvoice = async () => {
         if (!id || !deletePassword.trim()) {
             setFeedback({ type: 'error', message: 'Ingresá tu contraseña para confirmar la eliminación.' });
@@ -615,9 +717,23 @@ export function FacturaSummary() {
 
                                 {item.colores.length > 0 && (
                                     <div className={styles.colorList}>
-                                        {item.colores.map((color) => (
+                                        {item.colores.map((color, colorIndex) => (
                                             <div key={`${color.codigoColor}-${color.nombreColor}`} className={styles.colorRow}>
-                                                <span className={styles.colorName}>{color.nombreColor} ({color.codigoColor})</span>
+                                                <div className={styles.colorRowHeader}>
+                                                    <span className={styles.colorName}>{color.nombreColor} ({color.codigoColor})</span>
+                                                    {!isFinal && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="danger"
+                                                            size="sm"
+                                                            onClick={() => void handleDeleteVariant(idx, colorIndex)}
+                                                            isLoading={deletingVariantTarget?.itemIndex === idx && deletingVariantTarget?.colorIndex === colorIndex}
+                                                            disabled={deletingItem && !(deletingVariantTarget?.itemIndex === idx && deletingVariantTarget?.colorIndex === colorIndex)}
+                                                        >
+                                                            Eliminar variante
+                                                        </Button>
+                                                    )}
+                                                </div>
                                                 <span className={styles.sizes}>
                                                     {item.curvaTalles.map((size) => `${size}: ${formatNumber(Number(color.cantidadesPorTalle[size] ?? 0))}`).join(' · ')}
                                                 </span>

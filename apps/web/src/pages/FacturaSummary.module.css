@@ -170,6 +170,13 @@
     padding-left: var(--space-1);
 }
 
+.colorRowHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-1);
+}
+
 .colorName {
     font-weight: 600;
 }
