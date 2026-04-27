@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronUp, FileText, Grid2x2, Home, KeyRound, LogOut, Plus, Shirt } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext';
@@ -9,11 +9,15 @@ interface MainLayoutProps {
     children: ReactNode;
 }
 
+const SESSION_EXPIRED_MESSAGE = 'Tu sesión expiró, iniciá sesión nuevamente.';
+
 export function MainLayout({ children }: MainLayoutProps) {
     const location = useLocation();
+    const navigate = useNavigate();
     const { isAuthenticated, logout } = useAuth();
     const [isNavCollapsed, setIsNavCollapsed] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
+    const [authToast, setAuthToast] = useState<string | null>(null);
     const lastScrollYRef = useRef(0);
 
     const isLoginPage = location.pathname === '/login';
@@ -73,6 +77,28 @@ export function MainLayout({ children }: MainLayoutProps) {
         };
     }, [isMobileViewport]);
 
+    useEffect(() => {
+        const onSessionExpired = () => {
+            setAuthToast(SESSION_EXPIRED_MESSAGE);
+            navigate('/login', { replace: true, state: { from: location } });
+        };
+
+        window.addEventListener('stockia-auth-session-expired', onSessionExpired);
+
+        return () => {
+            window.removeEventListener('stockia-auth-session-expired', onSessionExpired);
+        };
+    }, [location, navigate]);
+
+    useEffect(() => {
+        if (!authToast) {
+            return;
+        }
+
+        const timeout = window.setTimeout(() => setAuthToast(null), 3500);
+        return () => window.clearTimeout(timeout);
+    }, [authToast]);
+
     return (
         <div className={styles.appFrame}>
             <div className={styles.shell}>
@@ -83,13 +109,18 @@ export function MainLayout({ children }: MainLayoutProps) {
                                 <KeyRound size={16} />
                             </Link>
                         ) : (
-                            <button type="button" className={styles.authAction} onClick={logout} aria-label="Cerrar sesión">
+                            <button type="button" className={styles.authAction} onClick={() => void logout()} aria-label="Cerrar sesión">
                                 <LogOut size={16} />
                             </button>
                         )}
                     </div>
                 )}
                 <main className={styles.content}>{children}</main>
+                {authToast && (
+                    <div className={styles.authToast} role="status" aria-live="polite">
+                        {authToast}
+                    </div>
+                )}
                 {!isLoginPage && (
                     <>
                         <nav

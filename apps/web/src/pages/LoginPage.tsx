@@ -15,6 +15,7 @@ export function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
 
     const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/facturas';
 
@@ -24,7 +25,7 @@ export function LoginPage() {
         setIsLoading(true);
 
         try {
-            await login(username.trim(), password);
+            await login(username.trim(), password, rememberMe);
             navigate(redirectTo, { replace: true });
         } catch (submitError: any) {
             setError(submitError?.message || 'No pudimos iniciar sesión. Verificá tus credenciales.');
@@ -61,6 +62,15 @@ export function LoginPage() {
                         />
 
                         {error && <div className={styles.error}>{error}</div>}
+
+                        <label className={styles.rememberMe}>
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(event) => setRememberMe(event.target.checked)}
+                            />
+                            <span>Recordar sesión en este dispositivo</span>
+                        </label>
 
                         <div className={styles.actions}>
                             <Button type="submit" isLoading={isLoading} className={styles.submit}>Iniciar sesión</Button>

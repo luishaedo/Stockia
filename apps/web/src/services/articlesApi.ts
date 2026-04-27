@@ -180,7 +180,7 @@ export class ArticlesApiService {
         const response = await fetch(`${this.client.getBaseURL()}${path}`, {
             method: 'POST',
             headers: {
-                ...this.client.getAccessTokenHeader()
+                ...await this.client.getAuthHeaders()
             },
             body: formData
         });

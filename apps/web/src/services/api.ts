@@ -19,6 +19,8 @@ class ApiFacade {
     private articlesApi = new ArticlesApiService(client);
 
     login = this.authApi.login.bind(this.authApi);
+    restoreSession = this.authApi.restoreSession.bind(this.authApi);
+    logout = this.authApi.logout.bind(this.authApi);
 
     getFactura = this.facturasApi.getFactura.bind(this.facturasApi);
     createFactura = this.facturasApi.createFactura.bind(this.facturasApi);

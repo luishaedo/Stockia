@@ -18,7 +18,36 @@ const JWT_AUDIENCE = 'stockia-admin';
 
 const getJwtSecret = (secret?: string) => new TextEncoder().encode(secret);
 
-export const issueAuthToken = async (payload: AuthUser, jwtSecret?: string, expiresInSeconds = 8 * 60 * 60) => {
+const normalizeUserPayload = (payload: Record<string, unknown>): AuthUser | null => {
+    const roles = Array.isArray(payload.roles) ? payload.roles.filter((value): value is string => typeof value === 'string') : [];
+    const scopes = typeof payload.scope === 'string'
+        ? payload.scope.split(' ').map((value) => value.trim()).filter(Boolean)
+        : [];
+
+    if (
+        payload.role !== 'admin'
+        || typeof payload.sub !== 'string'
+        || typeof payload.uid !== 'string'
+        || typeof payload.username !== 'string'
+    ) {
+        return null;
+    }
+
+    return {
+        userId: payload.uid,
+        sub: payload.sub,
+        username: payload.username,
+        role: 'admin',
+        roles,
+        scopes
+    };
+};
+
+const issueToken = async (
+    payload: AuthUser,
+    jwtSecret: string | undefined,
+    options: { expiresInSeconds: number; tokenType: 'access' | 'refresh' }
+) => {
     if (!jwtSecret) {
         throw new Error('Server misconfigured: missing JWT_SECRET');
     }
@@ -31,50 +60,48 @@ export const issueAuthToken = async (payload: AuthUser, jwtSecret?: string, expi
         uid: payload.userId,
         username: payload.username,
         roles: payload.roles,
-        scope: scopes
+        scope: scopes,
+        typ: options.tokenType
     })
         .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
         .setIssuer(JWT_ISSUER)
         .setAudience(JWT_AUDIENCE)
         .setJti(randomUUID())
         .setIssuedAt()
-        .setExpirationTime(`${expiresInSeconds}s`)
+        .setExpirationTime(`${options.expiresInSeconds}s`)
         .sign(getJwtSecret(jwtSecret));
 };
 
-const verifyAuthToken = async (token: string, secret: string): Promise<AuthUser | null> => {
+export const issueAuthToken = async (payload: AuthUser, jwtSecret?: string, expiresInSeconds = 8 * 60 * 60) => issueToken(payload, jwtSecret, {
+    expiresInSeconds,
+    tokenType: 'access'
+});
+
+export const issueRefreshToken = async (payload: AuthUser, jwtSecret?: string, rememberSession = false) => issueToken(payload, jwtSecret, {
+    expiresInSeconds: rememberSession ? 30 * 24 * 60 * 60 : 24 * 60 * 60,
+    tokenType: 'refresh'
+});
+
+const verifyToken = async (token: string, secret: string, expectedType: 'access' | 'refresh'): Promise<AuthUser | null> => {
     try {
         const { payload } = await jwtVerify(token, getJwtSecret(secret), {
             issuer: JWT_ISSUER,
             audience: JWT_AUDIENCE
         });
 
-        const roles = Array.isArray(payload.roles) ? payload.roles.filter((value): value is string => typeof value === 'string') : [];
-        const scopes = typeof payload.scope === 'string'
-            ? payload.scope.split(' ').map((value) => value.trim()).filter(Boolean)
-            : [];
-
-        if (
-            payload.role !== 'admin'
-            || typeof payload.sub !== 'string'
-            || typeof payload.uid !== 'string'
-            || typeof payload.username !== 'string'
-        ) {
+        if (payload.typ !== expectedType) {
             return null;
         }
 
-        return {
-            userId: payload.uid,
-            sub: payload.sub,
-            username: payload.username,
-            role: 'admin',
-            roles,
-            scopes
-        };
+        return normalizeUserPayload(payload as Record<string, unknown>);
     } catch {
         return null;
     }
 };
+
+const verifyAuthToken = async (token: string, secret: string) => verifyToken(token, secret, 'access');
+
+export const verifyRefreshToken = async (token: string, secret: string) => verifyToken(token, secret, 'refresh');
 
 export const requireAuthToken = (jwtSecret?: string) => async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.header('authorization');
