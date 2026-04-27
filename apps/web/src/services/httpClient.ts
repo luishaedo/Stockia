@@ -11,10 +11,9 @@ if (isProduction && !envApiUrl) {
     throw new Error('Missing VITE_API_URL environment variable in production');
 }
 
-const ACCESS_TOKEN_KEY = 'stockia.accessToken';
-
-const getStoredAccessToken = () => window.sessionStorage.getItem(ACCESS_TOKEN_KEY);
+let inMemoryAccessToken: string | null = null;
 const emitAuthChanged = () => window.dispatchEvent(new Event('stockia-auth-changed'));
+const emitSessionExpired = () => window.dispatchEvent(new Event('stockia-auth-session-expired'));
 
 export class ApiError extends Error {
     code: string;
@@ -69,45 +68,109 @@ const parseErrorPayload = async (response: Response, fallback: string): Promise<
     return new ApiError(getDefaultMessage(response.status, fallback), ErrorCodes.BAD_REQUEST, response.status);
 };
 
+const parseTokenExpiration = (token: string): number | null => {
+    try {
+        const [, payload] = token.split('.');
+        if (!payload) return null;
+        const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = JSON.parse(window.atob(normalized));
+        if (typeof decoded.exp !== 'number') return null;
+        return decoded.exp;
+    } catch {
+        return null;
+    }
+};
+
+const isTokenValidForRequest = (token: string): boolean => {
+    const exp = parseTokenExpiration(token);
+    if (!exp) {
+        return false;
+    }
+
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    return exp - nowInSeconds > 30;
+};
+
 export const authTokenStore = {
     get() {
-        return getStoredAccessToken();
+        return inMemoryAccessToken;
     },
     set(token: string) {
-        window.sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
+        inMemoryAccessToken = token;
         emitAuthChanged();
     },
     clear() {
-        window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+        inMemoryAccessToken = null;
         emitAuthChanged();
     }
 };
 
 export class HttpClient {
     private baseURL = apiURL;
+    private refreshPromise: Promise<string | null> | null = null;
 
-    private getAccessTokenOrThrow() {
-        const accessToken = getStoredAccessToken();
-        if (!accessToken) {
+    private async requestRefreshToken(): Promise<string | null> {
+        if (this.refreshPromise) {
+            return this.refreshPromise;
+        }
+
+        this.refreshPromise = (async () => {
+            const response = await fetch(`${this.baseURL}/auth/refresh`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                authTokenStore.clear();
+                return null;
+            }
+
+            const data = await response.json() as { accessToken?: string };
+            if (!data.accessToken) {
+                authTokenStore.clear();
+                return null;
+            }
+
+            authTokenStore.set(data.accessToken);
+            return data.accessToken;
+        })();
+
+        try {
+            return await this.refreshPromise;
+        } finally {
+            this.refreshPromise = null;
+        }
+    }
+
+    private async ensureAccessToken() {
+        const currentToken = authTokenStore.get();
+        if (currentToken && isTokenValidForRequest(currentToken)) {
+            return currentToken;
+        }
+
+        const refreshedToken = await this.requestRefreshToken();
+        if (!refreshedToken) {
+            emitSessionExpired();
             throw new ApiError('Se requiere autenticación', ErrorCodes.AUTH_TOKEN_MISSING, 401);
         }
-        return accessToken;
+
+        return refreshedToken;
     }
 
     async getAuthHeaders() {
+        const accessToken = await this.ensureAccessToken();
         return {
             'Content-Type': 'application/json',
-            authorization: `Bearer ${this.getAccessTokenOrThrow()}`
+            authorization: `Bearer ${accessToken}`
         };
     }
 
-    getAccessTokenHeader() {
-        return { authorization: `Bearer ${this.getAccessTokenOrThrow()}` };
-    }
-
     getOptionalAccessTokenHeader(): Record<string, string> {
-        const accessToken = getStoredAccessToken();
-        if (!accessToken) {
+        const accessToken = authTokenStore.get();
+        if (!accessToken || !isTokenValidForRequest(accessToken)) {
             return {};
         }
 
@@ -119,8 +182,9 @@ export class HttpClient {
 
         const parsed = await parseErrorPayload(response, fallback);
 
-        if (parsed.code === ErrorCodes.AUTH_TOKEN_INVALID || parsed.code === ErrorCodes.AUTH_TOKEN_MISSING) {
+        if (parsed.code === ErrorCodes.AUTH_TOKEN_INVALID || parsed.code === ErrorCodes.AUTH_TOKEN_MISSING || parsed.status === 401 || parsed.status === 403) {
             authTokenStore.clear();
+            emitSessionExpired();
         }
 
         throw parsed;

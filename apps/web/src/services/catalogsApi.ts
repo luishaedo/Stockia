@@ -94,7 +94,7 @@ export class CatalogsApiService {
         const path = `/admin/catalogs/${catalog}`;
         try {
             const response = await fetch(`${this.client.getBaseURL()}${path}`, {
-                headers: this.client.getAccessTokenHeader()
+                headers: await this.client.getAuthHeaders()
             });
             await this.client.assertOk(response, 'No pudimos cargar el catálogo');
             return response.json();
@@ -117,7 +117,7 @@ export class CatalogsApiService {
         const path = `/admin/catalogs/${catalog}`;
         try {
             const response = await fetch(`${this.client.getBaseURL()}${path}`, {
-                headers: this.client.getAccessTokenHeader()
+                headers: await this.client.getAuthHeaders()
             });
             await this.client.assertOk(response, 'No pudimos cargar el catálogo');
             const data = await response.json() as T;
@@ -212,7 +212,7 @@ export class CatalogsApiService {
         try {
             const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 method: 'DELETE',
-                headers: this.client.getAccessTokenHeader()
+                headers: await this.client.getAuthHeaders()
             });
             await this.client.assertOk(response, 'No pudimos eliminar color del proveedor');
             this.invalidateCatalogCache('suppliers');
@@ -258,7 +258,7 @@ export class CatalogsApiService {
         try {
             const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 method: 'DELETE',
-                headers: this.client.getAccessTokenHeader()
+                headers: await this.client.getAuthHeaders()
             });
             await this.client.assertOk(response, 'No pudimos eliminar el registro');
             this.invalidateCatalogCache(catalog);
@@ -271,7 +271,7 @@ export class CatalogsApiService {
         const path = `/admin/catalogs/quick-curves?sizeCurveId=${encodeURIComponent(sizeCurveId)}`;
         try {
             const response = await fetch(`${this.client.getBaseURL()}${path}`, {
-                headers: this.client.getAccessTokenHeader()
+                headers: await this.client.getAuthHeaders()
             });
             await this.client.assertOk(response, 'No pudimos cargar las curvas rápidas');
             return response.json() as Promise<QuickCurveRecord[]>;
@@ -315,7 +315,7 @@ export class CatalogsApiService {
         try {
             const response = await fetch(`${this.client.getBaseURL()}${path}`, {
                 method: 'DELETE',
-                headers: this.client.getAccessTokenHeader()
+                headers: await this.client.getAuthHeaders()
             });
             await this.client.assertOk(response, 'No pudimos eliminar la curva rápida');
         } catch (error) {

@@ -14,7 +14,7 @@ export class AdminApiService {
         if (filters.search) params.append('search', filters.search);
 
         const response = await fetch(`${this.client.getBaseURL()}/admin/invoices?${params.toString()}`, {
-            headers: this.client.getAccessTokenHeader()
+            headers: await this.client.getAuthHeaders()
         });
         await this.client.assertOk(response, 'No pudimos cargar el panel de facturas admin');
         return response.json();
@@ -27,7 +27,7 @@ export class AdminApiService {
         if (filters.search) params.append('search', filters.search);
 
         const response = await fetch(`${this.client.getBaseURL()}/admin/invoice-users?${params.toString()}`, {
-            headers: this.client.getAccessTokenHeader()
+            headers: await this.client.getAuthHeaders()
         });
         await this.client.assertOk(response, 'No pudimos cargar usuarios de facturas admin');
         return response.json();
@@ -39,7 +39,7 @@ export class AdminApiService {
 
         const response = await fetch(`${this.client.getBaseURL()}/admin/uploads/logo`, {
             method: 'POST',
-            headers: this.client.getAccessTokenHeader(),
+            headers: await this.client.getAuthHeaders(),
             body: formData
         });
         await this.client.assertOk(response, 'No pudimos subir el logo');
@@ -49,7 +49,7 @@ export class AdminApiService {
     async deleteAdminInvoice(id: string): Promise<void> {
         const response = await fetch(`${this.client.getBaseURL()}/admin/invoices/${id}`, {
             method: 'DELETE',
-            headers: this.client.getAccessTokenHeader()
+            headers: await this.client.getAuthHeaders()
         });
         await this.client.assertOk(response, 'No pudimos eliminar la factura');
     }
@@ -57,7 +57,7 @@ export class AdminApiService {
     async exportAdminInvoice(id: string) {
         const response = await fetch(`${this.client.getBaseURL()}/admin/invoices/${id}/export`, {
             method: 'PATCH',
-            headers: this.client.getAccessTokenHeader()
+            headers: await this.client.getAuthHeaders()
         });
         await this.client.assertOk(response, 'No pudimos exportar la factura');
         return response.json();

@@ -225,3 +225,19 @@
     display: none;
   }
 }
+
+.authToast {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 410px;
+  background: rgba(30, 41, 59, 0.96);
+  color: #f8fafc;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.85rem;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
+  z-index: 40;
+}

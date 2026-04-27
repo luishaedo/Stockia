@@ -125,3 +125,15 @@
     gap: 16px;
   }
 }
+
+.rememberMe {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  font-size: 0.85rem;
+}
+
+.rememberMe input {
+  accent-color: #4f46e5;
+}
