@@ -14,19 +14,11 @@ const formatVariantQuantities = (variant: InvoiceLineVariant) => Object.entries(
     .filter(([, qty]) => Number(qty) > 0)
     .map(([size, qty]) => ({ size, qty }));
 
-const getVisibleCurveSizes = (line: InvoiceLine) => {
-    const sizesWithQty = new Set<string>();
-
-    line.variants.forEach((variant) => {
-        Object.entries(variant.cantidadesPorTalle).forEach(([size, qty]) => {
-            if (Number(qty) > 0) {
-                sizesWithQty.add(size);
-            }
-        });
-    });
-
-    return line.curvaTalles.filter((size) => sizesWithQty.has(size));
-};
+const getLineSubtotal = (line: InvoiceLine) => line.variants.reduce(
+    (lineTotal, variant) => lineTotal + Object.values(variant.cantidadesPorTalle)
+        .reduce((variantTotal, qty) => variantTotal + Number(qty), 0),
+    0
+);
 
 export function SearchFacturasPage() {
     const navigate = useNavigate();
@@ -173,26 +165,13 @@ export function SearchFacturasPage() {
 
                                 <div className={styles.lineList}>
                                     {invoice.lines.map((line) => {
-                                        const visibleCurveSizes = getVisibleCurveSizes(line);
+                                        const lineSubtotal = getLineSubtotal(line);
 
                                         return (
                                             <article key={line.itemId} className={styles.lineCard}>
                                                 <div className={styles.lineHeader}>
                                                     <strong>{line.codigoArticulo}</strong>
                                                     <span>{line.description}</span>
-                                                </div>
-
-                                                <div className={styles.curveBlock}>
-                                                    <p className={styles.curveLabel}>Curva cargada</p>
-                                                    {visibleCurveSizes.length === 0 ? (
-                                                        <p className={styles.emptyCurveText}>Sin talles con cantidad cargada.</p>
-                                                    ) : (
-                                                        <div className={styles.chipsWrap}>
-                                                            {visibleCurveSizes.map((size) => (
-                                                                <span key={`${line.itemId}-${size}`} className={styles.sizeChip}>{size}</span>
-                                                            ))}
-                                                        </div>
-                                                    )}
                                                 </div>
 
                                                 <div className={styles.variantList}>
@@ -209,6 +188,8 @@ export function SearchFacturasPage() {
                                                         </div>
                                                     ))}
                                                 </div>
+
+                                                <p className={styles.lineSubtotal}>Subtotal: {lineSubtotal}</p>
                                             </article>
                                         );
                                     })}
