@@ -34,18 +34,13 @@
 .lineHeader strong { color: #0f172a; }
 .lineHeader span { color: #64748b; font-size: .85rem; }
 
-.curveBlock { display: grid; gap: 8px; }
-.curveLabel { margin: 0; font-size: .8rem; color: #6366f1; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.emptyCurveText { margin: 0; color: #64748b; font-size: .85rem; }
-
 .variantList { display: grid; gap: 8px; }
 .variantCard { border: 1px dashed #d1d5db; border-radius: 12px; padding: 10px; background: #f8fafc; display: grid; gap: 8px; }
 .variantTitle { margin: 0; color: #334155; font-size: .86rem; font-weight: 600; }
+.lineSubtotal { margin: 0; color: #1e1b4b; font-size: .86rem; font-weight: 700; }
 
 .chipsWrap { display: flex; flex-wrap: wrap; gap: 8px; }
-.sizeChip,
 .quantityChip { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: .8rem; font-weight: 600; }
-.sizeChip { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
 .quantityChip { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
 
 .badgeDraft,.badgeFinal { border-radius:999px; padding:3px 10px; font-size:.72rem; }
