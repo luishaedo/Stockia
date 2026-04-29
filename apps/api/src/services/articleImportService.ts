@@ -142,6 +142,7 @@ const normalizeHeader = (header: unknown) => String(header ?? '').trim().toLower
 const normalizeHeaderAlias = (header: unknown) => normalizeHeader(header).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const normalizeText = (value: unknown) => String(value ?? '').trim();
 
+
 const sameLabel = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 const buildCatalogMaps = async (prisma: PrismaClient) => {
@@ -436,11 +437,11 @@ export class ArticleImportService {
                 sku: row.sku,
                 description: row.description,
                 supplierId: resolutions.supplier.catalogId ?? '',
-                familyId: resolutions.family.catalogId ?? undefined,
-                materialId: resolutions.material.catalogId ?? undefined,
-                categoryId: resolutions.category.catalogId ?? undefined,
-                classificationId: resolutions.classification.catalogId ?? undefined,
-                garmentTypeId: resolutions.garmentType.catalogId ?? undefined,
+                familyId: resolutions.family.catalogId ?? defaultCatalogIds.family ?? '',
+                materialId: resolutions.material.catalogId ?? defaultCatalogIds.material ?? '',
+                categoryId: resolutions.category.catalogId ?? defaultCatalogIds.category ?? '',
+                classificationId: resolutions.classification.catalogId ?? defaultCatalogIds.classification ?? '',
+                garmentTypeId: resolutions.garmentType.catalogId ?? defaultCatalogIds.garmentType ?? '',
                 sizeCurveId: resolutions.sizeCurve.catalogId ?? ''
             });
 
