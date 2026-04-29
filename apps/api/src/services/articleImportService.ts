@@ -446,7 +446,24 @@ export class ArticleImportService {
             });
 
             if (!payloadValidation.success) {
-                errors.push('El payload no cumple las reglas de validación para crear artículos');
+                const issues = payloadValidation.error.issues.map((issue: { path: PropertyKey[]; message: string }) => ({
+                    field: issue.path[0],
+                    message: issue.message
+                }));
+
+                const blockingIssues = issues.filter((issue: { field: PropertyKey | undefined; message: string }) => issue.field === 'sku'
+                    || issue.field === 'description'
+                    || issue.field === 'supplierId'
+                    || issue.field === 'sizeCurveId');
+
+                if (blockingIssues.length > 0) {
+                    errors.push('El payload no cumple las reglas de validación para crear artículos');
+                    blockingIssues.forEach((issue: { field: PropertyKey | undefined; message: string }) => {
+                        errors.push(`Campo inválido (${String(issue.field)}): ${issue.message}`);
+                    });
+                } else {
+                    warnings.push('Se detectaron ajustes automáticos de catálogo en el payload.');
+                }
             }
 
             const importable = errors.length === 0;
