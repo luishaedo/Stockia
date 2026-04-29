@@ -92,6 +92,17 @@ const validateCatalogReferences = async (prisma: PrismaClient, payload: {
 };
 
 
+
+const normalizeOptionalArticleCatalogIds = (payload: Record<string, unknown>) => {
+    const normalized = { ...payload };
+    for (const key of ['familyId', 'materialId', 'categoryId', 'classificationId', 'garmentTypeId'] as const) {
+        if (typeof normalized[key] === 'string' && normalized[key].trim() === '') {
+            delete normalized[key];
+        }
+    }
+    return normalized;
+};
+
 export const createArticleRoutes = (
     prisma: PrismaClient,
     requireAuth: RequestHandler,
@@ -334,7 +345,8 @@ export const createArticleRoutes = (
     });
 
     router.post('/articles', writeRateLimitMiddleware, requireAuth, async (req, res) => {
-        const validation = CreateArticleSchema.safeParse(req.body);
+        const normalizedBody = normalizeOptionalArticleCatalogIds(req.body as Record<string, unknown>);
+        const validation = CreateArticleSchema.safeParse(normalizedBody);
         if (!validation.success) {
             return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'Validation Failed', validation.error.format(), req.traceId);
         }
