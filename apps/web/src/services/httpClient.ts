@@ -168,6 +168,13 @@ export class HttpClient {
         };
     }
 
+    async getAuthHeader() {
+        const accessToken = await this.ensureAccessToken();
+        return {
+            authorization: `Bearer ${accessToken}`
+        };
+    }
+
     getOptionalAccessTokenHeader(): Record<string, string> {
         const accessToken = authTokenStore.get();
         if (!accessToken || !isTokenValidForRequest(accessToken)) {
