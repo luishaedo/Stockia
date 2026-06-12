@@ -182,6 +182,15 @@ const getSafeErrorDetails = (error: unknown) => {
 };
 
 const mapQuickCurvesWriteError = (error: unknown): { status: number; code: string; message: string } => {
+    const prismaError = error as { code?: string };
+    if (prismaError?.code === 'P2021' || prismaError?.code === 'P2022') {
+        return {
+            status: 503,
+            code: ErrorCodes.QUICK_CURVES_SCHEMA_NOT_READY,
+            message: 'Quick curves catalog is not ready yet. Please run pending database migrations'
+        };
+    }
+
     const mapped = mapCatalogWriteError(error);
     if (mapped.status !== 500 || mapped.code !== ErrorCodes.INTERNAL_SERVER_ERROR) {
         return mapped;
@@ -189,7 +198,7 @@ const mapQuickCurvesWriteError = (error: unknown): { status: number; code: strin
 
     return {
         status: 500,
-        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        code: ErrorCodes.QUICK_CURVES_WRITE_FAILED,
         message: 'Unexpected error while processing quick curve'
     };
 };
@@ -215,15 +224,15 @@ const mapQuickCurvesReadError = (error: unknown): { status: number; code: string
     if (prismaError?.code === 'P2021' || prismaError?.code === 'P2022') {
         return {
             status: 503,
-            code: ErrorCodes.INTERNAL_SERVER_ERROR,
+            code: ErrorCodes.QUICK_CURVES_SCHEMA_NOT_READY,
             message: 'Quick curves catalog is not ready yet. Please run pending database migrations'
         };
     }
 
     return {
         status: 500,
-        code: ErrorCodes.INTERNAL_SERVER_ERROR,
-        message: 'Failed to load quick curves'
+        code: ErrorCodes.QUICK_CURVES_READ_FAILED,
+        message: 'Unexpected error while loading quick curves'
     };
 };
 
