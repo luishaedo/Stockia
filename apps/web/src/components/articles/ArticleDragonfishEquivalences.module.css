@@ -1,0 +1,87 @@
+.section {
+  border-top: 1px solid #d6deea;
+  padding-top: var(--space-2);
+  display: grid;
+  gap: var(--space-1-5);
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: #0f766e;
+}
+
+.heading h3,
+.heading p { margin: 0; }
+.heading h3 { font-size: 1rem; color: #0f172a; }
+.heading p { margin-top: 3px; color: #64748b; font-size: 0.82rem; }
+
+.createRow {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(180px, 1fr) auto;
+  gap: var(--space-1);
+}
+
+.createRow select,
+.createRow input,
+.editActions input {
+  min-height: var(--control-height);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-1);
+  min-width: 0;
+  background: #fff;
+}
+
+.createRow button {
+  min-height: var(--control-height);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: #0f766e;
+  color: #fff;
+  padding: 0 var(--space-1-5);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.list { display: grid; gap: 6px; }
+.item {
+  min-height: 48px;
+  border: 1px solid #dbe4ee;
+  border-radius: var(--radius-control);
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+.item > div:first-child { display: grid; gap: 2px; min-width: 0; }
+.item strong { font-size: 0.82rem; color: #334155; }
+.item span { color: #0f172a; font-weight: 700; overflow-wrap: anywhere; }
+.actions, .editActions { display: flex; align-items: center; gap: 5px; }
+.actions button, .editActions button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: #334155;
+  display: grid;
+  place-items: center;
+}
+.editActions input { width: min(220px, 34vw); }
+.muted, .error, .success { margin: 0; font-size: 0.82rem; }
+.muted { color: #64748b; }
+.error { color: #b91c1c; }
+.success { color: #0f766e; }
+
+@media (max-width: 640px) {
+  .createRow { grid-template-columns: 1fr; }
+  .createRow button { justify-content: center; }
+  .item { align-items: flex-start; flex-direction: column; }
+  .actions, .editActions { width: 100%; justify-content: flex-end; }
+  .editActions input { width: 100%; }
+}

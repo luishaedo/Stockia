@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Factura, FacturaEstado, FacturaItem } from '@stockia/shared';
+import { ErrorCodes, Factura, FacturaEstado, FacturaItem } from '@stockia/shared';
 import { Loader2, ArrowLeft, CheckCircle, Download, PencilLine, Trash2, Link2, X } from 'lucide-react';
 import { useFactura } from '../context/FacturaContext';
 import { api, ApiError } from '../services/api';
@@ -9,6 +9,8 @@ import { Card } from '../components/ui/Card';
 import { ArticleResponse } from '../services/articlesApi';
 import { ArticleDraftForm, MasterArticleResolver, SupplierOption } from '../features/wizard/MasterArticleResolver';
 import styles from './FacturaSummary.module.css';
+import { MissingDragonfishEquivalencesModal } from '../components/dragonfish/MissingDragonfishEquivalencesModal';
+import { MissingDragonfishEquivalence } from '../services/dragonfishApi';
 
 const formatNumber = (value: number) => new Intl.NumberFormat('es-AR').format(value);
 const getEstadoLabel = (estado: string) => (estado === 'FINAL' ? 'Final' : 'Borrador');
@@ -57,53 +59,6 @@ function exportToCSV(factura: Factura) {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `factura_${factura.nroFactura}_${Date.now()}.csv`;
-    link.click();
-}
-
-const sanitizeFileNamePart = (value: string) => value
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-zA-Z0-9-_]/g, '');
-
-const formatDatePart = (value: Date | string) => {
-    const date = new Date(value);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}${month}${day}`;
-};
-
-function exportToTXT(factura: Factura) {
-    const lines: string[] = [];
-
-    factura.items.forEach(item => {
-        item.colores.forEach(color => {
-            const isNoColorVariant = color.codigoColor === '$' && color.nombreColor?.trim().toUpperCase() === 'SIN COLOR';
-            const skuAndColor = isNoColorVariant ? item.codigoArticulo : `${item.codigoArticulo}${color.codigoColor}`;
-
-            Object.entries(color.cantidadesPorTalle).forEach(([size, quantity]) => {
-                const numericQuantity = Number(quantity);
-                if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
-                    return;
-                }
-
-                for (let i = 0; i < numericQuantity; i += 1) {
-                    lines.push(`${skuAndColor}!!${size}`);
-                }
-            });
-        });
-    });
-
-    const providerPart = sanitizeFileNamePart(factura.proveedor || 'UnknownProvider');
-    const creationDatePart = formatDatePart(factura.createdAt);
-    const invoiceNumberPart = sanitizeFileNamePart(factura.nroFactura);
-    const fileName = `${providerPart}-${creationDatePart}-${invoiceNumberPart}.txt`;
-
-    const txtContent = `${lines.join('\n')}${lines.length > 0 ? '\n' : ''}`;
-    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
     link.click();
 }
 
@@ -173,6 +128,8 @@ export function FacturaSummary() {
     const [sizeCurveOptions, setSizeCurveOptions] = useState<SizeCurveOption[]>([]);
     const [catalogsLoading, setCatalogsLoading] = useState(false);
     const [catalogsError, setCatalogsError] = useState<string | null>(null);
+    const [exportingDragonfish, setExportingDragonfish] = useState(false);
+    const [missingDragonfish, setMissingDragonfish] = useState<MissingDragonfishEquivalence[] | null>(null);
 
     const currentFacturaId = state.currentFactura?.id;
 
@@ -233,6 +190,35 @@ export function FacturaSummary() {
     }, [state.currentFactura]);
 
     const resetFeedback = () => setFeedback(null);
+
+    const handleDragonfishExport = async () => {
+        if (!id) return;
+        setExportingDragonfish(true);
+        setFeedback(null);
+        try {
+            const result = await api.downloadDragonfishInvoiceExport(id);
+            const url = URL.createObjectURL(result.blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = result.fileName;
+            link.click();
+            URL.revokeObjectURL(url);
+            setMissingDragonfish(null);
+            setFeedback({ type: 'success', message: 'TXT Dragonfish generado correctamente.' });
+        } catch (error) {
+            if (error instanceof ApiError && error.code === ErrorCodes.DRAGONFISH_EQUIVALENCES_MISSING) {
+                const details = error.details as { missing?: MissingDragonfishEquivalence[] } | undefined;
+                setMissingDragonfish(details?.missing || []);
+                return;
+            }
+            setFeedback({
+                type: 'error',
+                message: error instanceof ApiError ? error.message : 'No pudimos generar el TXT Dragonfish.'
+            });
+        } finally {
+            setExportingDragonfish(false);
+        }
+    };
 
     const handleFinalize = async () => {
         if (!id || !state.currentFactura) return;
@@ -673,8 +659,8 @@ export function FacturaSummary() {
                         <Button variant="secondary" onClick={() => exportToCSV(factura)} className={styles.actionButton} icon={<Download size={16} />}>
                             Exportar CSV
                         </Button>
-                        <Button variant="secondary" onClick={() => exportToTXT(factura)} className={styles.actionButton} icon={<Download size={16} />}>
-                            Exportar TXT
+                        <Button variant="secondary" onClick={() => void handleDragonfishExport()} isLoading={exportingDragonfish} className={styles.actionButton} icon={<Download size={16} />}>
+                            Exportar TXT Dragonfish
                         </Button>
                     </div>
                 </div>
@@ -923,6 +909,13 @@ export function FacturaSummary() {
                         </div>
                     </div>
                 </div>
+            )}
+            {missingDragonfish && (
+                <MissingDragonfishEquivalencesModal
+                    missing={missingDragonfish}
+                    onClose={() => setMissingDragonfish(null)}
+                    onRetry={handleDragonfishExport}
+                />
             )}
         </div>
     );

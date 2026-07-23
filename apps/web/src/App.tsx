@@ -12,6 +12,7 @@ import { AdminCatalogPage } from './pages/AdminCatalogPage';
 import { AdminInvoicesPage } from './pages/AdminInvoicesPage';
 import { ArticlesPage } from './pages/ArticlesPage';
 import { SearchFacturasPage } from './pages/SearchFacturasPage';
+import { DragonfishEquivalencesPage } from './pages/DragonfishEquivalencesPage';
 import './index.css';
 
 function App() {
@@ -59,6 +60,14 @@ function App() {
                                 element={<FacturaSummary />}
                             />
                             <Route path="/articulos" element={<ArticlesPage />} />
+                            <Route
+                                path="/equivalencias-dragonfish"
+                                element={(
+                                    <ProtectedRoute>
+                                        <DragonfishEquivalencesPage />
+                                    </ProtectedRoute>
+                                )}
+                            />
                             <Route path="/buscar" element={<SearchFacturasPage />} />
                         </Routes>
                     </MainLayout>

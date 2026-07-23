@@ -162,6 +162,7 @@ model Article {
   baseArticle      Article?       @relation("ArticleVariant", fields: [baseArticleId], references: [id])
   variants         Article[]      @relation("ArticleVariant")
   facturaItems     FacturaItem[]
+  dragonfishEquivalences DragonfishEquivalence[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -174,6 +175,21 @@ model Article {
   @@index([classificationId])
   @@index([garmentTypeId])
   @@index([sizeCurveId])
+}
+
+model DragonfishEquivalence {
+  id             String   @id @default(uuid())
+  articleId      String
+  article        Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  colorCode      String
+  dragonfishCode String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([articleId, colorCode])
+  @@index([articleId])
+  @@index([colorCode])
+  @@index([updatedAt])
 }
 
 model FacturaItemColor {

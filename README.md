@@ -118,6 +118,7 @@ npm run dev -w web
 ## Guías de importación
 
 - Formato y reglas de validación para importación masiva de artículos: `docs/article-import-format.md`.
+- Equivalencias, exportación e importación masiva Dragonfish: `docs/dragonfish-equivalences.md`.
 
 ## Production readiness
 

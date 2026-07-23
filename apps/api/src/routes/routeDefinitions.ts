@@ -32,7 +32,13 @@ export type RouteDefinition = {
         | '/admin/articles/import/commit'
         | '/admin/articles/import/batch'
         | '/admin/articles/import/template'
-        | '/admin/articles/import/readiness';
+        | '/admin/articles/import/readiness'
+        | '/dragonfish-equivalences'
+        | '/dragonfish-equivalences/:id'
+        | '/dragonfish-equivalences/import/template'
+        | '/dragonfish-equivalences/import/preview'
+        | '/dragonfish-equivalences/import/commit'
+        | '/facturas/:id/dragonfish-export';
     requiresAdminToken: boolean;
 };
 
@@ -77,7 +83,15 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/batch', requiresAdminToken: true },
     { method: 'GET', path: '/admin/articles/import/template', requiresAdminToken: true },
-    { method: 'GET', path: '/admin/articles/import/readiness', requiresAdminToken: true }
+    { method: 'GET', path: '/admin/articles/import/readiness', requiresAdminToken: true },
+    { method: 'GET', path: '/dragonfish-equivalences', requiresAdminToken: true },
+    { method: 'POST', path: '/dragonfish-equivalences', requiresAdminToken: true },
+    { method: 'PUT', path: '/dragonfish-equivalences/:id', requiresAdminToken: true },
+    { method: 'DELETE', path: '/dragonfish-equivalences/:id', requiresAdminToken: true },
+    { method: 'GET', path: '/dragonfish-equivalences/import/template', requiresAdminToken: true },
+    { method: 'POST', path: '/dragonfish-equivalences/import/preview', requiresAdminToken: true },
+    { method: 'POST', path: '/dragonfish-equivalences/import/commit', requiresAdminToken: true },
+    { method: 'GET', path: '/facturas/:id/dragonfish-export', requiresAdminToken: true }
 ];
 
 export const toRouteKey = (method: RouteDefinition['method'], path: RouteDefinition['path']) => `${method} ${path}`;

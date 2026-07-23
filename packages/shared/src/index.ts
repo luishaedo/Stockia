@@ -210,6 +210,30 @@ export const UpdateSupplierColorSchema = z.object({
     message: 'At least one field (code, value, isDefault) must be provided'
 });
 
+export const DragonfishEquivalenceQuerySchema = z.object({
+    supplierId: z.string().min(1).optional(),
+    articleId: z.string().min(1).optional(),
+    q: z.string().trim().optional(),
+    status: z.enum(['all', 'mapped', 'pending']).default('all'),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(200).default(50)
+});
+
+export const CreateDragonfishEquivalenceSchema = z.object({
+    articleId: z.string().min(1),
+    colorCode: z.string().optional(),
+    dragonfishCode: z.string().min(1)
+});
+
+export const UpdateDragonfishEquivalenceSchema = z.object({
+    dragonfishCode: z.string().min(1)
+});
+
+export const CommitDragonfishImportSchema = z.object({
+    previewId: z.string().min(1),
+    rowNumbers: z.array(z.number().int().min(2)).optional()
+});
+
 export const AdminInvoicesQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
@@ -347,6 +371,10 @@ export type SupplierColorDTO = z.infer<typeof SupplierColorSchema>;
 export type SupplierColorListResponse = z.infer<typeof SupplierColorListResponseSchema>;
 export type CreateSupplierColorDTO = z.infer<typeof CreateSupplierColorSchema>;
 export type UpdateSupplierColorDTO = z.infer<typeof UpdateSupplierColorSchema>;
+export type DragonfishEquivalenceQuery = z.infer<typeof DragonfishEquivalenceQuerySchema>;
+export type CreateDragonfishEquivalenceDTO = z.infer<typeof CreateDragonfishEquivalenceSchema>;
+export type UpdateDragonfishEquivalenceDTO = z.infer<typeof UpdateDragonfishEquivalenceSchema>;
+export type CommitDragonfishImportDTO = z.infer<typeof CommitDragonfishImportSchema>;
 
 export interface Factura {
     id: string;
@@ -435,7 +463,15 @@ export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'POST', path: '/admin/articles/import/commit', requiresAdminToken: true },
     { method: 'POST', path: '/admin/articles/import/batch', requiresAdminToken: true },
     { method: 'GET', path: '/admin/articles/import/template', requiresAdminToken: true },
-    { method: 'GET', path: '/admin/articles/import/readiness', requiresAdminToken: true }
+    { method: 'GET', path: '/admin/articles/import/readiness', requiresAdminToken: true },
+    { method: 'GET', path: '/dragonfish-equivalences', requiresAdminToken: true },
+    { method: 'POST', path: '/dragonfish-equivalences', requiresAdminToken: true },
+    { method: 'PUT', path: '/dragonfish-equivalences/:id', requiresAdminToken: true },
+    { method: 'DELETE', path: '/dragonfish-equivalences/:id', requiresAdminToken: true },
+    { method: 'GET', path: '/dragonfish-equivalences/import/template', requiresAdminToken: true },
+    { method: 'POST', path: '/dragonfish-equivalences/import/preview', requiresAdminToken: true },
+    { method: 'POST', path: '/dragonfish-equivalences/import/commit', requiresAdminToken: true },
+    { method: 'GET', path: '/facturas/:id/dragonfish-export', requiresAdminToken: true }
 ];
 
 export type FacturaListResponse = PaginatedResponse<Factura>;
@@ -457,6 +493,7 @@ export const ErrorCodes = {
     BAD_REQUEST: 'BAD_REQUEST',
     UNIQUE_CONSTRAINT_VIOLATION: 'UNIQUE_CONSTRAINT_VIOLATION',
     INVOICE_ALREADY_FINALIZED: 'INVOICE_ALREADY_FINALIZED',
+    DRAGONFISH_EQUIVALENCES_MISSING: 'DRAGONFISH_EQUIVALENCES_MISSING',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

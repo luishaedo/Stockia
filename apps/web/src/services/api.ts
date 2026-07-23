@@ -3,6 +3,7 @@ import { FacturasApiService } from './facturasApi';
 import { AdminApiService } from './adminApi';
 import { CatalogsApiService } from './catalogsApi';
 import { ArticlesApiService } from './articlesApi';
+import { DragonfishApiService } from './dragonfishApi';
 import { ApiError, authTokenStore, HttpClient } from './httpClient';
 export type { QuickCurveRecord, SupplierColorRecord } from './catalogsApi';
 
@@ -17,6 +18,7 @@ class ApiFacade {
     private adminApi = new AdminApiService(client);
     private catalogsApi = new CatalogsApiService(client);
     private articlesApi = new ArticlesApiService(client);
+    private dragonfishApi = new DragonfishApiService(client);
 
     login = this.authApi.login.bind(this.authApi);
     restoreSession = this.authApi.restoreSession.bind(this.authApi);
@@ -64,6 +66,15 @@ class ApiFacade {
     downloadArticleImportTemplate = this.articlesApi.downloadArticleImportTemplate.bind(this.articlesApi);
     commitArticleImportBatch = this.articlesApi.commitArticleImportBatch.bind(this.articlesApi);
     commitArticleImport = this.articlesApi.commitArticleImport.bind(this.articlesApi);
+
+    listDragonfishEquivalences = this.dragonfishApi.listEquivalences.bind(this.dragonfishApi);
+    createDragonfishEquivalence = this.dragonfishApi.createEquivalence.bind(this.dragonfishApi);
+    updateDragonfishEquivalence = this.dragonfishApi.updateEquivalence.bind(this.dragonfishApi);
+    deleteDragonfishEquivalence = this.dragonfishApi.deleteEquivalence.bind(this.dragonfishApi);
+    downloadDragonfishImportTemplate = this.dragonfishApi.downloadImportTemplate.bind(this.dragonfishApi);
+    previewDragonfishImport = this.dragonfishApi.previewImport.bind(this.dragonfishApi);
+    commitDragonfishImport = this.dragonfishApi.commitImport.bind(this.dragonfishApi);
+    downloadDragonfishInvoiceExport = this.dragonfishApi.downloadInvoiceExport.bind(this.dragonfishApi);
 }
 
 export const api = new ApiFacade();

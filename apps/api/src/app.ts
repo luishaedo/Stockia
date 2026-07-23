@@ -22,6 +22,8 @@ import { FacturaRepository } from './repositories/facturaRepository.js';
 import { FacturaService } from './services/facturaService.js';
 import { FacturaController } from './controllers/facturaController.js';
 import { ArticleImportService } from './services/articleImportService.js';
+import { DragonfishEquivalenceService } from './services/dragonfishEquivalenceService.js';
+import { createDragonfishEquivalenceRoutes } from './routes/dragonfishEquivalenceRoutes.js';
 import { AuthService } from './services/authService.js';
 import { sendError } from './middlewares/error.js';
 import { getPrometheusMetrics } from './lib/metrics.js';
@@ -202,6 +204,7 @@ export const createApp = (prisma: PrismaClient) => {
     const service = new FacturaService(repository);
     const controller = new FacturaController(service);
     const articleImportService = new ArticleImportService(prisma);
+    const dragonfishEquivalenceService = new DragonfishEquivalenceService(prisma);
 
     const facturaRoutes = createFacturaRoutes(controller, authMiddleware, readRateLimitMiddleware, writeRateLimitMiddleware);
     const catalogSelectionRoutes = createCatalogSelectionRoutes(prisma, readRateLimitMiddleware);
@@ -214,6 +217,12 @@ export const createApp = (prisma: PrismaClient) => {
     );
     const adminUploadRoutes = createAdminUploadRoutes(authMiddleware, writeRateLimitMiddleware);
     const articleImportRoutes = createArticleImportRoutes(articleImportService, authMiddleware, writeRateLimitMiddleware);
+    const dragonfishEquivalenceRoutes = createDragonfishEquivalenceRoutes(
+        dragonfishEquivalenceService,
+        authMiddleware,
+        readRateLimitMiddleware,
+        writeRateLimitMiddleware
+    );
 
     app.use('/api', facturaRoutes);
     app.use('/api', catalogSelectionRoutes);
@@ -221,6 +230,7 @@ export const createApp = (prisma: PrismaClient) => {
     app.use('/api', adminCatalogRoutes);
     app.use('/api', adminUploadRoutes);
     app.use('/api', articleImportRoutes);
+    app.use('/api', dragonfishEquivalenceRoutes);
 
     app.use(legacyApiDeprecationMiddleware, facturaRoutes);
     app.use(legacyApiDeprecationMiddleware, catalogSelectionRoutes);
@@ -228,6 +238,7 @@ export const createApp = (prisma: PrismaClient) => {
     app.use(legacyApiDeprecationMiddleware, adminCatalogRoutes);
     app.use(legacyApiDeprecationMiddleware, adminUploadRoutes);
     app.use(legacyApiDeprecationMiddleware, articleImportRoutes);
+    app.use(legacyApiDeprecationMiddleware, dragonfishEquivalenceRoutes);
 
     return app;
 };

@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Link2 } from 'lucide-react';
 import { ApiError, api } from '../services/api';
 import { ArticleResponse, CloneArticlePayload, CreateArticlePayload, UpdateArticlePayload } from '../services/articlesApi';
 import { BulkArticlesModal } from '../components/articles/BulkArticlesModal';
+import { ArticleDragonfishEquivalences } from '../components/articles/ArticleDragonfishEquivalences';
 import styles from './ArticlesPage.module.css';
 
 type CatalogItem = {
@@ -311,6 +312,10 @@ export function ArticlesPage() {
             </header>
 
             <div className={styles.content}>
+                <button type="button" className={styles.dragonfishButton} onClick={() => navigate('/equivalencias-dragonfish')}>
+                    <Link2 size={18} />
+                    Administrar equivalencias Dragonfish
+                </button>
                 <form onSubmit={onSearch} className={styles.card}>
                     <div className={styles.cardHeader}>
                         <p className={styles.label}>Buscar artículos</p>
@@ -543,6 +548,7 @@ export function ArticlesPage() {
                                 {catalogs.sizeCurves.map((entry) => <option key={entry.id} value={entry.id}>{entry.code} - {getCatalogLabel(entry)}</option>)}
                             </select>
                         </div>
+                        <ArticleDragonfishEquivalences article={editingArticle} />
                         <div className={styles.modalActions}>
                             <button type="button" className={styles.secondaryButton} onClick={onCloseEditModal}>
                                 Cancelar

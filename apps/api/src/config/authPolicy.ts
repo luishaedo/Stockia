@@ -7,6 +7,8 @@ export type RouteAuthRule = {
 
 export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'GET /facturas': { requiresAdminToken: false },
+    'GET /invoices/by-article/:articleQuery': { requiresAdminToken: false },
+    'GET /facturas/by-article/:articleQuery': { requiresAdminToken: false },
     'DELETE /facturas/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'DELETE /admin/invoices/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'PATCH /admin/invoices/:id/export': { requiresAdminToken: true, requiredHeader: 'authorization' },
@@ -43,7 +45,16 @@ export const AUTH_POLICY: Record<string, RouteAuthRule> = {
     'POST /admin/articles/import/preview': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/articles/import/commit': { requiresAdminToken: true, requiredHeader: 'authorization' },
     'POST /admin/articles/import/batch': { requiresAdminToken: true, requiredHeader: 'authorization' },
-    'GET /admin/articles/import/template': { requiresAdminToken: true, requiredHeader: 'authorization' }
+    'GET /admin/articles/import/template': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /admin/articles/import/readiness': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /dragonfish-equivalences': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'POST /dragonfish-equivalences': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'PUT /dragonfish-equivalences/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'DELETE /dragonfish-equivalences/:id': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /dragonfish-equivalences/import/template': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'POST /dragonfish-equivalences/import/preview': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'POST /dragonfish-equivalences/import/commit': { requiresAdminToken: true, requiredHeader: 'authorization' },
+    'GET /facturas/:id/dragonfish-export': { requiresAdminToken: true, requiredHeader: 'authorization' }
 };
 
 export const assertAuthPolicyCoverage = () => {
