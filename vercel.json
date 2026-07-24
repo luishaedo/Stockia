@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install --include=dev --workspaces",
+  "installCommand": "npm ci --include=dev --workspaces --production=false",
   "buildCommand": "npm run build -w @stockia/shared && npm run build -w web",
   "outputDirectory": "apps/web/dist",
   "rewrites": [
