@@ -39,7 +39,8 @@ export const buildCorsMiddleware = () => {
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'authorization', 'x-request-id']
+        allowedHeaders: ['Content-Type', 'authorization', 'x-request-id'],
+        exposedHeaders: ['Content-Disposition']
     };
 
     return cors(corsOptions);

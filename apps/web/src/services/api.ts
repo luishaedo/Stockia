@@ -58,6 +58,7 @@ class ApiFacade {
     deleteQuickCurve = this.catalogsApi.deleteQuickCurve.bind(this.catalogsApi);
 
     searchArticles = this.articlesApi.searchArticles.bind(this.articlesApi);
+    downloadArticlesExport = this.articlesApi.downloadArticlesExport.bind(this.articlesApi);
     createArticle = this.articlesApi.createArticle.bind(this.articlesApi);
     cloneArticle = this.articlesApi.cloneArticle.bind(this.articlesApi);
     updateArticle = this.articlesApi.updateArticle.bind(this.articlesApi);

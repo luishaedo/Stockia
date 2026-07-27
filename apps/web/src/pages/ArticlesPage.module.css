@@ -53,6 +53,14 @@
   gap: var(--space-1-5);
 }
 
+.cardHeaderActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
 .row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -97,6 +105,10 @@
   margin-top: 0;
   width: auto;
   padding: 0 var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .label {

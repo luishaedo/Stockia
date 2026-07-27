@@ -156,6 +156,20 @@ export class ArticlesApiService {
         return checkedResponse.json() as Promise<{ items: ArticleResponse[] }>;
     }
 
+    async downloadArticlesExport(supplierId: string) {
+        const query = new URLSearchParams({ supplierId });
+        const path = `/articles/export?${query.toString()}`;
+        const response = await fetch(`${this.client.getBaseURL()}${path}`, {
+            headers: await this.client.getAuthHeaders()
+        });
+
+        const checkedResponse = await this.ensureArticlesRouteExists(response, '/articles/export');
+        await this.client.assertOk(checkedResponse, 'No pudimos exportar los artículos');
+        const disposition = checkedResponse.headers.get('content-disposition') || '';
+        const fileName = disposition.match(/filename="([^"]+)"/)?.[1] || 'articulos.csv';
+        return { blob: await checkedResponse.blob(), fileName };
+    }
+
     async createArticle(payload: CreateArticlePayload) {
         const path = '/articles';
         const response = await fetch(`${this.client.getBaseURL()}${path}`, {

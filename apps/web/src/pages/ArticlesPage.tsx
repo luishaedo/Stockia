@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Link2 } from 'lucide-react';
+import { ArrowLeft, Download, Link2 } from 'lucide-react';
 import { ApiError, api } from '../services/api';
 import { ArticleResponse, CloneArticlePayload, CreateArticlePayload, UpdateArticlePayload } from '../services/articlesApi';
 import { BulkArticlesModal } from '../components/articles/BulkArticlesModal';
@@ -76,6 +76,7 @@ export function ArticlesPage() {
     const [catalogs, setCatalogs] = useState<CatalogMap>(emptyCatalogs);
     const [loadingCatalogs, setLoadingCatalogs] = useState(false);
     const [loadingArticles, setLoadingArticles] = useState(false);
+    const [exportingArticles, setExportingArticles] = useState(false);
     const [savingArticle, setSavingArticle] = useState(false);
     const [cloningArticleId, setCloningArticleId] = useState<string | null>(null);
     const [updatingArticleId, setUpdatingArticleId] = useState<string | null>(null);
@@ -185,6 +186,30 @@ export function ArticlesPage() {
     const onSearch = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         await loadArticles(searchSupplierId, query);
+    };
+
+    const onExportArticles = async () => {
+        if (!searchSupplierId) {
+            setError('Seleccioná un proveedor para exportar artículos.');
+            return;
+        }
+
+        setExportingArticles(true);
+        setError(null);
+        try {
+            const result = await api.downloadArticlesExport(searchSupplierId);
+            const url = URL.createObjectURL(result.blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = result.fileName;
+            link.click();
+            URL.revokeObjectURL(url);
+            setToast('Artículos exportados correctamente.');
+        } catch (err) {
+            setError(formatError(err, 'No pudimos exportar los artículos'));
+        } finally {
+            setExportingArticles(false);
+        }
     };
 
     const onCreateArticle = async (event: FormEvent<HTMLFormElement>) => {
@@ -319,13 +344,24 @@ export function ArticlesPage() {
                 <form onSubmit={onSearch} className={styles.card}>
                     <div className={styles.cardHeader}>
                         <p className={styles.label}>Buscar artículos</p>
-                        <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() => setBulkModalOpen(true)}
-                        >
-                            Gestión masiva (CSV)
-                        </button>
+                        <div className={styles.cardHeaderActions}>
+                            <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={() => void onExportArticles()}
+                                disabled={!searchSupplierId || exportingArticles}
+                            >
+                                <Download size={16} />
+                                {exportingArticles ? 'Exportando...' : 'Exportar artículos'}
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={() => setBulkModalOpen(true)}
+                            >
+                                Gestión masiva (CSV)
+                            </button>
+                        </div>
                     </div>
                     <div className={styles.row}>
                         <select

@@ -22,6 +22,7 @@
         "verify:contract-shared": "node --loader ts-node/esm test-scripts/verify-contract-shared.ts",
         "verify:route-contracts": "node --loader ts-node/esm test-scripts/verify-route-contracts.ts",
         "verify:article-import": "node --loader ts-node/esm test-scripts/verify-article-import.ts",
+        "verify:article-export": "node --loader ts-node/esm test-scripts/verify-article-export.ts",
         "verify:dragonfish": "node --loader ts-node/esm test-scripts/verify-dragonfish-equivalences.ts",
         "prisma:migrate:recover": "bash scripts/prisma-recover-failed-migration.sh",
         "catalogs:bootstrap:article-defaults": "node --loader ts-node/esm scripts/bootstrap-article-optional-defaults.ts"

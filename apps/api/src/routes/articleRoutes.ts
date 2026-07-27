@@ -14,6 +14,7 @@ import { catalogVersionStore } from '../lib/catalogVersion.js';
 import { logger } from '../lib/logger.js';
 import { sendError } from '../middlewares/error.js';
 import { MissingOptionalCatalogDefaultsError, resolveOptionalCatalogDefaults } from '../services/articleCatalogDefaults.js';
+import { buildArticleExportCsv, buildArticleExportRows } from '../services/articleExportService.js';
 
 const articleSelect = {
     id: true,
@@ -143,6 +144,56 @@ export const createArticleRoutes = (
         } catch (error) {
             logger.error({ err: error, traceId: req.traceId, operation: 'searchArticles' }, 'Failed to search articles');
             return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to search articles', error, req.traceId);
+        }
+    });
+
+    router.get('/articles/export', readRateLimitMiddleware, requireAuth, async (req, res) => {
+        const supplierId = typeof req.query.supplierId === 'string' ? req.query.supplierId.trim() : '';
+        if (!supplierId) {
+            return sendError(res, 400, ErrorCodes.VALIDATION_FAILED, 'supplierId is required', undefined, req.traceId);
+        }
+
+        try {
+            const supplier = await prisma.supplier.findUnique({
+                where: { id: supplierId },
+                select: {
+                    code: true,
+                    colors: { select: { code: true, value: true } },
+                    articles: {
+                        orderBy: { sku: 'asc' },
+                        select: {
+                            sku: true,
+                            description: true,
+                            supplier: { select: { code: true } },
+                            dragonfishEquivalences: { select: { colorCode: true } },
+                            facturaItems: {
+                                select: {
+                                    colores: {
+                                        select: {
+                                            codigoColor: true,
+                                            nombreColor: true,
+                                            cantidadesPorTalle: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (!supplier) {
+                return sendError(res, 404, ErrorCodes.NOT_FOUND, 'Supplier not found', undefined, req.traceId);
+            }
+
+            const rows = buildArticleExportRows(supplier.articles, supplier.colors);
+            const safeSupplierCode = supplier.code.replace(/[^a-zA-Z0-9_-]/g, '_');
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="articulos-${safeSupplierCode}.csv"`);
+            return res.send(`\uFEFF${buildArticleExportCsv(rows)}\n`);
+        } catch (error) {
+            logger.error({ err: error, traceId: req.traceId, operation: 'exportArticles' }, 'Failed to export articles');
+            return sendError(res, 500, ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to export articles', error, req.traceId);
         }
     });
 

@@ -451,6 +451,7 @@ export const SHARED_ACTIVE_ROUTE_CONTRACTS: SharedRouteContract[] = [
     { method: 'GET', path: '/operations/catalogs/version', requiresAdminToken: false },
     { method: 'POST', path: '/articles', requiresAdminToken: true },
     { method: 'GET', path: '/articles/search', requiresAdminToken: false },
+    { method: 'GET', path: '/articles/export', requiresAdminToken: true },
     { method: 'PUT', path: '/articles/:id', requiresAdminToken: true },
     { method: 'DELETE', path: '/articles/:id', requiresAdminToken: true },
     { method: 'POST', path: '/suppliers', requiresAdminToken: true },
