@@ -62,6 +62,54 @@ function exportToCSV(factura: Factura) {
     link.click();
 }
 
+const sanitizeFileNamePart = (value: string) => value
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9-_]/g, '');
+
+const formatDatePart = (value: Date | string) => {
+    const date = new Date(value);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+};
+
+function exportToTXT(factura: Factura) {
+    const lines: string[] = [];
+
+    factura.items.forEach(item => {
+        item.colores.forEach(color => {
+            const isNoColorVariant = color.codigoColor === '$' && color.nombreColor?.trim().toUpperCase() === 'SIN COLOR';
+            const skuAndColor = isNoColorVariant ? item.codigoArticulo : `${item.codigoArticulo}${color.codigoColor}`;
+
+            Object.entries(color.cantidadesPorTalle).forEach(([size, quantity]) => {
+                const numericQuantity = Number(quantity);
+                if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
+                    return;
+                }
+
+                for (let index = 0; index < numericQuantity; index += 1) {
+                    lines.push(`${skuAndColor}!!${size}`);
+                }
+            });
+        });
+    });
+
+    const providerPart = sanitizeFileNamePart(factura.proveedor || 'UnknownProvider');
+    const creationDatePart = formatDatePart(factura.createdAt);
+    const invoiceNumberPart = sanitizeFileNamePart(factura.nroFactura);
+    const fileName = `${providerPart}-${creationDatePart}-${invoiceNumberPart}.txt`;
+    const txtContent = `${lines.join('\n')}${lines.length > 0 ? '\n' : ''}`;
+    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
 const cloneItems = (items: FacturaItem[]) => JSON.parse(JSON.stringify(items)) as FacturaItem[];
 
 const getItemUnits = (item: FacturaItem) => item.colores.reduce((total, color) => (
@@ -658,6 +706,9 @@ export function FacturaSummary() {
                     <div className={`${styles.actionGroup} ${styles.actionGroupExport}`}>
                         <Button variant="secondary" onClick={() => exportToCSV(factura)} className={styles.actionButton} icon={<Download size={16} />}>
                             Exportar CSV
+                        </Button>
+                        <Button variant="secondary" onClick={() => exportToTXT(factura)} className={styles.actionButton} icon={<Download size={16} />}>
+                            Exportar TXT
                         </Button>
                         <Button variant="secondary" onClick={() => void handleDragonfishExport()} isLoading={exportingDragonfish} className={styles.actionButton} icon={<Download size={16} />}>
                             Exportar TXT Dragonfish
